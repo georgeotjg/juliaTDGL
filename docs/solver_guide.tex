@@ -1,0 +1,598 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[margin=2.4cm]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+
+\newcommand{\Hc}[1]{H_{c#1}}
+\newcommand{\tGL}{\tau_{\mathrm{GL}}}
+\newcommand{\code}[1]{\texttt{#1}}
+
+\title{juliaTDGL: a guide to the three-dimensional two-band\\
+time-dependent Ginzburg--Landau solver}
+\author{J.~A.~Robles-Calder\'on\\
+\small Departamento de F\'isica, Universidad Nacional de Colombia, Bogot\'a}
+\date{\today}
+
+\begin{document}
+\sloppy
+\maketitle
+
+\begin{abstract}
+\noindent
+This guide describes what the solver computes and how: the two-band
+model, its discretisation on a staggered lattice with link variables, the
+time step, the injection of a transport current, the voltage observable,
+the convergence of a current ladder, the optional scalar potential and the
+optional terms (mixed-gradient coupling, heating, Joule heating, bath
+temperature, charge imbalance), the geometry, and the protocol for
+reporting a diode efficiency. It ends with how to run the code, what it
+writes, and what each test checks.
+\end{abstract}
+
+\tableofcontents
+
+% ======================================================================
+\section{What the solver computes}
+
+The solver integrates the time-dependent Ginzburg--Landau (TDGL) equations
+of a superconductor with two order parameters, $\Psi_\sigma$ and $\Psi_\pi$,
+coupled by a Josephson term, together with the vector potential
+$\mathbf A$, on a three-dimensional rectangular box surrounded by a buffer,
+under an applied field and a transport current. It was written to study
+the geometric superconducting diode: a sample whose shape breaks the
+mirror symmetry along the direction of vortex motion carries different
+critical currents in the two directions.
+
+The output of a run is a current--voltage characteristic for both
+polarities, the vortex content and magnetisation at every current, and the
+full state at chosen points, from which the critical currents
+$I_c^\pm$ and the efficiency
+\begin{equation}
+  \eta = \frac{I_c^{+}-|I_c^{-}|}{I_c^{+}+|I_c^{-}|}
+\end{equation}
+follow.
+
+% ======================================================================
+\section{The model}
+\label{sec:model}
+
+\subsection{Free energy and units}
+
+The free energy is the two-component Ginzburg--Landau functional with an
+interband Josephson coupling,
+\begin{equation}
+  \mathcal{F} = \sum_{a=\sigma,\pi}\Bigl[
+      \alpha_a|\Psi_a|^2 + \frac{\beta_a}{2}|\Psi_a|^4
+    + \frac{1}{2m_a}\bigl|(-i\nabla-\mathbf{A})\Psi_a\bigr|^2 \Bigr]
+  - \gamma_{12}\bigl(\Psi_\sigma^{*}\Psi_\pi+\mathrm{c.c.}\bigr)
+  + \tfrac{1}{2}|\nabla\times\mathbf{A}|^2 .
+\end{equation}
+Lengths are measured in the $\sigma$-band coherence length $\xi_\sigma$,
+fields in $\Hc2\equiv\Hc2^\sigma$, time in $\tGL$, order parameters in the
+$\sigma$-band equilibrium amplitude at $T=0$ and currents in the natural
+unit $J_0$ of the equations. With this scaling the remaining parameters are
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+symbol & \code{Config} field & meaning \\
+\midrule
+$\kappa$ & \code{kappa\_s} & Ginzburg--Landau parameter, $\lambda/\xi_\sigma$ \\
+$a_{2n}$ & \code{a2n} & equilibrium density of the $\pi$ band at $T=0$ (default $0.59$) \\
+$m_r$ & \code{m\_ratio} & mass ratio $m_\pi/m_\sigma$ (set from \code{xi\_ratio} when given) \\
+$R$ & \code{xi\_ratio} & coherence-length ratio $\xi_\pi/\xi_\sigma$ \\
+$\gamma_{12}$ & \code{gamma12} & interband Josephson coupling \\
+$\Gamma_r$ & \code{gamma\_ratio} & relaxation time of $\pi$ relative to $\sigma$ \\
+$T$ & \code{T\_red} & reduced temperature \\
+$H$ & \code{H\_const} & applied field along $z$, in $\Hc2$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Equations of motion}
+
+In the gauge $\Phi=0$ (the default) the dynamics is relaxational:
+\begin{align}
+  \partial_t\Psi_\sigma &= (\nabla-i\mathbf A)^2\Psi_\sigma
+     + \bigl(f\alpha_\sigma-|\Psi_\sigma|^2\bigr)\Psi_\sigma + \gamma_{12}\Psi_\pi ,\\
+  \Gamma_r\,\partial_t\Psi_\pi &= \frac{1}{m_r}(\nabla-i\mathbf A)^2\Psi_\pi
+     + \bigl(f\alpha_\pi-|\Psi_\pi|^2\bigr)\Psi_\pi + \gamma_{12}\Psi_\sigma ,\\
+  \partial_t\mathbf A &= \mathbf J_s - \kappa^2\nabla\times\nabla\times\mathbf A ,
+  \qquad
+  \mathbf J_s=\mathrm{Im}[\Psi_\sigma^*(\nabla-i\mathbf A)\Psi_\sigma]
+     +\frac{1}{m_r}\mathrm{Im}[\Psi_\pi^*(\nabla-i\mathbf A)\Psi_\pi] ,
+\end{align}
+with $\alpha_\sigma=1-T$ and $\alpha_\pi=a_{2n}-T$. The normal conductivity
+is one, which fixes the voltage scale. $\Gamma_r$ divides the whole
+right-hand side of the $\pi$ equation: it sets a relaxation time and does not
+move any static quantity.
+
+\paragraph{Temperature.} By default $T$ enters only the $\pi$ condensation
+term and the field equation carries $(1-T)\mathbf J_s$, the convention of
+the methods paper. Both conventions
+coincide at $T=0$. Setting \code{T\_physical=true} gives the equations
+above, with $T$ felt by both bands and no factor on $\mathbf J_s$; the
+coherence-length ratio is then fixed at its $T=0$ value. At $T=0.3$ the
+uniform equilibrium is $|\Psi_\sigma|^2=1-T$ and $|\Psi_\pi|^2\simeq a_{2n}-T$.
+
+\subsection{Coherence lengths, critical fields and depairing}
+
+Linearising about $\Psi=0$ with the bands decoupled,
+\begin{equation}
+  R=\frac{\xi_\pi}{\xi_\sigma}=\frac{1}{\sqrt{m_r a_{2n}}},\qquad
+  \Hc2^\pi=m_ra_{2n}\Hc2=\frac{\Hc2}{R^2}.
+\end{equation}
+The solver takes $R$ as input and sets $m_r=1/(a_{2n}R^2)$; it prints the
+ratio it realises. Raising $R$ lowers the $\pi$-band upper critical field as
+$R^{-2}$, so a $\pi$ band with a long coherence length is normal at the
+fields at which vortices enter: check $\langle|\Psi_\pi|^2\rangle$ before
+reading any band-resolved number. At finite $\gamma_{12}$ there is one
+$\Hc2$, the largest root of $(1-H)(a_{2n}-H/m_r)=\gamma_{12}^2$.
+
+The superfluid stiffness of the pair is $\rho_s=1+a_{2n}/m_r=1+a_{2n}^2R^2$
+and the effective penetration depth $\lambda_{\rm ef}=\kappa/\sqrt{\rho_s}$.
+$J_0$ is not the depairing current: a uniform superflow gives
+$j(q)=q[(1+a_{2n}/m_r)-q^2(1+1/m_r^2)]$, with maximum $0.546\,J_0$ at
+$R=1.30$ and $2/3\sqrt3=0.385\,J_0$ for one band.
+
+\subsection{Geometry as a condensation mask}
+
+The sample is always the full box. The geometry enters through a mask
+$f(\mathbf r)$ multiplying the condensation coefficients: $f=1$ in the
+bulk, $0<f<1$ for weakened and $f>1$ for strengthened condensation. Where
+$f=0$ the condensation energy vanishes and the material is locally at its
+critical temperature: a notch is neither a vacuum cut nor a normal metal,
+which would need $f<0$. The local upper critical fields
+are $f\Hc2$ for $\sigma$ and $f\Hc2/R^2$ for $\pi$: any region with $0<f<H$
+is normal and can shunt the sample (the solver warns at start).
+
+% ======================================================================
+\section{Discretisation}
+
+\subsection{The lattice}
+
+The mesh is staggered. $\Psi_\sigma$ and $\Psi_\pi$ live on nodes; the
+vector potential lives on links as the phase
+$\theta_x=\int A_x\,\mathrm dx$ of the link variable
+$U_x=e^{-i\theta_x}$; the field $\mathbf h=\nabla\times\mathbf A$ lives on
+plaquettes. The covariant derivative is $\Psi_{i+1}U_x(i)-\Psi_i$, which is
+exactly gauge invariant on the lattice. The sample occupies
+$N_x\times N_y\times N_z$ cells of size $\mathrm dx$ inside a box padded
+by \code{buf} buffer cells on every face (\code{bufx}, \code{bufy},
+\code{bufz} set them per axis). In the buffer the supercurrent vanishes and
+$\partial_t\mathbf A=-\kappa^2\nabla\times\nabla\times\mathbf A$: it is a
+normal metal of unit conductivity, not vacuum, and carries normal current
+wherever the electric field is nonzero.
+
+\subsection{Boundary conditions}
+
+The applied field is imposed on $h_z$ at the outer faces of the
+buffer; inside, the field is whatever $\nabla\times\mathbf A$ gives, so
+screening, magnetisation and vortex entry are computed rather than
+prescribed. The order parameters satisfy
+$\hat n\cdot(\nabla-i\mathbf A)\Psi=0$ on the six faces of the sample.
+Each link type has its own mask: a link is live when both of its nodes
+belong to the sample. A single mask for all three directions would include
+the low-index transverse rows and exclude the high-index ones, biasing the
+field equation and the voltmeter towards one edge.
+
+The buffer is a physical parameter, not only a numerical one: the
+field is clamped at its outer face, inside the region where screening
+currents live when the padding is thinner than $\lambda$. On the notched
+production sample each doubling of the padding admits one more vortex at
+zero current. Quote absolute numbers together with the padding.
+
+\subsection{Time stepping}
+
+Integration is explicit. One substep applies, in this order:
+\begin{center}
+\begin{tabular}{cl}
+\toprule
+block & operation \\
+\midrule
+{[A]} & update $\Psi_\sigma,\Psi_\pi$ (kinetic, condensation and coupling terms) \\
+{[B]} & supercurrent on every link, from $\Psi$ and the links of the previous step \\
+{[C]} & tentative increment of $\theta$: supercurrent minus $\kappa^2\nabla\times\mathbf h$ \\
+{[C2]} & (with \code{use\_phi}) projection by the scalar potential \\
+{[E]} & links $U=e^{-i\theta}$ \\
+{[F]} & field $\mathbf h=\nabla\times\theta$ on plaquettes \\
+{[G]} & applied field and self-field of the transport current on the boundary \\
+{[H]} & Neumann condition for $\Psi$ on the sample faces \\
+{[I]} & advance: the new state becomes the old one (array swaps, no copies) \\
+\bottomrule
+\end{tabular}
+\end{center}
+The time step is the minimum over the diffusion branches of both bands and
+the field equation,
+\begin{equation}
+  \mathrm dt=0.99\min\Bigl[\frac{\eta\,\mathrm dl}{4\sqrt{1+\gamma^2}},
+  \frac{\eta\,\mathrm dl\,m_r\Gamma_r}{4\sqrt{1+\gamma^2}},
+  \frac{\mathrm dl}{4\kappa_\sigma^2},\frac{\mathrm dl}{4\kappa_\pi^2},
+  \frac{\nu\,\mathrm dl}{4\zeta^2}\Bigr],\qquad
+  \mathrm dl=\frac{2}{\mathrm dx^{-2}+\mathrm dy^{-2}+\mathrm dz^{-2}},
+\end{equation}
+with $\eta=5.79$, $\nu=0.03$, $\zeta=0.5$, $\gamma=10$. At $\kappa=2$ and
+$\mathrm dx=0.5$ the flat branch binds and $\mathrm dt=4.95\times10^{-3}\,\tGL$;
+above $\kappa\simeq2.9$ the field branch $\mathrm dl/4\kappa^2$ takes over,
+so a run at $\kappa=25$ takes about $160$ times more steps per unit of
+physical time than one at $\kappa=2$. Optional diffusive terms add the
+condition $\mathrm dt\le0.15\,\mathrm dx^2/D$. A \emph{cycle} is
+\code{lMax}$=40$ substeps; convergence is tested once per cycle.
+
+\subsection{Symmetry}
+
+With $\mathbf H\parallel\hat z$ and $\mathbf J\parallel\hat x$ the Lorentz
+force is along $y$. Complex conjugation, $\Psi\to\Psi^*$ and
+$\mathbf A\to-\mathbf A$, composed with the mirror $M_y$ maps $(+J,+H)$ onto
+$(-J,+H)$. A geometry invariant under $M_y$ therefore gives
+$V(-J)=-V(+J)$ and $\eta=0$ to machine precision; a diode needs a shape that
+breaks $M_y$, and an asymmetry along $x$ alone does not. On the lattice the
+mirror of the interior nodes is $j\mapsto(y_1+y_2+1)-j$. The functions
+\code{check\_my\_symmetry}, \code{check\_mx\_symmetry} and
+\code{check\_rz\_symmetry} count the cells that break each symmetry and are
+printed at the start of every run.
+
+% ======================================================================
+\section{Driving and measuring}
+
+\subsection{Current injection}
+
+With $\Phi=0$, a current imposed as a uniform phase on the links of a
+contact face is a gauge transformation: it cancels in the lattice curl and
+in the Neumann condition, and the solver integrates the zero-current
+problem whatever value is imposed. The solver therefore injects the
+current through its own field: for a slab of thickness $d$ carrying
+$\mathbf J\parallel\hat x$, $h_y=\mp\mathcal G Jd/2\kappa^2$ on the two $z$
+faces (\code{inject\_mode="selffield"}, gain \code{inject\_gain}$=\mathcal G$).
+This field is the curl itself, cannot be gauged away, and is odd in $J$.
+It adds in quadrature to the applied field; keep the total below $\Hc2$.
+The legacy phase clamp (\code{inject\_mode="phase"}) is kept only to
+reproduce old runs.
+
+\subsection{The voltage}
+
+The voltage is read from the Josephson relation on the gauge-invariant
+phase between two measuring planes inset \code{delta\_v} cells from the
+contact faces,
+\begin{equation}
+  V_\sigma=-\frac{\mathrm d}{\mathrm dt}\Bigl\langle\sum_{\rm path}
+  \arg(\Psi_{\sigma,i}^*U_{ij}\Psi_{\sigma,j})\Bigr\rangle_{\rm lines}.
+\end{equation}
+Each transverse line is unwrapped in time separately and only then
+averaged, so every $2\pi$ slip is counted: $V=2\pi N_{\rm cross}/(n_{\rm lin}\Delta t)$.
+The same construction on $\Psi_\pi$ gives $V_\pi$. The voltage is the slope
+of a least-squares fit over an averaging window. The plane-to-plane
+difference of $A_x$ is a static quantity and is not a voltage; it is
+printed as a diagnostic (\code{Vest}). Unwrapping is faithful while every
+line advances by less than $\pi$ per cycle. The solver records the largest
+per-line increment of each point (\code{dmax\_arr}), which in developed flux
+flow is an order of magnitude above the mean rate $|V|\,\mathrm dt_{\rm cycle}$;
+when it approaches $\pi$ the remedy is to sample the phase more often
+(\code{unwrap\_every}), not a smaller time step. A wrapped increment cannot
+exceed $\pi$; the number of increments above 2\,rad (\code{nbig\_arr})
+bounds the slips that may have been misattributed, which happens when a
+core passes close to a link. It also reports the voltage on the lines whose
+whole path has $f=1$ (\code{Vf1\_arr}), which tells whether slips counted
+inside a notch, where $\arg(\Psi^*U\Psi)$ is poorly conditioned, contribute
+to $V$, and the rate of the line integral of $\mathbf A$ over the window
+(\code{VA\_arr}), which has no core to misattribute but is not gauge
+invariant: with $\Phi=0$ the condensate phase between the planes also
+drifts, and the two voltages differ. For a point that closes as a fixed
+point, \code{V\_arr} is the slope of the last \code{V\_win} cycles, a
+short window ($0.1\,\tGL$ at $\kappa=25$); \code{Vh\_arr} and
+\code{Vh2\_arr} give the slope of the $\sigma$ and $\pi$ phases over the
+second half of every point, which is what the verdict rule needs.
+\code{keep\_rung\_states=true} keeps
+the state of every closed point in \code{restart/rungs/}, for analysis after
+the run.
+
+\subsection{Vortex counting and magnetisation}
+
+The vortex count is the fluxoid $\oint D=2\pi n-\Phi_{\rm enc}$ summed over
+the plaquettes of the mid-thickness plane, excluding plaquettes where
+$f\simeq0$. The mask is the geometry, never the amplitude: masking by
+$|\Psi|$ removes the cores being counted. The magnetisation is
+$M=\langle h_z\rangle_{\rm sample}-H$.
+
+\subsection{A current ladder}
+
+A run sweeps a list of currents (\code{J\_list}), first $+J$ and then $-J$,
+each polarity starting from the same zero-current seed. Each rung starts
+from the converged state of the previous one. A rung closes when either
+\begin{itemize}
+\item the state is a fixed point, $\max|\Delta|\Psi||<$\code{eps\_conv}
+  per cycle (conv \code{F}); or
+\item the state is a limit cycle --- flux flow --- and the windowed mean of
+  $V$ is stationary (conv \code{V}),
+\end{itemize}
+and in both cases only after a floor of physical time, \code{t\_min\_GL}
+for a static point and \code{t\_min\_GL\_res} once it is resistive. The
+floors are in units of $\tGL$, not of cycles, because the length of a cycle
+moves with $\mathrm dt$. The tolerance \code{eps\_conv} is per cycle;
+\code{eps\_conv\_rate} sets it per unit time instead, so that it does not
+change with $\mathrm dt$. Near onset a flowing state can spend most of each
+period nearly frozen, and no local tolerance tells it from a fixed point:
+the verdict rule below does. A rung that reaches \code{mMax} cycles is
+marked \code{*} and is not converged. \code{Config(:paper)} sets the
+protocol of the methods paper (tolerance, floors and ceiling).
+
+After each rung the state of that polarity is written to
+\code{restart/state\_Jpos.mat} or \code{state\_Jneg.mat}; a run restarted
+with \code{restart\_pos/restart\_neg} continues at the next rung. A file
+\code{STOP.txt} in the run folder stops the run after the current rung.
+\code{guard\_hours} sets a wall-clock budget, and \code{guard\_psi} stops a
+run whose $|\Psi|$ diverges (usually a time step too large for $\kappa$).
+
+% ======================================================================
+\section{The scalar potential}
+
+With \code{use\_phi=true} the solver leaves the gauge $\Phi=0$. Each
+substep computes the tentative link increment $\delta$ of block [C],
+solves
+\begin{equation}
+  D(G\Phi) = D\delta ,
+\end{equation}
+with $G$ the lattice gradient from nodes to links and $D$ its adjoint, and
+corrects $\delta'=\delta-G\Phi$, so that $D\delta'=0$ to machine precision
+(Coulomb gauge). The order parameters gain $-i\Phi\Psi$ with the time step
+$\mathrm dt$ in both bands. $D\circ G$ is the seven-point Laplacian; on the
+uniform box it is separable and is diagonalised once by three
+one-dimensional eigenproblems (\code{phi\_method=:separable}, the default),
+which is an exact direct solve; a sparse LU (\code{:lu}) gives the same
+result. With the separable solver a cycle costs $1.55$ times a cycle in
+the gauge $\Phi=0$.
+
+$\Phi$ is a gauge choice: $|\Psi|$, $\mathbf h$ and the Josephson voltage
+are the same with $\Phi=0$, with Dirichlet and with Neumann conditions on
+$\Phi$ (\code{phi\_bc}); only the split of the voltage between the drop of
+$\Phi$, printed as $V_\Phi$, and the drift of the phase changes. Neumann is
+the natural condition here: there are no electrodes.
+
+Two extensions change the physics:
+\begin{itemize}
+\item \textbf{Thomas--Fermi screening} (\code{lambda\_TF}$>0$): the operator
+  becomes $D\circ G-\lambda_{\rm TF}^{-2}$, so the potential is screened
+  over $\lambda_{\rm TF}$ and the gauge equivalence is broken.
+\item \textbf{Charge imbalance} (\code{tau\_Q}$>0$, with Thomas--Fermi): a
+  field $Q$ relaxes towards the projection residual,
+  $\tau_Q\,\mathrm dQ/\mathrm dt+Q=D\delta'$ (implicit Euler), and the
+  order parameters rotate with $\mu=\Phi+Q$. Without Thomas--Fermi the
+  residual is zero and $Q$ does nothing. With \code{use\_Qss} the residual
+  also diffuses, $\tau_Q(\partial_tQ-D_Q\nabla^2Q)+Q=D\delta'$.
+\end{itemize}
+
+% ======================================================================
+\section{Optional terms}
+
+All are off by default. Use one at a time against a control run with the
+same protocol; with two on, a change cannot be attributed. The coefficients
+are model values that switch a term on, not material constants.
+
+\begin{description}
+\item[Mixed-gradient coupling] (\code{use\_drag}, \code{nu\_drag}$=\nu$).
+  Adds $\nu\,\mathrm{Re}[(\mathbf D\Psi_\sigma)^*\cdot\mathbf D\Psi_\pi]$ to the
+  functional, with the corresponding terms in both order-parameter
+  equations and in the supercurrent. The $\pi$-side term carries
+  $\nu/\Gamma_r$ and no extra $1/m_r$, which keeps the coupling variational.
+\item[Heating] (\code{use\_heat}, \code{D\_T}, \code{eta\_J},
+  \code{gamma\_bath}). A temperature field obeys
+  $\partial_t\theta=D_T\nabla^2\theta+\eta_J s-\gamma(\theta-\theta_{\rm bath})$,
+  with $\alpha_\sigma=(1-\theta)f$ and $\alpha_\pi=(a_{2n}-\theta)f$ and the
+  source $s=|\partial_t\Psi_\sigma|^2+\Gamma_r|\partial_t\Psi_\pi|^2$. A rung
+  whose temperature exceeds $0.45$ is cut (conv \code{T}) and ends that
+  polarity.
+\item[Joule heating] (\code{use\_joule}). Adds the normal-current term
+  $|\mathbf E|^2$ to $s$. Requires heating and $\Phi=0$.
+\item[Contact margin] (\code{heat\_margin}). Excludes from $s$ the cells
+  next to each injection face. There the injected normal current converts
+  into supercurrent within about one coherence length, with an electric
+  field and a rotating phase even in the Meissner state; that heat belongs
+  to the contact, not to the sample.
+\item[Bath temperature] (\code{T\_physical}, \code{T\_red}). See
+  Sec.~\ref{sec:model}.
+\end{description}
+
+% ======================================================================
+\section{Geometry}
+
+\code{GEOM\_MODE} selects a shape from the built-in catalogue (\code{SIM},
+the clean box; \code{WEDGE}, a sawtooth notch on the $y_1$ face;
+\code{STAGGER}, \code{FUNNEL}, \code{TRI\_Y1}, \ldots); the suffix
+\code{\_REF} gives the exact $M_y$ mirror, which is the sign control. Any
+shape can also be read from a file (\code{GEOM\_MODE="CUSTOM"} or
+\code{"CUSTOM\_REF"}, \code{geom\_file}): a TOML list of regions in units of
+$\xi_\sigma$, painted in order,
+\begin{verbatim}
+[[shape]]
+type = "triangle"     # circle rect triangle ngon polygon sphere pixels voxels
+x = 10.0              # centre; origin at the corner (x1, y1, z1) of the sample
+y = 0.0
+w = 4.0
+h = 3.0
+skew = 1.0            # apex offset along the base
+rot = 0.0             # degrees about z
+z = "all"             # all | bottom | top | buried | [z0, z1]
+f = 0.0
+\end{verbatim}
+Because positions are physical, the same file rasterises on any mesh; the
+catalogue shapes written as files reproduce the catalogue masks bit for
+bit. The browser editor (\code{python3 julia/editor/server.py}) draws these
+files. One picks a face of the sample and paints from it inward, a given
+number of cells deep and starting a given number of cells inside, so cuts
+can be buried; figures, gradients of $f$ or of depth, and a palette of
+condensation strengths complete it. It shows the current, the field and the
+face through which vortices enter for each sign of $J$, and checks, while
+drawing, the mirror symmetry that would force $\eta=0$, contact with the
+injection faces and normal shunts.
+
+% ======================================================================
+\section{Protocol for reporting an efficiency}
+
+A critical current is a bracket: the last silent rung and the first
+dissipating one of an ascending ladder. A rung integrated for $\Delta t$ at
+voltage $V$ carries $|V|\Delta t/2\pi$ vortex crossings per measuring line:
+below one it is silent, at ten or more dissipating, and in between undecided
+until it is re-measured on a doubled window. A threshold on the voltage
+alone, $|V(J)-V(0)|>10^{-4}$, is weaker: at $\Delta t=2000\,t_{\rm GL}$ it
+reads a thirtieth of a crossing. The run summary and the terminal menu (key
+\code{v}) give both brackets with this rule, $\eta$ at the bracket centres
+with its range, the undecided rungs, and the voltage non-reciprocity
+$\sigma_V=(|V_+|-|V_-|)/(|V_+|+|V_-|)$ at the first $|J|$ where both
+polarities dissipate; a simpler interpolated threshold is printed next to
+them for comparison. Before reporting $\eta$:
+\begin{enumerate}
+\item no region with $0<f<H$, and $V(J=0)$ at the floor;
+\item the odd part $[V(+J)-V(-J)]/2$ is nonzero (the drive enters); the
+  even part is the rectification;
+\item vortices are present somewhere on the ladder;
+\item the \code{\_REF} geometry inverts the sign and keeps $|I_c|$;
+\item a rigid shift of the defects by $0.05L$ along $y$ leaves the brackets;
+\item the asymmetry exceeds that of an $M_y$-symmetric control run with the
+  same numerics while it dissipates.
+\end{enumerate}
+The failure modes these checks catch are described in the methods paper:
+an inert injection, a defect touching a contact, normal shunts, index
+ranges or mirrors that are not exact, a static drop read as a voltage,
+averaging before unwrapping, windows too short near the threshold,
+thresholds set by the current grid, floors counted in cycles, fixed-point
+tests applied to limit cycles, path dependence of a ladder, a coherence
+length other than the intended one, an extinct $\pi$ band still counted,
+coefficients acting on the wrong quantity, and contact heat counted as
+sample heat.
+
+% ======================================================================
+\section{Numerical modes and reproducibility}
+
+\code{Strict()} routes $|z|$, $e^{-i\phi}$ and the complex product through
+the C library functions (\code{hypot}, \code{sincos}, a fused multiply--add
+product); it is the mode of the regression tests, which compare against
+stored states. \code{Fast()} uses Julia's native arithmetic, vectorises,
+is about 1.3 times faster and agrees to machine precision. With
+\code{use\_threads=true} the planes in $z$ are updated in parallel; each
+plane writes distinct cells, so the result does not depend on the number of
+threads. At the start of each run a self-test
+compares the vectorised kernel with a reference triple loop.
+
+On one core of a laptop (Intel i5-1235U) a cycle of the
+$40\times24\times6$ production box costs $0.030$\,s, so a rung on a
+$1500\,\tGL$ floor takes about four minutes; with the scalar potential,
+$0.046$\,s.
+
+% ======================================================================
+\section{Running}
+
+\subsection{From Julia}
+\begin{verbatim}
+using Pkg; Pkg.activate("julia")
+using TDGL
+sde = run_case(Config(GEOM_MODE="WEDGE", Nx_sc=40, Ny_sc=24, Nz_sc=6,
+                      dx=0.5, dy=0.5, dz=0.5, kappa_s=2.0, xi_ratio=1.30,
+                      H_const=0.50, J_list=[0.040, 0.045],
+                      t_min_GL=1500.0, t_min_GL_res=2000.0, eps_conv=1e-5,
+                      out_dir="runs/first", run_tag="first"))
+brackets(sde)        # Ic+- as brackets with the verdict rule, eta and its range
+\end{verbatim}
+The same, smaller and in about a minute, is \code{examples/first\_run.jl}.
+
+\subsection{From the command line and the terminal menu}
+
+\code{julia/scripts/run\_preset.jl} launches one run with flags for the
+geometry (\code{--geom}, \code{--shape}), the parameters (\code{--kappa},
+\code{--H}, \code{--xi-ratio}, \code{--gamma12}, \code{--T}), the currents
+(\code{--J}), the mesh (\code{--mesh} or \code{--Nx --Ny --Nz --dx}), the
+times (\code{--window} or \code{--tmin --tminres}), the scalar potential
+(\code{--phi off|coulomb|tf}) and one optional term (\code{--drag},
+\code{--heat}, \code{--qss}). \code{python3 julia/scripts/tdgl\_tui.py} builds
+the same command step by step, lists the runs, stops them cleanly and
+resumes them.
+
+\subsection{Where runs are written}
+
+\code{run\_case} writes to \code{out\_dir}, any path, created if needed;
+\code{run\_preset.jl} writes to \code{julia/runs/<name>/} unless \code{--dir}
+says otherwise. The terminal menu lists every run below \code{julia/runs}, at
+any depth (\code{julia/runs/project/runs/case} is found), and every
+\code{runs/} folder one or two levels below the root of the repository
+(\code{project/runs}, \code{group/project/runs}); a run kept anywhere else is
+not scanned. Runs started outside the menu (a script, a cluster job) appear
+as read-only rows, with their progress read from their own output.
+
+\subsection{On a cluster}
+
+The menu is for a workstation; on a cluster a run is one batch job. Each job
+uses one process, with the kernel threaded over $z$ planes
+(\code{use\_threads}, \code{JULIA\_NUM\_THREADS}). A Slurm script:
+\begin{verbatim}
+#!/bin/bash
+#SBATCH --job-name=tdgl --cpus-per-task=2 --time=48:00:00
+export JULIA_NUM_THREADS=$SLURM_CPUS_PER_TASK
+julia --project=julia julia/scripts/run_preset.jl --geom WEDGE \
+      --mesh production --window paper --J 0.0,0.040,0.045 \
+      --dir runs/wedge_$SLURM_JOB_ID
+\end{verbatim}
+A job stopped by the time limit resumes from its last closed point with
+\code{--restart} and the same \code{--dir}. Results are read without the
+menu: \code{python3 julia/scripts/tdgl\_tui.py --results}, or
+\code{brackets(sde)} in Julia.
+
+\subsection{What a run writes}
+\begin{center}
+\begin{tabular}{ll}
+\toprule
+file & content \\
+\midrule
+\code{job.json} & the parameters of the launch \\
+\code{j\_history.csv} & one line per closed rung: $J$, $V$, class, vortices \\
+\code{run\_info.txt} & time step and cycle length, to count crossings \\
+\code{output/RUN\_SUMMARY\_*.txt} & parameters, $I_c^\pm$, $\eta$ and a convergence table \\
+\code{restart/state\_J\{pos,neg\}.mat} & full state, text \code{.mat} format \\
+\code{output/snapshots/} & mid-plane $|\Psi|^2$ as PGM and CSV \\
+\code{output/vtk/} & legacy VTK for ParaView (\code{vtk\_every}) \\
+\bottomrule
+\end{tabular}
+\end{center}
+Any checkpoint converts to VTK with \code{julia/scripts/vtk\_from\_checkpoint.jl}.
+
+% ======================================================================
+\section{Tests}
+
+\code{julia --project=julia julia/test/run.jl} runs about $56\,000$
+assertions in a minute and a half. They check the kernel against the
+reference loop and across threads; regression against two stored states
+(a Meissner state and a state with vortex flow);
+the lattice Landau level ($1.6\,\%$ low at $\mathrm dx=0.5$, $H=0.5$) and
+the surface-nucleation ratio $\Hc3/\Hc2$ ($0.05\,\%$ from $1.69461$);
+that $\Gamma_r$ moves no static quantity; that $\Phi$ is a gauge freedom,
+also with a Thomas--Fermi length, as long as the residual does not relax;
+that the separable solver equals the LU; every optional term and its guards;
+shapes read from files; and the VTK writer.
+
+% ======================================================================
+\section{Limitations}
+
+\begin{itemize}
+\item Standard TDGL with a scalar relaxation time per band; no generalised
+  TDGL, no mass tensor, no microscopic derivation of $\Gamma_r$.
+\item The two-component functional has two parameters, $m_r$ and $a_{2n}$,
+  for three targets of a material such as MgB$_2$ (coherence-length ratio,
+  stiffness partition and gap ratio); not all can be matched at once.
+\item A notch ($f=0$) is locally at $T_c$: neither vacuum nor a normal metal.
+\item The buffer is a normal metal and a systematic: absolute thresholds depend on its width.
+\item Explicit time stepping: large $\kappa$ costs time steps
+  quadratically.
+\item The silent state is driven, not an equilibrium. The current enters
+  through the contact faces as normal current and turns into supercurrent
+  within one or two $\xi_\sigma$; those layers carry a steady electric field.
+  The current at which the silent state starts to flow therefore depends on
+  the relaxation rates and on the contact, not only on the free energy.
+\item Checkpoints store $\Psi$ and the link variables, not the temperature
+  nor the charge residual; a resumed run restarts them from the bath and
+  from zero.
+\end{itemize}
+
+\end{document}

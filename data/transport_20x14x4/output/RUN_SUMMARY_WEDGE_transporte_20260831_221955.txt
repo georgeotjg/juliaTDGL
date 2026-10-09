@@ -1,0 +1,55 @@
+==============================================================
+ TDGL-SDE-MgB2 v11 — RESUMEN DE CORRIDA
+==============================================================
+[RUN]
+  fecha        : 2026-08-31 22:19:55
+  geometria    : WEDGE
+  tag          : transporte
+  tiempo pared : 1.6 min (0.03 h)
+
+[RESULTADO]
+  Ic+  = NaN J0
+  Ic-  = NaN J0
+  eta  = NaN %
+  (recordar protocolo: margen limpio + _REF invierte signo
+   conservando |Ic| + robustez x_shift/y_shift, ANTES de
+   reportar cualquier eta como fisico)
+
+[MALLA]
+  Nx x Ny x Nz : 20 x 14 x 4 (SC) | dx=dy=dz=0.500 xi
+  muestra      : 10.0 x 7.0 x 2.0 xi
+
+[FISICA]
+  kappa_s=2.00 | kappa_p=2.00 | T_red=0.000
+  xi_ratio: pedido=1.3 | REALIZADO=1.300 | Hc2_pi/Hc2_sigma=0.5917
+  INYECCION: inject_mode=selffield | inject_gain=1
+  VOLTAJE: relacion de Josephson, V = d(fase gauge-invariante)/dt
+  a2n=0.590 | m_ratio=1.003 | gamma12=0.0010
+  gamma_ratio (Gamma_pi/Gamma_sigma) = 1.3000  (banda pi MAS LENTA: Gamma multiplica d/dt)
+  H=0.500 Hc2 | J||x | defect_model=soft | z_mode=through
+
+[NUMERICA]
+  dt=4.9500e-03 t_GL (dt1=2.40e-02 dt2s=1.04e-02 dt2p=1.04e-02 dt3=5.00e-03)
+  eps_conv=1.0e-14 (semilla J=0: 1.0e-14) | iter_min=400 | lMax=40 | mMax=400 | V_thr=1.0e-04
+  J_max=1.600 | dJ_fine=0.0050 | dJ_coarse=0.0200 | J_tr=0.400
+  inj_margin=6 celdas | x_shift=0.000 | y_shift=0.000
+
+[GEOMETRIA] 1 defecto(s)
+  #01 wedge    xc=12 yc=2 half=4 depth=5 dir=1 f=0 zlo=2 zhi=5
+
+[SIMETRIA +J/-J]  (|V_corr| en puntos de |J| emparejados)
+          |J|       |V+|corr       |V-|corr      dif.rel
+       0.1000    1.51047e-01    2.41162e-05    1.999e+00
+   dif. relativa: mediana=1.999e+00 | max=1.999e+00 (en |J|=0.100)
+
+[CONVERGENCIA J+]  (iters = ciclos m; res = residuo final;
+                    '*' = agoto mMax sin bajar de eps => NO convergido)
+            J              V    iters     res_Psi1     res_Psi2
+      +0.0000   -2.92076e-05     401*    5.433e-06    8.782e-05
+      +0.1000    1.51018e-01     401*    9.801e-03    4.070e-03
+
+[CONVERGENCIA J-]  (iters = ciclos m; res = residuo final;
+                    '*' = agoto mMax sin bajar de eps => NO convergido)
+            J              V    iters     res_Psi1     res_Psi2
+      -0.0000   -2.92076e-05     401*    5.433e-06    8.782e-05
+      -0.1000    5.33238e-05     401*    2.546e-06    4.103e-05

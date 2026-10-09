@@ -1,0 +1,1242 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Shape editor</title>
+<style>
+:root {
+  --bg: #f4f5f7; --panel: #ffffff; --ink: #1d232b; --muted: #66707c; --line: #d5d9df;
+  --sc: #4f7fb3; --hole: #f4f5f7; --anti: #3f9b6e; --hatch: #c3c9d1;
+  --accent: #b5551d; --warn: #b5551d; --ok: #2e7d4f;
+  --margin: rgba(200, 60, 40, 0.18);
+  --cutA: #c2185b; --cutB: #00897b; --cutK: #f9a825;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #15181c; --panel: #1e2228; --ink: #e6e9ed; --muted: #9aa4af; --line: #343a42;
+          --sc: #5b8fc7; --hole: #15181c; --anti: #4fb584; --hatch: #3b424b;
+          --accent: #f0a35e; --warn: #e08a52; --ok: #6cc28f;
+          --margin: rgba(230, 90, 60, 0.22);
+          --cutA: #f06292; --cutB: #4db6ac; --cutK: #ffd54f; }
+}
+/* the theme button forces one of the two, over the system setting */
+:root[data-theme="light"] {
+  --bg: #f4f5f7; --panel: #ffffff; --ink: #1d232b; --muted: #66707c; --line: #d5d9df;
+  --sc: #4f7fb3; --hole: #f4f5f7; --anti: #3f9b6e; --hatch: #c3c9d1;
+  --accent: #b5551d; --warn: #b5551d; --ok: #2e7d4f;
+  --margin: rgba(200, 60, 40, 0.18);
+  --cutA: #c2185b; --cutB: #00897b; --cutK: #f9a825;
+}
+:root[data-theme="dark"] { --bg: #15181c; --panel: #1e2228; --ink: #e6e9ed; --muted: #9aa4af; --line: #343a42;
+          --sc: #5b8fc7; --hole: #15181c; --anti: #4fb584; --hatch: #3b424b;
+          --accent: #f0a35e; --warn: #e08a52; --ok: #6cc28f;
+          --margin: rgba(230, 90, 60, 0.22);
+          --cutA: #f06292; --cutB: #4db6ac; --cutK: #ffd54f; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink);
+       font: 13px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif; }
+header { padding: 8px 14px; border-bottom: 1px solid var(--line); display: flex; gap: 12px;
+         align-items: center; flex-wrap: wrap; background: var(--panel); }
+header h1 { font-size: 15px; margin: 0 8px 0 0; }
+main { display: grid; grid-template-columns: 290px minmax(0, 1fr) 340px; gap: 10px; padding: 10px; }
+@media (max-width: 1100px) { main { grid-template-columns: 1fr; } }
+section { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 10px;
+          margin-bottom: 10px; }
+h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 0 0 6px; }
+label { display: inline-flex; gap: 4px; align-items: center; margin: 2px 8px 2px 0; }
+input[type=number] { width: 64px; } input[type=text] { width: 120px; }
+input, select, button { font: inherit; color: inherit; background: var(--bg);
+                        border: 1px solid var(--line); border-radius: 4px; padding: 2px 5px; }
+button { cursor: pointer; } button:hover { border-color: var(--accent); }
+button.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+button:disabled { opacity: .45; cursor: default; }
+.tools { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+.cara { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3px; margin-bottom: 6px; }
+.cara { max-width: 268px; }
+.cara button { height: 40px; padding: 2px 0; font-size: 12px; font-weight: 600; line-height: 1.1;
+               display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.cara button small { font-weight: 400; font-size: 10px; opacity: .75; }
+.cara button .toca { font-size: 9px; font-weight: 400; line-height: 1; }
+.ayuda { display: inline-block; width: 16px; height: 16px; line-height: 14px; padding: 0; margin-left: 6px;
+         border-radius: 50%; font-size: 11px; text-transform: none; vertical-align: middle; }
+.textoayuda { font-size: 12px; margin: 4px 0 6px; padding: 6px 8px; border-left: 3px solid var(--accent); background: var(--bg); }
+.izq { position: sticky; top: 8px; align-self: start; max-height: calc(100vh - 16px); overflow-y: auto; }
+main > div:last-child { position: sticky; top: 8px; align-self: start; max-height: calc(100vh - 16px); overflow-y: auto; }
+.pestanas { display: flex; gap: 4px; margin-bottom: 6px; }
+.pestanas button { flex: 1; }
+.ctx { margin-top: 6px; }
+details summary { cursor: pointer; }
+a { color: var(--accent); }
+section.activa { outline: 2px solid var(--accent); }
+.pal { display: flex; align-items: center; gap: 6px; padding: 2px 4px; border-radius: 4px; cursor: pointer; }
+.pal.on { outline: 2px solid var(--accent); }
+.sw { width: 16px; height: 16px; border-radius: 3px; border: 1px solid var(--line); flex: none; display: inline-block; }
+.el { border: 1px solid var(--line); border-radius: 4px; padding: 4px 6px; margin-bottom: 4px; }
+.el.on { border-color: var(--accent); }
+.el .row { display: flex; flex-wrap: wrap; align-items: center; }
+.el input[type=number] { width: 54px; }
+canvas { display: block; max-width: 100%; background: var(--bg); border-radius: 4px; }
+.vista canvas { cursor: crosshair; }
+#iso { cursor: grab; }
+.checks div { margin: 2px 0; }
+.bad { color: var(--warn); } .good { color: var(--ok); }
+.muted { color: var(--muted); }
+textarea { width: 100%; height: 140px; font: 11px/1.3 ui-monospace, monospace; background: var(--bg);
+           color: var(--ink); border: 1px solid var(--line); border-radius: 4px; }
+code { font: 12px ui-monospace, monospace; }
+#msg { min-height: 1.4em; }
+.leyenda { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 6px; color: var(--muted); }
+.leyenda span { display: inline-flex; align-items: center; gap: 5px; }
+.vtit { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 2px 0 4px; }
+.vtit b { font-weight: 600; }
+.chip { display: inline-block; width: 18px; height: 3px; border-radius: 2px; vertical-align: middle; }
+kbd { font: 11px ui-monospace, monospace; border: 1px solid var(--line); border-radius: 3px; padding: 0 3px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Shape editor</h1>
+  <span class="muted">the box starts full of superconductor; what you draw is removed (f=0) or gets its own f · each node is a voxel</span>
+  <span style="flex:1"></span>
+  <button id="bUndo" title="Ctrl+Z">↶ undo</button>
+  <button id="bRedo" title="Ctrl+Y or Ctrl+Shift+Z">↷ redo</button>
+  <label>name <input type="text" id="nombre" value="my_shape"></label>
+  <button id="bGuardar">Save</button>
+  <select id="selCargar"><option value="">load…</option></select>
+  <label class="muted">import <input type="file" id="fImport" accept=".toml"></label>
+  <span id="msg" class="muted"></span>
+  <button id="bTema" title="theme: follows the system / light / dark">◐ auto</button>
+  <label title="colour of the superconducting cells">cells <input type="color" id="colSC" value="#4f7fb3" style="width:34px;padding:0"></label>
+  <button id="bQuit" title="stops the local server (python3 julia/editor/server.py); the page stays open but can no longer save">close server</button>
+</header>
+<main>
+<div class="izq">
+  <div class="pestanas"><button data-t="dibujo" class="on">Draw</button><button data-t="paleta">Palette</button><button data-t="caja">Box</button></div>
+  <section class="tab" data-t="dibujo">
+    <h2>Work face <button class="ayuda" data-a="aCara">?</button></h2>
+    <div class="textoayuda" id="aCara" hidden>Pick the face you work from, here or by clicking it on the 3D model: its view is outlined and the page scrolls to it. Each click of the pencil or the eraser goes <b>depth</b> cells into the sample from that face, starting <b>from</b> cells inside. from 0 + through = the whole thickness; from &gt; 0 = a cut inside the sample. Figures (circle, rectangle…) use the same from/depth when their z is "from the work face" (top or bottom): a circle 3 cells deep from the top, or a buried disc from 2 to 3. The list of figures says which z planes each one covers, and its z0/z1 can be edited there.</div>
+    <div class="cara" id="caras">
+      <span></span><button data-c="top" title="z = top">top<small>+z</small></button><span></span><span></span>
+      <button data-c="left" title="x1: the current enters here">left<small>−x · x1</small></button><button data-c="front" title="y1: the face of the production notch">front<small>−y · y1</small></button><button data-c="right" title="x2: the current leaves here">right<small>+x · x2</small></button><button data-c="back" title="y2">back<small>+y · y2</small></button>
+      <span></span><button data-c="bottom" title="z = 0">bottom<small>−z</small></button><span></span><span></span>
+    </div>
+    <label title="cells between the face and the first cell painted; 0 = on the face itself">from <input type="number" id="cDesde" value="0" min="0"></label>
+    <label title="cells painted inward from there">depth <input type="number" id="cProf" value="6" min="1"></label>
+    <button id="cTodo" title="from 0, depth = the whole sample">through</button>
+    <div class="muted" id="cAyuda"></div>
+    <h2 style="margin-top:10px">Tool <button class="ayuda" data-a="aTool">?</button></h2>
+    <div class="textoayuda" id="aTool" hidden>pencil / eraser: paint cells on any view (width in cells). Figures (circle, rectangle…): drag on the top view, f and z below. gradient: drag a rectangle; f or depth changes along it in n steps. select/move: drag a figure or the pencil layer. move cuts: click a view to move the other cuts there.</div>
+    <div class="tools" id="tools"></div>
+    <div class="ctx" data-ctx="lapiz">
+      <span id="pActual"></span>
+      <label title="cells">width <input type="number" id="brush" value="1" min="1" max="40"></label>
+      <label>stroke <select id="trazo"><option value="libre">free</option><option value="recta">straight</option></select></label>
+    </div>
+    <div class="ctx" data-ctx="figura">
+      <label>f <input type="number" id="dF" value="0" step="0.1" min="0"></label>
+      <label>rot° <input type="number" id="dRot" value="0" step="5"></label>
+      <label class="ctx2" data-t="ngono">n <input type="number" id="dN" value="3" min="3" max="24"></label>
+      <label class="ctx2" data-t="triangulo" title="apex of the triangle shifted along the base; ±w/2 = right triangle">skew <input type="number" id="dSesgo" value="0" step="0.5"></label>
+      <label><input type="checkbox" id="snap" checked> snap</label>
+      <div><label title="work face: the figure takes the 'from' and 'depth' cells of the work face (top or bottom), like the pencil">z <select id="dZ"><option value="cara" selected>from the work face (from/depth)</option><option value="todo">all (through)</option><option value="abajo">bottom half</option><option value="arriba">top half</option><option value="enterrado">buried (middle half)</option><option value="rango">range in ξσ…</option></select></label>
+      <label>z0 <input type="number" id="dZ0" value="0" step="0.5"></label><label>z1 <input type="number" id="dZ1" value="1" step="0.5"></label></div>
+      <div class="muted" id="dZinfo"></div>
+    </div>
+    <div class="ctx" data-ctx="gradiente">
+      <label>of <select id="gModo"><option value="f">f (strength)</option><option value="top">depth, from the top</option><option value="bottom">depth, from the bottom</option></select></label>
+      <label>n <input type="number" id="gN" value="6" min="2" max="40"></label>
+      <label title="f mode: f where the drag starts">f0 <input type="number" id="gF0" value="1" step="0.1" min="0"></label>
+      <label title="f mode: f where the drag ends; depth mode: f of the removed part">f1 <input type="number" id="gF1" value="0" step="0.1" min="0"></label>
+      <div class="muted" id="gAyuda"></div>
+    </div>
+    <details class="muted" style="margin-top:6px"><summary>keys</summary>
+      <kbd>Ctrl+Z</kbd> undo · <kbd>Ctrl+Y</kbd> redo · <kbd>[</kbd> <kbd>]</kbd> lower/raise the z plane ·
+      right click on any view = move the cuts there · <kbd>Del</kbd> deletes the selected figure ·
+      <kbd>r</kbd>/<kbd>R</kbd> rotates ±5° · arrows move · <kbd>Enter</kbd> closes the polygon · <kbd>Esc</kbd> cancels
+    </details>
+  </section>
+  <section class="tab" data-t="paleta" hidden>
+    <h2>Pencil palette <button class="ayuda" data-a="aPal2">?</button></h2>
+    <div class="textoayuda" id="aPal2" hidden>Each character is a value of f: 0 removes the material, 0 &lt; f &lt; 1 weakens it, f &gt; 1 strengthens it. Click one to paint with it.</div>
+    <div class="muted">The pencil paints the selected character: its f is what the material gets. "." is untouched material; ✕ deletes a character and what it painted.</div>
+    <div id="paleta"></div>
+    <div style="margin-top:6px">
+      <label>char <input type="text" id="pCh" maxlength="1" style="width:28px" value="c"></label>
+      <label>f <input type="number" id="pF" value="0" step="0.1" min="0"></label>
+      <button id="pAdd">add</button>
+    </div>
+    <details style="margin-top:8px"><summary>legacy mode (z extent per character)</summary>
+      <label>pencil fills <select id="cModo"><option value="cara">from the work face</option><option value="paleta">the character's z extent (top view)</option></select></label>
+      <label title="in legacy mode, on the top view a click fills this much of the column below the cursor">z extent of a new character <select id="pZ"><option value="todo">all</option><option value="plano">this plane only</option><option value="abajo">bottom</option><option value="arriba">top</option><option value="enterrado">buried</option><option value="rango">range…</option></select></label>
+      <label>z0 <input type="number" id="pZ0" value="0" step="0.5"></label><label>z1 <input type="number" id="pZ1" value="1" step="0.5"></label>
+      <label>eraser on the top view <select id="borrZ"><option value="columna">whole column</option><option value="plano">this plane only</option></select></label>
+    </details>
+  </section>
+  <section class="tab" data-t="caja" hidden>
+    <h2>Box</h2>
+    <label>Nx <input type="number" id="Nx" min="4" max="200" value="40"></label>
+    <label>Ny <input type="number" id="Ny" min="4" max="200" value="24"></label>
+    <label>Nz <input type="number" id="Nz" min="2" max="64" value="6"></label>
+    <label>dx <input type="number" id="dx" step="0.05" value="0.5"></label>
+    <label>dz <input type="number" id="dz" step="0.05" value="0.5"></label>
+    <label title="cells next to the injection faces (x) that must stay untouched">margin <input type="number" id="margen" min="0" value="6"></label>
+    <label>H <input type="number" id="H" step="0.005" value="0.03"></label>
+    <label title="ξπ/ξσ">ξπ/ξσ <input type="number" id="xir" step="0.1" value="4"></label>
+    <div class="muted" id="cajaInfo"></div>
+  </section>
+</div>
+<div>
+  <section class="vista">
+    <div class="vtit"><b>Top</b><span class="muted">seen from above · x →, y ↑ · plane</span>
+      <label class="muted" title="the shape reflected in y, which the _REF control runs: where the two differ, +J and −J differ"><input type="checkbox" id="espejo"> mirror (_REF)</label>
+      <span class="chip" style="background:var(--cutK)"></span>
+      <label>z: <input type="range" id="kSlider" min="0" max="5" value="0"></label><span id="kTxt"></span></div>
+    <canvas id="top" width="900" height="560"></canvas>
+    <div class="leyenda">
+      <span><span class="sw" style="background:var(--sc)"></span>superconductor (f = 1)</span>
+      <span><span class="sw" style="background:repeating-linear-gradient(45deg,var(--hole) 0 3px,var(--hatch) 3px 4px)"></span>removed (f = 0)</span>
+      <span><span class="sw" style="background:linear-gradient(90deg,var(--hole),var(--sc))"></span>0 &lt; f &lt; 1</span>
+      <span><span class="sw" style="background:var(--anti)"></span>f &gt; 1: stronger condensation</span>
+      <span><span class="sw" style="background:var(--margin)"></span>injection strip: the current enters through x1 and x2; do not remove material there</span>
+      <span><span class="chip" style="background:var(--cutA)"></span>front cut (x–z)</span>
+      <span><span class="chip" style="background:var(--cutB)"></span>side cut (y–z)</span>
+    </div>
+  </section>
+  <section class="vista">
+    <div class="vtit"><b>Front</b><span class="muted">x–z cut · x →, z ↑ · at</span>
+      <span class="chip" style="background:var(--cutA)"></span>
+      <label>y: <input type="range" id="jCorte" min="0" max="23" value="0"></label><span id="jTxt"></span></div>
+    <canvas id="xz" width="900" height="150"></canvas>
+  </section>
+  <section class="vista">
+    <div class="vtit"><b>Side</b><span class="muted">y–z cut · y →, z ↑ · at</span>
+      <span class="chip" style="background:var(--cutB)"></span>
+      <label>x: <input type="range" id="iCorte" min="0" max="39" value="20"></label><span id="iTxt"></span></div>
+    <canvas id="yz" width="900" height="150"></canvas>
+  </section>
+</div>
+<div>
+  <section>
+    <h2>3D</h2>
+    <label><input type="checkbox" id="soloHuecos"> removed only</label>
+    <label><input type="checkbox" id="planos3d" checked> cut planes</label>
+    <label title="current J along x (x1 → x2), field H along z, and the face where vortices enter for each sign of J"><input type="checkbox" id="fisica3d" checked> J, H, entry</label>
+    <span class="muted">drag = rotate · wheel = zoom · double click = initial view</span>
+    <canvas id="iso" width="320" height="300"></canvas>
+  </section>
+  <section class="checks">
+    <h2>Checks</h2>
+    <div id="checks"></div>
+  </section>
+  <section>
+    <h2>Figures (in painting order)</h2>
+    <div id="lista"></div>
+  </section>
+  <section>
+    <h2>File</h2>
+    <div class="muted">Julia Config:</div>
+
+    <code id="snippet"></code>
+    <textarea id="toml" readonly></textarea>
+  </section>
+</div>
+</main>
+<script>
+"use strict";
+// ==== CORE (no DOM: checked with node against Julia) ====
+// Internal names (tipo, todo, abajo, ...) are those of the first version and
+// are kept so that the editor-json of older files still loads; the TOML that
+// is written uses the English format of src/shapes.jl.
+const TOL = 1e-9;
+const EN_TIPO = { circulo: "circle", rect: "rect", triangulo: "triangle", ngono: "ngon",
+                  poligono: "polygon", esfera: "sphere", pixeles: "pixels", voxeles: "voxels" };
+const EN_Z = { todo: "all", abajo: "bottom", arriba: "top", enterrado: "buried", plano: "this plane" };
+const DE_TIPO = Object.fromEntries(Object.entries(EN_TIPO).map(([a, b]) => [b, a]));
+const DE_Z = Object.fromEntries(Object.entries(EN_Z).map(([a, b]) => [b, a]));
+const DE_CLAVE = { type: "tipo", skew: "sesgo", points: "puntos", rows: "filas", palette: "paleta", layers: "capas" };
+// element read from a TOML (English or the first format) → internal names
+function interno(e) {
+  const o = {};
+  for (const [k, v] of Object.entries(e)) o[DE_CLAVE[k] || k] = v;
+  if (o.tipo) o.tipo = DE_TIPO[o.tipo] || o.tipo;
+  if (typeof o.z === "string") o.z = DE_Z[o.z] || o.z;
+  if (o.paleta) for (const q of Object.values(o.paleta)) if (typeof q.z === "string") q.z = DE_Z[q.z] || q.z;
+  return o;
+}
+const S = {
+  caja: { Nx: 40, Ny: 24, Nz: 6, dx: 0.5, dz: 0.5, margen: 6, H: 0.03, xir: 4 },
+  elems: [],            // figures and at most one {tipo:'voxeles'} (the pencil layer)
+  vox: null,            // vox[(k*Ny + j)*Nx + i]: pencil character (j = 0 is y1, k = 0 bottom)
+  paleta: {
+    "#": { z: "todo", f: 0, color: "#c0392b" },
+    "p": { z: "plano", f: 0, color: "#8e44ad" },
+    "b": { z: "abajo", f: 0, color: "#d68910" },
+    "a": { z: "arriba", f: 0, color: "#16a085" },
+    "5": { z: "todo", f: 0.5, color: "#2e86c1" },
+  },
+  pincel: "#", herramienta: "lapiz", k: 0, jc: 0, ic: 20, sel: -1,
+  f: null, undo: [], redo: [],
+};
+const vi = (i, j, k) => (k * S.caja.Ny + j) * S.caja.Nx + i;
+function nuevaVox(Nx, Ny, Nz, vieja, o) {
+  const v = new Array(Nx * Ny * Nz).fill(".");
+  if (vieja && o) for (let k = 0; k < Math.min(Nz, o.Nz); k++) for (let j = 0; j < Math.min(Ny, o.Ny); j++)
+    for (let i = 0; i < Math.min(Nx, o.Nx); i++) v[(k * Ny + j) * Nx + i] = vieja[(k * o.Ny + j) * o.Nx + i];
+  return v;
+}
+S.vox = nuevaVox(S.caja.Nx, S.caja.Ny, S.caja.Nz);
+
+function rangoZ(spec, Lz) {
+  if (spec === undefined || spec === null || spec === "todo") return [-Infinity, Infinity];
+  if (spec === "abajo") return [-Infinity, Lz / 2];
+  if (spec === "arriba") return [Lz / 2, Infinity];
+  if (spec === "enterrado") return [Lz / 4, 3 * Lz / 4];
+  return [Number(spec[0]), Number(spec[1])];
+}
+function local(e, X, Y) {
+  const dx = X - (e.x || 0), dy = Y - (e.y || 0);
+  const th = (e.rot || 0) * Math.PI / 180;
+  if (th === 0) return [dx, dy];
+  const c = Math.cos(th), s = Math.sin(th);
+  return [c * dx + s * dy, -s * dx + c * dy];
+}
+function enPoligono(px, py, vx, vy) {
+  const n = vx.length; let dentro = false; let j = n - 1;
+  for (let i = 0; i < n; i++) {
+    const xi = vx[i], yi = vy[i], xj = vx[j], yj = vy[j];
+    const cr = (xj - xi) * (py - yi) - (yj - yi) * (px - xi);
+    if (Math.abs(cr) <= TOL * Math.max(1, Math.hypot(xj - xi, yj - yi)) &&
+        Math.min(xi, xj) - TOL <= px && px <= Math.max(xi, xj) + TOL &&
+        Math.min(yi, yj) - TOL <= py && py <= Math.max(yi, yj) + TOL) return true;
+    if ((yi > py) !== (yj > py)) {
+      const xint = xi + (py - yi) * (xj - xi) / (yj - yi);
+      if (px < xint) dentro = !dentro;
+    }
+    j = i;
+  }
+  return dentro;
+}
+function verticesLocales(e) {
+  if (e.tipo === "triangulo") return [[-e.w / 2, e.w / 2, e.sesgo || 0], [0, 0, e.h]];
+  if (e.tipo === "ngono") {
+    const vx = [], vy = [];
+    for (let k = 0; k < e.n; k++) { vx.push(e.r * Math.cos(2 * Math.PI * k / e.n)); vy.push(e.r * Math.sin(2 * Math.PI * k / e.n)); }
+    return [vx, vy];
+  }
+  if (e.tipo === "rect") return [[-e.w / 2, e.w / 2, e.w / 2, -e.w / 2], [-e.h / 2, -e.h / 2, e.h / 2, e.h / 2]];
+  if (e.tipo === "poligono") return [e.puntos.map(p => p[0]), e.puntos.map(p => p[1])];
+  return null;
+}
+function dentro2D(e, X, Y) {
+  if (e.tipo === "circulo" || e.tipo === "esfera") return (X - e.x) ** 2 + (Y - e.y) ** 2 <= e.r * e.r + TOL;
+  const [u, v] = local(e, X, Y);
+  if (e.tipo === "rect") return Math.abs(u) <= e.w / 2 + TOL && Math.abs(v) <= e.h / 2 + TOL;
+  const [vx, vy] = verticesLocales(e);
+  return enPoligono(u, v, vx, vy);
+}
+function dentro(e, X, Y, Z, Lz) {
+  if (e.tipo === "esfera") return (X - e.x) ** 2 + (Y - e.y) ** 2 + (Z - e.zc) ** 2 <= e.r * e.r + TOL;
+  const [z0, z1] = rangoZ(e.z, Lz);
+  if (!(z0 - TOL <= Z && Z <= z1 + TOL)) return false;
+  return dentro2D(e, X, Y);
+}
+function rasterizar() {
+  const { Nx, Ny, Nz, dx, dz } = S.caja;
+  const f = new Float64Array(Nx * Ny * Nz).fill(1);
+  const Lz = (Nz - 1) * dz;
+  for (let k = 0; k < Nz; k++) for (let j = 0; j < Ny; j++) for (let i = 0; i < Nx; i++) {
+    const X = i * dx, Y = j * dx, Z = k * dz, n = vi(i, j, k);
+    for (const e of S.elems) {
+      if (e.tipo === "voxeles") {
+        const ch = S.vox[n];
+        if (ch !== "." && ch !== " " && S.paleta[ch]) f[n] = S.paleta[ch].f;
+      } else if (dentro(e, X, Y, Z, Lz)) f[n] = e.f;
+    }
+  }
+  S.f = f;
+}
+const F = (i, j, k) => S.f[vi(i, j, k)];
+// Counts with the same indices as Julia's check_my_symmetry / check_rz_symmetry
+function contar() {
+  const { Nx, Ny, Nz, margen, H, xir } = S.caja;
+  let my = 0, rz = 0, mg = 0, quitados = 0, fsig = 0, fpi = 0;
+  for (let k = 0; k < Nz; k++) for (let j = 0; j < Ny; j++) for (let i = 0; i < Nx; i++) {
+    const v = F(i, j, k);
+    if (v !== 1) quitados++;
+    if (v > 0 && v < H) fsig++;
+    if (v > 0 && v < Math.min(1, H * xir * xir)) fpi++;
+    if ((i < margen || i > Nx - 1 - margen) && v < 1) mg++;
+    if (j >= 1 && i >= 1) {
+      const jm = Ny - j, im = Nx - i;
+      if (jm >= 1 && jm <= Ny - 1 && v !== F(i, jm, k)) my++;
+      if (jm >= 1 && jm <= Ny - 1 && im >= 1 && im <= Nx - 1 && v !== F(im, jm, k)) rz++;
+    }
+  }
+  let shunt = false;
+  for (let k = 0; k < Nz && !shunt; k++) for (let j = 0; j < Ny && !shunt; j++) {
+    let todo = true; for (let i = 0; i < Nx; i++) if (F(i, j, k) >= 0.5) { todo = false; break; }
+    if (todo) shunt = true;
+  }
+  return { my, rz, mg, quitados, fsig, fpi, shunt };
+}
+// pencil: view 'top' (u=i, v=j, plane k), 'xz' (u=i, v=k, row jc), 'yz' (u=j, v=k, column ic)
+function aIJK(vista, u, v) {
+  if (vista === "top") return [u, v, S.k];
+  if (vista === "xz") return [u, S.jc, v];
+  return [S.ic, u, v];
+}
+function dentroCaja(i, j, k) { const c = S.caja; return i >= 0 && j >= 0 && k >= 0 && i < c.Nx && j < c.Ny && k < c.Nz; }
+// ---- work face: which view paints along which axis, and from where
+const VISTA_CARA = { top: "top", bottom: "top", front: "xz", back: "xz", left: "yz", right: "yz" };
+function nEje(c) { const b = S.caja; return { top: b.Nz, bottom: b.Nz, front: b.Ny, back: b.Ny, left: b.Nx, right: b.Nx }[c]; }
+// index of the cut plane at `d` cells from face c, and back
+function planoDe(c, d) { const n = nEje(c); return ["top", "back", "right"].includes(c) ? n - 1 - d : d; }
+function desdeDe(c) { const idx = { top: S.k, bottom: S.k, front: S.jc, back: S.jc, left: S.ic, right: S.ic }[c]; return ["top", "back", "right"].includes(c) ? nEje(c) - 1 - idx : idx; }
+function capasCara() {            // indices along the face normal that the pencil fills
+  const c = S.cara, n = nEje(c), d0 = desdeDe(c), prof = Math.max(1, Math.round(+$("cProf").value)), L = [];
+  for (let d = d0; d < Math.min(n, d0 + prof); d++) L.push(planoDe(c, d));
+  return L;
+}
+// the face of view vw nearest to its cut plane (the 3D view is not turned)
+function caraCercana(vw) {
+  const b = S.caja;
+  S.cara = vw === "top" ? (S.k >= (b.Nz - 1) / 2 ? "top" : "bottom")
+         : vw === "xz" ? (S.jc <= (b.Ny - 1) / 2 ? "front" : "back")
+         : (S.ic <= (b.Nx - 1) / 2 ? "left" : "right");
+  msg(`work face: ${S.cara}, painting from the plane you are on, ${$("cProf").value} cell(s) deep`);
+}
+function zDeCara() {             // z range [ξσ] of the face layers, for figures drawn on the top view
+  if (VISTA_CARA[S.cara] !== "top") caraCercana("top");
+  const L = capasCara(), dz = S.caja.dz;
+  return [+(Math.min(...L) * dz).toFixed(6), +(Math.max(...L) * dz).toFixed(6)];
+}
+// cells with f ≠ 1 on each outer face of the sample
+function tocadas() {
+  const { Nx, Ny, Nz } = S.caja, n = { top: 0, bottom: 0, front: 0, back: 0, left: 0, right: 0 };
+  for (let k = 0; k < Nz; k++) for (let j = 0; j < Ny; j++) for (let i = 0; i < Nx; i++) {
+    if (F(i, j, k) === 1) continue;
+    if (k === Nz - 1) n.top++; if (k === 0) n.bottom++;
+    if (j === 0) n.front++; if (j === Ny - 1) n.back++;
+    if (i === 0) n.left++; if (i === Nx - 1) n.right++;
+  }
+  return n;
+}
+function ponerCara(c) {
+  S.cara = c;
+  const d = Math.min(desdeDe(c), nEje(c) - 1);
+  // the cut plane goes to the face itself when the face changes
+  const idx = planoDe(c, 0);
+  if (VISTA_CARA[c] === "top") S.k = idx; else if (VISTA_CARA[c] === "xz") S.jc = idx; else S.ic = idx;
+  $("cDesde").value = 0;
+  const giro = { top: [-0.6, 1.3], bottom: [-0.6, -1.3], front: [-0.35, 0.35], back: [Math.PI - 0.35, 0.35],
+                 left: [Math.PI / 2 - 0.35, 0.35], right: [-Math.PI / 2 - 0.35, 0.35] }[c];
+  C3.yaw = giro[0]; C3.pitch = giro[1];
+  sincronizarCaja(); todo();
+  // the views keep their place; the page scrolls to the one of this face
+  $(VISTA_CARA[c]).closest("section").scrollIntoView({ block: "nearest", behavior: "smooth" });
+}
+function pintarEn(vista, u, v, ch, grosor, colBorrar) {
+  const h = Math.floor((grosor - 1) / 2);
+  if ($("cModo").value === "cara" && VISTA_CARA[S.cara] === vista) {
+    const capas = capasCara();
+    for (let dv = -h; dv < grosor - h; dv++) for (let du = -h; du < grosor - h; du++) for (const n of capas) {
+      let [i, j, k] = aIJK(vista, u + du, v + dv);
+      if (vista === "top") k = n; else if (vista === "xz") j = n; else i = n;
+      if (dentroCaja(i, j, k)) S.vox[vi(i, j, k)] = ch;
+    }
+    return;
+  }
+  const { Nz, dz } = S.caja, Lz = (Nz - 1) * dz;
+  for (let dv = -h; dv < grosor - h; dv++) for (let du = -h; du < grosor - h; du++) {
+    const [i, j, k] = aIJK(vista, u + du, v + dv);
+    if (!dentroCaja(i, j, k)) continue;
+    if (vista === "top") {
+      // on the top view: reach of the character (or the eraser) along z
+      let zr;
+      if (ch === ".") zr = colBorrar === "plano" ? "plano" : "todo";
+      else zr = (S.paleta[ch] || {}).z || "todo";
+      if (zr === "plano") { S.vox[vi(i, j, S.k)] = ch; continue; }
+      const [z0, z1] = rangoZ(zr, Lz);
+      for (let kk = 0; kk < Nz; kk++) { const Z = kk * dz; if (z0 - TOL <= Z && Z <= z1 + TOL) S.vox[vi(i, j, kk)] = ch; }
+    } else S.vox[vi(i, j, k)] = ch;
+  }
+}
+// gradient: n palette characters with f from f0 to f1, painted in bands across
+// the dragged rectangle (top view), along its longer side, with the pencil reach
+const POOL = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+function gradiente(u0, v0, u1, v1) {
+  const n = Math.max(2, Math.min(40, Math.round(+$("gN").value))), f0 = +$("gF0").value, f1 = +$("gF1").value;
+  const libres = [...POOL].filter(c => !S.paleta[c]);
+  if (libres.length < n) { msg(`only ${libres.length} free palette characters; lower n or remove entries`, true); return; }
+  guardarUndo(); capaLapiz();
+  const modo = $("gModo").value, { Nz, dz } = S.caja, Lz = (Nz - 1) * dz, chars = [];
+  for (let s = 0; s < n; s++) {
+    const ch = libres[s];
+    if (modo === "f") {
+      const fs = Math.max(0, f0 + (f1 - f0) * s / (n - 1));
+      S.paleta[ch] = { z: $("cModo").value === "cara" ? zDeCara() : zNueva("p"), f: +fs.toFixed(4), color: `hsl(${Math.round(220 * Math.min(1, fs / Math.max(f0, f1, 1e-9)))},60%,48%)` };
+    } else {
+      // staircase: step s removes p planes, from 1 (where the drag starts) to all Nz
+      const p = Math.max(1, Math.round((s + 1) * Nz / n));
+      const z = modo === "top" ? [+((Nz - p) * dz).toFixed(6), +Lz.toFixed(6)] : [0, +((p - 1) * dz).toFixed(6)];
+      S.paleta[ch] = { z, f: Math.max(0, f1), color: `hsl(${Math.round(30 + 200 * s / (n - 1))},60%,48%)` };
+    }
+    chars.push(ch);
+  }
+  const lx = Math.abs(u1 - u0) >= Math.abs(v1 - v0);
+  const [ia, ib] = [Math.min(u0, u1), Math.max(u0, u1)], [ja, jb] = [Math.min(v0, v1), Math.max(v0, v1)];
+  const largo = lx ? ib - ia + 1 : jb - ja + 1;
+  for (let j = ja; j <= jb; j++) for (let i = ia; i <= ib; i++) {
+    let pos = lx ? i - ia : j - ja;
+    if ((lx && u1 < u0) || (!lx && v1 < v0)) pos = largo - 1 - pos;    // f0 where the drag started
+    const s = Math.min(n - 1, Math.floor(pos * n / largo));
+    pintarEn("top", i, j, chars[s], 1, "columna");
+  }
+  pintarPaleta();
+  msg(modo === "f" ? `gradient: ${n} steps, f ${f0} → ${f1}, characters ${chars.join("")}` :
+      `staircase: ${n} steps, from 1 to ${Nz} planes removed from the ${modo}, f = ${f1}, characters ${chars.join("")}`);
+}
+function recta(u0, v0, u1, v1) {        // Bresenham
+  const L = []; const du = Math.abs(u1 - u0), dv = -Math.abs(v1 - v0);
+  const su = u0 < u1 ? 1 : -1, sv = v0 < v1 ? 1 : -1; let err = du + dv;
+  for (;;) { L.push([u0, v0]); if (u0 === u1 && v0 === v1) break;
+    const e2 = 2 * err; if (e2 >= dv) { err += dv; u0 += su; } if (e2 <= du) { err += du; v0 += sv; } }
+  return L;
+}
+function capasTexto() {
+  const { Nx, Ny, Nz } = S.caja, out = [];
+  for (let k = 0; k < Nz; k++) { const filas = [];
+    for (let j = Ny - 1; j >= 0; j--) { let r = ""; for (let i = 0; i < Nx; i++) r += S.vox[vi(i, j, k)]; filas.push(r); }
+    out.push(filas); }
+  return out;
+}
+const num = v => (+v).toFixed(6).replace(/0+$/, "").replace(/\.$/, ".0");
+// f with the shortest representation that returns the same double: a catalogue
+// template opened and saved is still the same mask.
+const numF = v => { const t = String(+v); return /[.eE]/.test(t) ? t : t + ".0"; };
+function zToml(z) { return Array.isArray(z) ? `[${num(z[0])}, ${num(z[1])}]` : `"${EN_Z[z] || z}"`; }
+function aToml() {
+  const c = S.caja;
+  const capas = capasTexto();
+  const usados = [...new Set(S.vox.filter(ch => ch !== "."))];
+  const out = [`# Shape for juliaTDGL: GEOM_MODE = "CUSTOM", geom_file = this file. Units: ξσ.`,
+               `# Drawn on a box of ${c.Nx}x${c.Ny}x${c.Nz} nodes, dx = ${c.dx}, dz = ${c.dz}.`,
+               `# editor-json: ${JSON.stringify({ caja: c, elems: S.elems, paleta: S.paleta, capas: capas.map(f => f.join("|")) })}`, ""];
+  for (const e of S.elems) {
+    if (e.tipo === "voxeles") {
+      if (!usados.length) continue;
+      out.push("[[shape]]", `type = "voxels"`, `dx = ${num(c.dx)}`, `dz = ${num(c.dz)}`, "layers = [");
+      capas.forEach((filas, k) => out.push(`"""\n${filas.join("\n")}"""${k < capas.length - 1 ? "," : ""}`));
+      out.push("]", "", "[shape.palette]");
+      for (const ch of usados) out.push(`"${ch}" = { f = ${numF(S.paleta[ch] ? S.paleta[ch].f : 0)} }`);
+    } else {
+      out.push("[[shape]]", `type = "${EN_TIPO[e.tipo] || e.tipo}"`);
+      for (const k of ["x", "y", "zc", "r", "w", "h", "sesgo", "rot"]) if (e[k] !== undefined) out.push(`${k === "sesgo" ? "skew" : k} = ${num(e[k])}`);
+      if (e.n !== undefined) out.push(`n = ${Math.round(e.n)}`);
+      if (e.puntos) out.push(`points = [${e.puntos.map(p => `[${num(p[0])}, ${num(p[1])}]`).join(", ")}]`);
+      if (e.tipo !== "esfera") out.push(`z = ${zToml(e.z)}`);
+      out.push(`f = ${numF(e.f)}`);
+    }
+    out.push("");
+  }
+  return out.join("\n");
+}
+let tono = 0;
+function colorNuevo() { tono = (tono + 67) % 360; return `hsl(${tono},55%,48%)`; }
+// Loads editor data (editor-json) or the TOML parsed by the server. Pixel
+// layers (templates) become voxels with the same z rule as shapes.jl.
+function aplicarDatos(d) {
+  if (!d.caja && (d.shape || d.forma)) d = { forma: (d.shape || d.forma).map(interno) };
+  if (d.caja) Object.assign(S.caja, d.caja);
+  const { Nx, Ny, Nz, dz } = S.caja, Lz = (Nz - 1) * dz;
+  S.elems = []; S.sel = -1; S.vox = nuevaVox(Nx, Ny, Nz);
+  if (d.paleta) for (const [ch, q] of Object.entries(d.paleta))
+    S.paleta[ch] = Object.assign({ z: "todo", color: S.paleta[ch]?.color || colorNuevo() }, q);
+  let capa = false;
+  const ponerCapa = () => { if (!capa) { S.elems.push({ tipo: "voxeles" }); capa = true; } };
+  const filasDe = t => Array.isArray(t) ? t : String(t).replace(/\n$/, "").split("\n");
+  const pixeles = (filas, pal) => { const nr = filas.length;
+    filas.forEach((fila, r) => [...fila].forEach((ch, i) => {
+      const j = nr - 1 - r; if (ch === "." || ch === " " || i >= Nx || j < 0 || j >= Ny) return;
+      const [z0, z1] = rangoZ((pal[ch] || {}).z, Lz);
+      for (let k = 0; k < Nz; k++) { const Z = k * dz; if (z0 - TOL <= Z && Z <= z1 + TOL) S.vox[vi(i, j, k)] = ch; }
+    })); };
+  const voxeles = capas => capas.forEach((t, k) => { if (k >= Nz) return;
+    const filas = typeof t === "string" && !t.includes("\n") ? t.split("|") : filasDe(t);
+    const nr = filas.length;
+    filas.forEach((fila, r) => [...fila].forEach((ch, i) => { const j = nr - 1 - r;
+      if (ch !== "." && ch !== " " && i < Nx && j >= 0 && j < Ny) S.vox[vi(i, j, k)] = ch; })); });
+  for (const e of (d.elems || d.forma || [])) {
+    if (e.tipo === "pixeles" || e.tipo === "voxeles") {
+      if (e.paleta) for (const [ch, q] of Object.entries(e.paleta))
+        S.paleta[ch] = Object.assign({ z: "todo", color: S.paleta[ch]?.color || colorNuevo() }, q);
+      if (e.tipo === "pixeles" && e.filas) pixeles(filasDe(e.filas), e.paleta || S.paleta);
+      if (e.tipo === "voxeles" && e.capas) voxeles(e.capas);
+      ponerCapa();
+    } else S.elems.push(Object.assign({}, e));
+  }
+  if (d.capas) { voxeles(d.capas); ponerCapa(); }                 // editor-json
+  else if (d.filas) { pixeles(d.filas, S.paleta); ponerCapa(); }   // older editor-json
+}
+// ==== END CORE ====
+
+// ------------------------------------------------------------- undo
+const $ = id => document.getElementById(id);
+function foto() { return JSON.stringify({ caja: S.caja, elems: S.elems, paleta: S.paleta, vox: S.vox.join("") }); }
+function restaurar(t) {
+  const d = JSON.parse(t);
+  S.caja = d.caja; S.elems = d.elems; S.paleta = d.paleta; S.vox = [...d.vox];
+  if (S.sel >= S.elems.length) S.sel = -1;
+  sincronizarCaja(); pintarPaleta(); todo();
+}
+function guardarUndo() { S.undo.push(foto()); if (S.undo.length > 200) S.undo.shift(); S.redo = []; botonesUndo(); }
+function deshacer() { if (!S.undo.length) return; S.redo.push(foto()); restaurar(S.undo.pop()); botonesUndo(); }
+function rehacer() { if (!S.redo.length) return; S.undo.push(foto()); restaurar(S.redo.pop()); botonesUndo(); }
+function botonesUndo() { $("bUndo").disabled = !S.undo.length; $("bRedo").disabled = !S.redo.length; }
+
+// ------------------------------------------------------------- 2D drawing
+function css(v) { return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
+function hexRgb(h) { h = h.replace("#", ""); if (h.length === 3) h = h.split("").map(c => c + c).join("");
+  return [0, 2, 4].map(k => parseInt(h.substr(k, 2), 16)); }
+function colorF(v) {
+  if (v > 1) return css("--anti");
+  const a = hexRgb(css("--sc")), b = hexRgb(css("--hole"));
+  const t = 1 - Math.max(0, v);
+  return `rgb(${Math.round(a[0] + (b[0] - a[0]) * t)},${Math.round(a[1] + (b[1] - a[1]) * t)},${Math.round(a[2] + (b[2] - a[2]) * t)})`;
+}
+function celda(g, x, y, w, v) {
+  g.fillStyle = colorF(v); g.fillRect(x, y, w, w);
+  if (v <= 0 && w >= 6) { g.strokeStyle = css("--hatch"); g.lineWidth = 1; g.beginPath(); g.moveTo(x, y + w); g.lineTo(x + w, y); g.stroke(); }
+}
+// geometry of each view: nu × nv cells, origin (ox, oy), size cs
+const V = { top: {}, xz: {}, yz: {} };
+function medirVistas() {
+  const { Nx, Ny, Nz } = S.caja;
+  const W = $("top").clientWidth || 900;
+  const ox = 62;                       // left margin for the axis labels
+  // each view its own cell size: the cuts are thin, so they get larger cells
+  const tam = (nu, nv, hmax) => Math.max(4, Math.floor(Math.min((W - ox - 10) / nu, hmax / nv)));
+  V.top = { nu: Nx, nv: Ny, cs: tam(Nx, Ny, 520), ox, oy: 14 };
+  V.xz = { nu: Nx, nv: Nz, cs: tam(Nx, Nz, 320), ox, oy: 14 };
+  V.yz = { nu: Ny, nv: Nz, cs: tam(Ny, Nz, 320), ox, oy: 14 };
+  for (const v of ["top", "xz", "yz"]) { $(v).width = W; $(v).height = V[v].cs * V[v].nv + 36; }
+}
+function linea(g, color, x0, y0, x1, y1, guion) {
+  g.strokeStyle = color; g.lineWidth = 2; g.setLineDash(guion ? [6, 4] : []);
+  g.beginPath(); g.moveTo(x0, y0); g.lineTo(x1, y1); g.stroke(); g.setLineDash([]);
+}
+function dibujarVista(vw) {
+  const cv = $(vw), g = cv.getContext("2d"), q = V[vw];
+  const { Nx, margen } = S.caja;
+  g.clearRect(0, 0, cv.width, cv.height);
+  const gap = q.cs > 6 ? 1 : 0;
+  for (let v = 0; v < q.nv; v++) for (let u = 0; u < q.nu; u++) {
+    const [i, j, k] = aIJK(vw, u, v);
+    celda(g, q.ox + u * q.cs, q.oy + (q.nv - 1 - v) * q.cs, q.cs - gap, F(i, j, k));
+    const ch = S.vox[vi(i, j, k)];
+    if (ch !== "." && S.paleta[ch]) { g.fillStyle = S.paleta[ch].color; const r = Math.max(2, q.cs * 0.22);
+      g.fillRect(q.ox + u * q.cs + q.cs / 2 - r / 2, q.oy + (q.nv - 1 - v) * q.cs + q.cs / 2 - r / 2, r, r); }
+  }
+  const W = q.nu * q.cs, Hh = q.nv * q.cs;
+  if (vw !== "yz") { g.fillStyle = css("--margin"); g.fillRect(q.ox, q.oy, margen * q.cs, Hh); g.fillRect(q.ox + (Nx - margen) * q.cs, q.oy, margen * q.cs, Hh); }
+  const cA = css("--cutA"), cB = css("--cutB"), cK = css("--cutK");
+  const xu = u => q.ox + u * q.cs + q.cs / 2, yv = v => q.oy + (q.nv - 1 - v) * q.cs + q.cs / 2;
+  if (vw === "top") { linea(g, cA, q.ox, yv(S.jc), q.ox + W, yv(S.jc), true); linea(g, cB, xu(S.ic), q.oy, xu(S.ic), q.oy + Hh, true); }
+  if (vw === "xz") { linea(g, cK, q.ox, yv(S.k), q.ox + W, yv(S.k), true); linea(g, cB, xu(S.ic), q.oy, xu(S.ic), q.oy + Hh, true); }
+  if (vw === "yz") { linea(g, cK, q.ox, yv(S.k), q.ox + W, yv(S.k), true); linea(g, cA, xu(S.jc), q.oy, xu(S.jc), q.oy + Hh, true); }
+  if (vw === "top") { S.elems.forEach((e, n) => { if (e.tipo !== "voxeles") contorno(g, e, n === S.sel); });
+    if (S.poli && S.poli.length) { g.strokeStyle = css("--accent"); g.lineWidth = 2; g.beginPath();
+      S.poli.forEach((p, n) => { const [px, py] = aPx(p[0], p[1]); n ? g.lineTo(px, py) : g.moveTo(px, py); }); g.stroke(); }
+    if (S.arr && S.arr.prev) contorno(g, S.arr.prev, true); }
+  if (S.arr && S.arr.vista === vw && S.arr.recta && S.arr.ruta) {   // preview of the straight stroke
+    g.fillStyle = css("--accent");
+    for (const [u, v] of S.arr.ruta) g.fillRect(q.ox + u * q.cs + q.cs * 0.3, q.oy + (q.nv - 1 - v) * q.cs + q.cs * 0.3, q.cs * 0.4, q.cs * 0.4);
+  }
+  if (vw === "top" && $("espejo").checked) {        // the shape reflected in y (what _REF runs)
+    g.strokeStyle = css("--accent"); g.lineWidth = 1.2;
+    for (let v = 0; v < q.nv; v++) for (let u = 0; u < q.nu; u++) {
+      const m = F(u, q.nv - 1 - v, S.k);
+      if (m !== F(u, v, S.k) && m !== 1) g.strokeRect(q.ox + u * q.cs + 2, q.oy + (q.nv - 1 - v) * q.cs + 2, q.cs - 5, q.cs - 5);
+    }
+  }
+  if (vw === "top" && $("fisica3d").checked) {
+    g.fillStyle = css("--accent"); g.font = "11px system-ui";
+    g.fillText("↑ +J: vortices enter here (y1)", q.ox + W / 2 - 80, q.oy + Hh + 15);
+    g.fillText("↓ −J: vortices enter here (y2)", q.ox + W / 2 - 80, q.oy - 3);
+  }
+  g.fillStyle = css("--muted"); g.font = "11px system-ui";
+  const et = { top: ["y1 (notch)", "y2", "x1", "x2"], xz: ["z bottom", "z top", "x1", "x2"], yz: ["z bottom", "z top", "y1 (notch)", "y2"] }[vw];
+  g.fillText(et[0], 2, q.oy + Hh - 2); g.fillText(et[1], 2, q.oy + 10);
+  g.fillText(et[2], q.ox, q.oy + Hh + 15); g.fillText(et[3], q.ox + W - 16, q.oy + Hh + 15);
+}
+function aPx(X, Y) { const q = V.top, dx = S.caja.dx; return [q.ox + (X / dx) * q.cs + q.cs / 2, q.oy + (q.nv - 1 - Y / dx) * q.cs + q.cs / 2]; }
+function contorno(g, e, sel) {
+  g.strokeStyle = sel ? css("--accent") : css("--muted"); g.lineWidth = sel ? 2.5 : 1.2;
+  g.setLineDash(e.f > 0 ? [5, 3] : []);
+  g.beginPath();
+  const cs = V.top.cs, dx = S.caja.dx;
+  if (e.tipo === "esfera") {
+    const dzz = S.k * S.caja.dz - e.zc, rc2 = e.r * e.r - dzz * dzz; const [px, py] = aPx(e.x, e.y);
+    if (rc2 > 0) g.arc(px, py, Math.sqrt(rc2) / dx * cs, 0, 2 * Math.PI);
+    else { g.setLineDash([2, 4]); g.arc(px, py, e.r / dx * cs, 0, 2 * Math.PI); }
+  } else if (e.tipo === "circulo") { const [px, py] = aPx(e.x, e.y); g.arc(px, py, e.r / dx * cs, 0, 2 * Math.PI); }
+  else {
+    const [vx, vy] = verticesLocales(e);
+    const th = (e.rot || 0) * Math.PI / 180, c = Math.cos(th), s = Math.sin(th);
+    vx.forEach((u, n) => { const v = vy[n], X = (e.x || 0) + c * u - s * v, Y = (e.y || 0) + s * u + c * v;
+      const [px, py] = aPx(X, Y); n ? g.lineTo(px, py) : g.moveTo(px, py); });
+    g.closePath();
+  }
+  g.stroke(); g.setLineDash([]);
+}
+
+// ------------------------------------------------------------- 3D
+const C3 = { yaw: -0.6, pitch: 0.9, zoom: 1, arr: null };
+function dibujar3D() {
+  const cv = $("iso"), g = cv.getContext("2d");
+  const { Nx, Ny, Nz, dx, dz } = S.caja;
+  const W = cv.clientWidth || 320; cv.width = W; cv.height = 300;
+  g.clearRect(0, 0, cv.width, cv.height);
+  const solo = $("soloHuecos").checked;
+  const lleno = (i, j, k) => { if (!dentroCaja(i, j, k)) return false; const v = F(i, j, k); return solo ? v !== 1 : v > 0; };
+  const ez = dz / dx;
+  const cy = Math.cos(C3.yaw), sy = Math.sin(C3.yaw), cp = Math.cos(C3.pitch), sp = Math.sin(C3.pitch);
+  const esc = C3.zoom * 0.85 * Math.min(W, 300) / Math.hypot(Nx, Ny, Nz * ez);
+  const P = (x, y, z) => {           // world → screen (orthographic); z up
+    const X = x - Nx / 2, Y = y - Ny / 2, Z = (z - Nz / 2) * ez;
+    const x1 = cy * X - sy * Y, y1 = sy * X + cy * Y;              // rotation about z
+    const y2 = cp * y1 - sp * Z, z2 = sp * y1 + cp * Z;            // tilt
+    return [W / 2 + esc * x1, 150 - esc * z2, y2];                 // y2 = depth
+  };
+  const luz = [0.35, -0.45, 0.82];
+  const N = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]];
+  const Q = [[[1,0,0],[1,1,0],[1,1,1],[1,0,1]], [[0,0,0],[0,0,1],[0,1,1],[0,1,0]],
+             [[0,1,0],[0,1,1],[1,1,1],[1,1,0]], [[0,0,0],[1,0,0],[1,0,1],[0,0,1]],
+             [[0,0,1],[1,0,1],[1,1,1],[0,1,1]], [[0,0,0],[0,1,0],[1,1,0],[1,0,0]]];
+  // a face is visible if its rotated normal points to the viewer (negative depth)
+  const visible = N.map(([a, b, c]) => { const y1 = sy * a + cy * b; return cp * y1 - sp * c * ez < 0; });
+  const caras = [];
+  for (let k = 0; k < Nz; k++) for (let j = 0; j < Ny; j++) for (let i = 0; i < Nx; i++) {
+    if (!lleno(i, j, k)) continue;
+    const v = F(i, j, k);
+    for (let f = 0; f < 6; f++) {
+      if (!visible[f]) continue;
+      const [a, b, c] = N[f]; if (lleno(i + a, j + b, k + c)) continue;
+      const pts = Q[f].map(([qa, qb, qc]) => P(i + qa, j + qb, k + qc));
+      const prof = pts.reduce((s, p) => s + p[2], 0) / 4;
+      const sombra = 0.5 + 0.5 * Math.max(0, a * luz[0] + b * luz[1] + c * luz[2]);
+      caras.push([prof, pts, v, sombra]);
+    }
+  }
+  caras.sort((p, q) => q[0] - p[0]);
+  const sc = hexRgb(css("--sc")), an = hexRgb(css("--anti")), wr = hexRgb(css("--warn"));
+  for (const [, pts, v, sh] of caras) {
+    const base = solo ? wr : v > 1 ? an : sc;
+    const alfa = solo ? 0.35 + 0.65 * Math.min(1, 1 - v) : 0.3 + 0.7 * Math.min(1, v);
+    g.fillStyle = `rgba(${base.map(x => Math.round(x * sh)).join(",")},${alfa})`;
+    g.beginPath(); pts.forEach(([x, y], n) => n ? g.lineTo(x, y) : g.moveTo(x, y)); g.closePath(); g.fill();
+  }
+  const marco = (pts, color, w, guion) => { g.strokeStyle = color; g.lineWidth = w; g.setLineDash(guion ? [5, 3] : []);
+    g.beginPath(); pts.forEach((p, n) => { const [x, y] = P(...p); n ? g.lineTo(x, y) : g.moveTo(x, y); }); g.closePath(); g.stroke(); g.setLineDash([]); };
+  const L = css("--muted");
+  for (const z of [0, Nz]) marco([[0, 0, z], [Nx, 0, z], [Nx, Ny, z], [0, Ny, z]], L, 0.8);
+  for (const [x, y] of [[0, 0], [Nx, 0], [Nx, Ny], [0, Ny]]) marco([[x, y, 0], [x, y, Nz]], L, 0.8);
+  if ($("planos3d").checked) {
+    const k = S.k + 0.5, j = S.jc + 0.5, i = S.ic + 0.5;
+    marco([[0, 0, k], [Nx, 0, k], [Nx, Ny, k], [0, Ny, k]], css("--cutK"), 1.5, true);
+    marco([[0, j, 0], [Nx, j, 0], [Nx, j, Nz], [0, j, Nz]], css("--cutA"), 1.5, true);
+    marco([[i, 0, 0], [i, Ny, 0], [i, Ny, Nz], [i, 0, Nz]], css("--cutB"), 1.5, true);
+  }
+  const CAJA = { top: [[0, 0, Nz], [Nx, 0, Nz], [Nx, Ny, Nz], [0, Ny, Nz]], bottom: [[0, 0, 0], [Nx, 0, 0], [Nx, Ny, 0], [0, Ny, 0]],
+    front: [[0, 0, 0], [Nx, 0, 0], [Nx, 0, Nz], [0, 0, Nz]], back: [[0, Ny, 0], [Nx, Ny, 0], [Nx, Ny, Nz], [0, Ny, Nz]],
+    left: [[0, 0, 0], [0, Ny, 0], [0, Ny, Nz], [0, 0, Nz]], right: [[Nx, 0, 0], [Nx, Ny, 0], [Nx, Ny, Nz], [Nx, 0, Nz]] };
+  const NC = { right: 0, left: 1, back: 2, front: 3, top: 4, bottom: 5 };
+  C3.caras = Object.entries(CAJA).map(([c, q]) => ({ c, vis: visible[NC[c]], pts: q.map(p => P(...p)) }));
+  if (S.cara) {
+    const q = C3.caras.find(x => x.c === S.cara), ac = css("--accent");
+    marco(CAJA[S.cara], ac, 3, !q.vis);
+  }
+  if ($("fisica3d").checked) {          // J along x, H along z, entry faces for ±J
+    const flecha = (a, b, col, t) => {
+      const [x0, y0] = P(...a), [x1, y1] = P(...b), ang = Math.atan2(y1 - y0, x1 - x0);
+      g.strokeStyle = col; g.fillStyle = col; g.lineWidth = 2.5; g.beginPath(); g.moveTo(x0, y0); g.lineTo(x1, y1); g.stroke();
+      g.beginPath(); g.moveTo(x1, y1); g.lineTo(x1 - 9 * Math.cos(ang - 0.4), y1 - 9 * Math.sin(ang - 0.4));
+      g.lineTo(x1 - 9 * Math.cos(ang + 0.4), y1 - 9 * Math.sin(ang + 0.4)); g.closePath(); g.fill();
+      g.font = "bold 12px system-ui"; g.fillText(t, x1 + 4, y1 - 4);
+    };
+    const zc = Nz + 2 / ez, yc = Ny / 2;
+    flecha([0.1 * Nx, yc, zc], [0.9 * Nx, yc, zc], "#e67e22", "J");
+    flecha([Nx + 2, Ny + 2, 0], [Nx + 2, Ny + 2, Nz + 4 / ez], "#8e44ad", "H");
+    flecha([Nx / 2, -0.35 * Ny, Nz / 2], [Nx / 2, -0.02 * Ny, Nz / 2], "#16a085", "+J");
+    flecha([Nx / 2, 1.35 * Ny, Nz / 2], [Nx / 2, 1.02 * Ny, Nz / 2], "#c0392b", "−J");
+  }
+  { // axes x, y, z at the corner x1, y1, bottom
+    const Lx = Math.max(5, Math.min(Nx, Ny) / 2), d0 = -0.12 * Math.max(Nx, Ny), o = P(d0, d0, 0);
+    for (const [v, col, t] of [[[Lx, 0, 0], "#d64541", "x"], [[0, Lx, 0], "#2e9d5b", "y"], [[0, 0, Lx / ez], "#3a78c9", "z"]]) {
+      const e = P(d0 + v[0], d0 + v[1], v[2]);
+      g.strokeStyle = col; g.fillStyle = col; g.lineWidth = 2; g.beginPath(); g.moveTo(o[0], o[1]); g.lineTo(e[0], e[1]); g.stroke();
+      g.font = "bold 14px system-ui"; g.fillText(t, e[0] + 4, e[1] + 5);
+    }
+  }
+  g.fillStyle = css("--muted"); g.font = "11px system-ui";
+  const et = (t, p) => { const [x, y] = P(...p); g.fillText(t, x + 3, y); };
+  et("x2", [Nx + 1, 0, 0]); et("y2", [0, Ny + 1, 0]); et("z", [0, 0, Nz + 1]); et("face y1", [Nx / 2, -1.5, 0]);
+}
+
+// ------------------------------------------------------------- checks
+function marcasCaras() {
+  const n = tocadas();
+  document.querySelectorAll("#caras button").forEach(b => {
+    let m = b.querySelector(".toca"); if (!m) { m = document.createElement("span"); m.className = "toca"; b.appendChild(m); }
+    const c = n[b.dataset.c];
+    m.textContent = c ? `● ${c}` : "";
+    m.style.color = c && (b.dataset.c === "left" || b.dataset.c === "right") ? "var(--warn)" : "";
+    b.title = (b.title.split(" · ")[0]) + (c ? ` · ${c} cell(s) with f ≠ 1 on this face` : "");
+  });
+}
+function chequeos() {
+  const { Nx, Ny, Nz, margen, H, xir, dx } = S.caja;
+  const { my, rz, mg, quitados, fsig, fpi, shunt } = contar();
+  const L = [];
+  L.push([null, `nodes with f≠1: ${quitados} (${(100 * quitados / (Nx * Ny * Nz)).toFixed(1)} %)`]);
+  L.push([null, `J ∥ x and H ∥ z: the Lorentz force moves vortices along y. +J pushes them toward +y, so they enter through the front face y1; −J through the back face y2.`]);
+  { const t = tocadas();
+    L.push([null, `entry faces: y1 (for +J) has ${t.front} modified cell(s), y2 (for −J) ${t.back}. A notch on the entry face lowers that polarity's threshold.`]);
+    if (t.left || t.right) L.push([false, `the injection faces x1/x2 are touched (${t.left}/${t.right} cells): a defect on a contact injects through it (mode M2)`]); }
+  L.push([my > 0, my > 0 ? `breaks the mirror in y (My, ${my} nodes): a diode is allowed` :
+          `symmetric in y (My): +J and −J are the same run mirrored (C∘My) → η = 0 exactly. It can still be run, but it does not rectify.`]);
+  L.push([rz > 0, rz > 0 ? `breaks the rotation Rz(π) (${rz} nodes)` : `invariant under Rz(π): η = 0 exactly. An asymmetry along x alone is not enough.`]);
+  L.push([mg === 0, mg === 0 ? `does not touch the injection strips` : `touches ${mg} node(s) closer than ${margen} cells to x1/x2 (spurious η)`]);
+  L.push([!shunt, shunt ? `a whole row with f &lt; 0.5 along x: normal path` : `no normal path from side to side`]);
+  if (fsig > 0) L.push([false, `${fsig} node(s) with 0 &lt; f &lt; H: σ is normal there`]);
+  if (fpi > 0) L.push([null, `${fpi} node(s) with 0 &lt; f &lt; H·(ξπ/ξσ)² = ${(H * xir * xir).toFixed(2)}: π is normal there, σ is not`]);
+  L.push([null, `ξπ = ${xir} ξσ = ${Math.round(xir / dx)} cells: details smaller than that are seen by σ, not by π`]);
+  if (Nz <= 8) L.push([null, `Nz=${Nz}: only ${Nz} planes in z; a channel in z is a coarse step`]);
+  $("checks").innerHTML = L.map(([ok, t]) =>
+    `<div class="${ok === null ? "muted" : ok ? "good" : "bad"}">${ok === null ? "·" : ok ? "✓" : "✗"} ${t}</div>`).join("");
+}
+
+// ------------------------------------------------------------- panels
+const TOOLS = [["lapiz", "pencil"], ["borrador", "eraser"], ["seleccionar", "select/move"],
+               ["circulo", "circle"], ["rect", "rectangle"], ["triangulo", "triangle"],
+               ["ngono", "n-gon"], ["poligono", "polygon"], ["esfera", "sphere"], ["gradiente", "gradient"],
+               ["cortes", "move cuts"]];
+function sincronizarCaja() {
+  for (const k of Object.keys(S.caja)) $(k).value = S.caja[k];
+  const { Nx, Ny, Nz, dx, dz } = S.caja;
+  $("kSlider").max = Nz - 1; $("jCorte").max = Ny - 1; $("iCorte").max = Nx - 1;
+  S.k = Math.min(S.k, Nz - 1); S.jc = Math.min(S.jc, Ny - 1); S.ic = Math.min(S.ic, Nx - 1);
+  $("kSlider").value = S.k; $("jCorte").value = S.jc; $("iCorte").value = S.ic;
+  $("cajaInfo").textContent = `sample ${((Nx - 1) * dx).toFixed(1)} × ${((Ny - 1) * dx).toFixed(1)} × ${((Nz - 1) * dz).toFixed(1)} ξσ between end nodes`;
+}
+function zTexto(z) { return Array.isArray(z) ? `[${z}]` : EN_Z[z] || z; }
+function pintarPaleta() {
+  $("paleta").innerHTML = "";
+  for (const [ch, q] of Object.entries(S.paleta)) {
+    const d = document.createElement("div"); d.className = "pal" + (ch === S.pincel ? " on" : "");
+    d.innerHTML = `<span class="sw" style="background:${q.color}"></span><code>${ch}</code> f=${q.f} · z ${zTexto(q.z)}` +
+      `<span style="flex:1"></span><button title="delete this character and what it painted">✕</button>`;
+    d.onclick = () => { S.pincel = ch; S.herramienta = "lapiz"; pintarTools(); pintarPaleta(); pestana("dibujo"); };
+    d.querySelector("button").onclick = ev => {
+      ev.stopPropagation(); guardarUndo();
+      S.vox = S.vox.map(c => c === ch ? "." : c); delete S.paleta[ch];
+      if (S.pincel === ch) S.pincel = Object.keys(S.paleta)[0] || "#";
+      pintarPaleta(); todo(); msg(`character ${ch} deleted`);
+    };
+    $("paleta").appendChild(d);
+  }
+  contexto();
+}
+const FIGURAS = ["circulo", "rect", "triangulo", "ngono", "poligono", "esfera"];
+function contexto() {
+  const t = S.herramienta;
+  document.querySelectorAll(".ctx").forEach(d => d.hidden =
+    !(d.dataset.ctx === "lapiz" ? LAPIZ(t) : d.dataset.ctx === "figura" ? FIGURAS.includes(t) : d.dataset.ctx === t));
+  document.querySelectorAll(".ctx2").forEach(d => d.hidden = d.dataset.t !== t);
+  const q = S.paleta[S.pincel];
+  $("pActual").innerHTML = t === "borrador" ? "eraser: back to f = 1 · " :
+    q ? `<span class="sw" style="background:${q.color}"></span> <code>${S.pincel}</code> f=${q.f} <a href="#" id="aPal">palette…</a> · ` : "";
+  const a = $("aPal"); if (a) a.onclick = ev => { ev.preventDefault(); pestana("paleta"); };
+}
+function pestana(t) {
+  document.querySelectorAll(".pestanas button").forEach(b => b.className = b.dataset.t === t ? "on" : "");
+  document.querySelectorAll(".tab").forEach(s => s.hidden = s.dataset.t !== t);
+}
+function pintarTools() {
+  contexto();
+  $("tools").innerHTML = "";
+  for (const [t, n] of TOOLS) {
+    const b = document.createElement("button"); b.textContent = n; if (t === S.herramienta) b.className = "on";
+    b.onclick = () => { S.herramienta = t; S.poli = null; pintarTools(); todo(); }; $("tools").appendChild(b);
+  }
+}
+function pintarLista() {
+  const L = $("lista"); L.innerHTML = "";
+  if (!S.elems.length) { L.innerHTML = `<div class="muted">empty: the whole box is superconducting</div>`; return; }
+  S.elems.forEach((e, n) => {
+    const d = document.createElement("div"); d.className = "el" + (n === S.sel ? " on" : "");
+    const campos = e.tipo === "voxeles" ? [] : ["x", "y", "zc", "r", "w", "h", "sesgo", "n", "rot", "f"].filter(k => e[k] !== undefined);
+    const extra = e.tipo === "voxeles" ? `pencil layer (${S.vox.filter(c => c !== ".").length} voxels)` : e.tipo === "esfera" ? "" : "z=" + zTexto(e.z) + " · " + planosTexto(e.z);
+    const conZ = e.tipo !== "voxeles" && e.tipo !== "esfera";
+    const zr = conZ ? rangoZ(e.z, (S.caja.Nz - 1) * S.caja.dz) : null;
+    const zCampos = conZ ? `<label>z0<input type="number" step="${S.caja.dz}" data-z="0" value="${Number.isFinite(zr[0]) ? +zr[0].toFixed(4) : 0}"></label><label>z1<input type="number" step="${S.caja.dz}" data-z="1" value="${Number.isFinite(zr[1]) ? +zr[1].toFixed(4) : +((S.caja.Nz - 1) * S.caja.dz).toFixed(4)}"></label><button data-a="zcara" title="give this figure the from/depth of the work face (top or bottom)">z ← work face</button>` : "";
+    d.innerHTML = `<div class="row"><b>${n + 1}. ${EN_TIPO[e.tipo] || e.tipo}</b>&nbsp;<span class="muted">${extra}</span>
+      <span style="flex:1"></span><button data-a="sube">↑</button><button data-a="baja">↓</button>${e.tipo === "voxeles" ? "" : '<button data-a="dup">⧉</button>'}<button data-a="del">✕</button></div>
+      <div class="row">${campos.map(k => `<label>${k}<input type="number" step="${k === "rot" ? 5 : k === "f" ? 0.1 : k === "n" ? 1 : 0.5}" data-k="${k}" value="${+(+e[k]).toFixed(4)}"></label>`).join("")}</div>
+      ${zCampos ? `<div class="row">${zCampos}</div>` : ""}`;
+    d.onclick = ev => { if (ev.target.tagName !== "INPUT" && ev.target.tagName !== "BUTTON") { S.sel = n; todo(); } };
+    d.querySelectorAll("input").forEach(inp => inp.onchange = () => {
+      guardarUndo();
+      if (inp.dataset.z !== undefined) {
+        const L = (S.caja.Nz - 1) * S.caja.dz, r = rangoZ(e.z, L);
+        const z = [Number.isFinite(r[0]) ? r[0] : 0, Number.isFinite(r[1]) ? r[1] : L];
+        z[+inp.dataset.z] = +inp.value; e.z = [Math.min(z[0], z[1]), Math.max(z[0], z[1])];
+      } else e[inp.dataset.k] = +inp.value;
+      todo();
+    });
+    d.querySelectorAll("button").forEach(b => b.onclick = ev => { ev.stopPropagation(); accion(n, b.dataset.a); });
+    L.appendChild(d);
+  });
+}
+function accion(n, a) {
+  const E = S.elems; guardarUndo();
+  if (a === "del") { if (E[n].tipo === "voxeles") S.vox = nuevaVox(S.caja.Nx, S.caja.Ny, S.caja.Nz); E.splice(n, 1); S.sel = -1; }
+  if (a === "sube" && n > 0) [E[n - 1], E[n]] = [E[n], E[n - 1]];
+  if (a === "baja" && n < E.length - 1) [E[n + 1], E[n]] = [E[n], E[n + 1]];
+  if (a === "dup") { const c = JSON.parse(JSON.stringify(E[n])); if (c.x !== undefined) c.x += 1; E.splice(n + 1, 0, c); S.sel = n + 1; }
+  if (a === "zcara") { E[n].z = zDeCara(); msg(`figure ${n + 1}: ${planosTexto(E[n].z)}`); }
+  todo();
+}
+function zNueva(prefijo) {
+  const v = $(prefijo + "Z").value;
+  if (v === "cara") return zDeCara();
+  return v === "rango" ? [+$(prefijo + "Z0").value, +$(prefijo + "Z1").value] : v;
+}
+// node planes k (0 = bottom) that a z specification covers: plane k sits at z = k dz
+function planosZ(z) {
+  const { Nz, dz } = S.caja, Lz = (Nz - 1) * dz, [z0, z1] = rangoZ(z, Lz), ks = [];
+  for (let k = 0; k < Nz; k++) if (z0 - TOL <= k * dz && k * dz <= z1 + TOL) ks.push(k);
+  return ks;
+}
+function planosTexto(z) {
+  const ks = planosZ(z), Nz = S.caja.Nz;
+  if (!ks.length) return "covers no plane";
+  if (ks.length === Nz) return `all ${Nz} planes (through)`;
+  return `planes k = ${ks[0]}–${ks[ks.length - 1]} of 0–${Nz - 1}` + (ks[ks.length - 1] === Nz - 1 ? " (reaches the top face)" : ks[0] === 0 ? " (reaches the bottom face)" : " (inside)");
+}
+function infoZFigura() {
+  const el = $("dZinfo"); if (!el) return;
+  const { Nz, dz } = S.caja, Lz = (Nz - 1) * dz, v = $("dZ").value;
+  const z = v === "cara" ? (VISTA_CARA[S.cara] === "top" ? zDeCara() : null) : zNueva("d");
+  el.textContent = `figures are drawn on the top view. z is in ξσ: plane k sits at z = k·${dz}, the top plane at z = ${+Lz.toFixed(4)}. ` +
+    (z === null ? "Pick the top or bottom work face for 'from the work face'." : `A new figure: ${planosTexto(z)}${Array.isArray(z) ? `, z = [${z}]` : ""}.`);
+}
+function todo() {
+  infoZFigura();
+  if (S.cara) {
+    $("cDesde").value = desdeDe(S.cara); $("cProf").max = nEje(S.cara); $("cDesde").max = nEje(S.cara) - 1;
+    document.querySelectorAll("#caras button").forEach(b => b.className = b.dataset.c === S.cara ? "on" : "");
+    const vw = VISTA_CARA[S.cara];
+    document.querySelectorAll("section.vista").forEach(s => s.classList.toggle("activa", !!s.querySelector("#" + vw)));
+
+    const capas = capasCara(), nom = { top: "top", bottom: "bottom", front: "front (y1)", back: "back (y2)", left: "left (x1)", right: "right (x2)" }[S.cara];
+    $("cAyuda").textContent = $("cModo").value === "cara"
+      ? `Draw on the ${{ top: "Top", xz: "Front", yz: "Side" }[vw]} view (outlined): the pencil and the eraser fill ${capas.length} cell(s) inward from the ${nom} face, from ${desdeDe(S.cara)} to ${desdeDe(S.cara) + capas.length - 1} cells deep. Click a face of the 3D model to pick it.`
+      : "Legacy mode: on the top view the pencil fills the z extent of its palette character; on the cuts it paints one voxel.";
+  }
+  rasterizar(); medirVistas(); dibujarVista("top"); dibujarVista("xz"); dibujarVista("yz"); dibujar3D();
+  chequeos(); pintarLista(); marcasCaras();
+  $("kTxt").textContent = `k=${S.k} (z = ${(S.k * S.caja.dz).toFixed(2)} of ${((S.caja.Nz - 1) * S.caja.dz).toFixed(2)} ξσ)`;
+  $("jTxt").textContent = `j=${S.jc} (y = ${(S.jc * S.caja.dx).toFixed(2)} ξσ)`;
+  $("iTxt").textContent = `i=${S.ic} (x = ${(S.ic * S.caja.dx).toFixed(2)} ξσ)`;
+  $("toml").value = aToml();
+  $("snippet").textContent = `GEOM_MODE="CUSTOM", geom_file="julia/shapes/${$("nombre").value}.toml"`;
+}
+function capaLapiz() { if (!S.elems.some(e => e.tipo === "voxeles")) S.elems.unshift({ tipo: "voxeles" }); }
+
+// ------------------------------------------------------------- mouse
+function celdaDe(vw, ev) {
+  const cv = $(vw), r = cv.getBoundingClientRect(), q = V[vw];
+  const px = (ev.clientX - r.left) * cv.width / r.width, py = (ev.clientY - r.top) * cv.height / r.height;
+  return { px, py, u: Math.floor((px - q.ox) / q.cs), v: q.nv - 1 - Math.floor((py - q.oy) / q.cs) };
+}
+function aFis(px, py) {
+  const q = V.top, dx = S.caja.dx;
+  let X = ((px - q.ox - q.cs / 2) / q.cs) * dx, Y = (q.nv - 1 - (py - q.oy - q.cs / 2) / q.cs) * dx;
+  if ($("snap").checked) { X = Math.round(X / (dx / 2)) * (dx / 2); Y = Math.round(Y / (dx / 2)) * (dx / 2); }
+  return [X, Y];
+}
+function moverCortes(vw, u, v) {
+  const c = S.caja, lim = (x, n) => Math.max(0, Math.min(n - 1, x));
+  if (vw === "top") { S.ic = lim(u, c.Nx); S.jc = lim(v, c.Ny); }
+  if (vw === "xz") { S.ic = lim(u, c.Nx); S.k = lim(v, c.Nz); }
+  if (vw === "yz") { S.jc = lim(u, c.Ny); S.k = lim(v, c.Nz); }
+  sincronizarCaja(); todo();
+}
+function figura(t, X0, Y0, X1, Y1) {
+  const base = { rot: +$("dRot").value, f: +$("dF").value, z: zNueva("d") };
+  const r = Math.hypot(X1 - X0, Y1 - Y0);
+  if (t === "circulo") return Object.assign({ tipo: t, x: X0, y: Y0, r }, base);
+  if (t === "esfera") return { tipo: t, x: X0, y: Y0, zc: S.k * S.caja.dz, r, f: base.f };
+  if (t === "ngono") return Object.assign({ tipo: t, x: X0, y: Y0, r, n: +$("dN").value }, base);
+  if (t === "rect") return Object.assign({ tipo: t, x: (X0 + X1) / 2, y: (Y0 + Y1) / 2, w: Math.abs(X1 - X0), h: Math.abs(Y1 - Y0) }, base);
+  if (t === "triangulo") return Object.assign({ tipo: t, x: X0, y: Y0, w: 2 * Math.abs(X1 - X0), h: Y1 - Y0, sesgo: +$("dSesgo").value }, base);
+}
+const LAPIZ = t => t === "lapiz" || t === "borrador";
+for (const vw of ["top", "xz", "yz"]) {
+  $(vw).addEventListener("contextmenu", ev => ev.preventDefault());
+  $(vw).addEventListener("mousedown", ev => {
+    const q = celdaDe(vw, ev), t = S.herramienta;
+    if (ev.button === 2 || t === "cortes") { moverCortes(vw, q.u, q.v); return; }
+    if (LAPIZ(t)) {
+      if ($("cModo").value === "cara" && VISTA_CARA[S.cara] !== vw) caraCercana(vw);
+      guardarUndo(); capaLapiz();
+      const ch = t === "lapiz" ? S.pincel : ".";
+      S.arr = { vista: vw, ch, u0: q.u, v0: q.v, recta: $("trazo").value === "recta", ruta: [[q.u, q.v]] };
+      if (!S.arr.recta) pintarEn(vw, q.u, q.v, ch, +$("brush").value, $("borrZ").value);
+      todo(); return;
+    }
+    if (t === "gradiente") {
+      if (vw !== "top") { msg("the gradient is dragged on the top view", true); return; }
+      S.arr = { grad: true, u0: q.u, v0: q.v, u1: q.u, v1: q.v }; return;
+    }
+    if (vw !== "top") { msg("figures are drawn on the top view; on the cuts use the pencil or the eraser", true); return; }
+    const [X, Y] = aFis(q.px, q.py);
+    if (t === "poligono") { guardarUndo(); (S.poli = S.poli || []).push([X, Y]); todo(); return; }
+    if (t === "seleccionar") {
+      S.sel = -1;
+      for (let n = S.elems.length - 1; n >= 0; n--) { const e = S.elems[n]; if (e.tipo !== "voxeles" && dentro2D(e, X, Y)) { S.sel = n; break; } }
+      if (S.sel >= 0) { guardarUndo(); S.arr = { mover: S.sel, X, Y }; }
+      else {
+        // a pencil voxel under the cursor (any plane): drag the whole pencil layer by whole cells
+        let hay = false;
+        for (let k = 0; k < S.caja.Nz && !hay; k++) if (dentroCaja(q.u, q.v, k) && S.vox[vi(q.u, q.v, k)] !== ".") hay = true;
+        if (hay) {
+          guardarUndo(); S.sel = S.elems.findIndex(e => e.tipo === "voxeles");
+          S.arr = { moverVox: true, u0: q.u, v0: q.v, base: [...S.vox] };
+          msg("moving the pencil layer (all its strokes together)");
+        }
+      }
+      todo(); return;
+    }
+    S.arr = { t, X0: X, Y0: Y };
+  });
+}
+window.addEventListener("mousemove", ev => {
+  const A = S.arr; if (!A) return;
+  if (A.grad) {
+    const q = celdaDe("top", ev); A.u1 = q.u; A.v1 = q.v;
+    msg(`gradient ${Math.abs(A.u1 - A.u0) + 1} × ${Math.abs(A.v1 - A.v0) + 1} cells (release to apply)`);
+    return;
+  }
+  if (A.vista) {
+    const q = celdaDe(A.vista, ev);
+    if (A.recta) { A.ruta = recta(A.u0, A.v0, q.u, q.v); dibujarVista(A.vista); }
+    else {
+      const [u0, v0] = A.ruta[A.ruta.length - 1];
+      if (u0 === q.u && v0 === q.v) return;
+      for (const [u, v] of recta(u0, v0, q.u, q.v)) pintarEn(A.vista, u, v, A.ch, +$("brush").value, $("borrZ").value);
+      A.ruta.push([q.u, q.v]); todo();
+    }
+    return;
+  }
+  const q = celdaDe("top", ev), [X, Y] = aFis(q.px, q.py);
+  if (A.moverVox) {
+    const du = q.u - A.u0, dv = q.v - A.v0, { Nx, Ny, Nz } = S.caja;
+    if (du === A.du && dv === A.dv) return;
+    A.du = du; A.dv = dv; S.vox = new Array(A.base.length).fill(".");
+    for (let k = 0; k < Nz; k++) for (let j = 0; j < Ny; j++) for (let i = 0; i < Nx; i++) {
+      const c = A.base[vi(i, j, k)];
+      if (c !== "." && dentroCaja(i + du, j + dv, k)) S.vox[vi(i + du, j + dv, k)] = c;
+    }
+    todo(); return;
+  }
+  if (A.mover !== undefined) {
+    const e = S.elems[A.mover], dX = X - A.X, dY = Y - A.Y;
+    if (e.puntos) e.puntos = e.puntos.map(p => [p[0] + dX, p[1] + dY]); else { e.x += dX; e.y += dY; }
+    A.X = X; A.Y = Y; todo(); return;
+  }
+  A.prev = figura(A.t, A.X0, A.Y0, X, Y); dibujarVista("top");
+  { const e = A.prev, d = S.caja.dx, c = x => `${(+x).toFixed(2)} ξσ (${Math.round(Math.abs(x) / d)} cells)`;
+    msg(e.r !== undefined ? `radius ${c(e.r)}` : `width ${c(e.w)} × height ${c(e.h)}`); }
+});
+window.addEventListener("mouseup", ev => {
+  const A = S.arr; S.arr = null; if (!A) return;
+  if (A.grad) { gradiente(A.u0, A.v0, A.u1, A.v1); todo(); return; }
+  if (A.vista && A.recta) for (const [u, v] of A.ruta) pintarEn(A.vista, u, v, A.ch, +$("brush").value, $("borrZ").value);
+  if (A.t) {
+    const q = celdaDe("top", ev), [X, Y] = aFis(q.px, q.py), e = figura(A.t, A.X0, A.Y0, X, Y);
+    const tam = e.r ?? Math.max(Math.abs(e.w || 0), Math.abs(e.h || 0));
+    if (tam > 0) { guardarUndo(); S.elems.push(e); S.sel = S.elems.length - 1; }
+  }
+  todo();
+});
+$("top").addEventListener("dblclick", () => cerrarPoli());
+function cerrarPoli() {
+  if (S.poli && S.poli.length >= 3) {
+    S.elems.push({ tipo: "poligono", x: 0, y: 0, rot: 0, z: zNueva("d"), f: +$("dF").value,
+                   puntos: S.poli.filter((p, n, L) => n === 0 || p[0] !== L[n - 1][0] || p[1] !== L[n - 1][1]) });
+    S.sel = S.elems.length - 1;
+  }
+  S.poli = null; todo();
+}
+// 3D: rotate, zoom
+$("iso").addEventListener("mousedown", ev => { C3.arr = [ev.clientX, ev.clientY, C3.yaw, C3.pitch]; $("iso").style.cursor = "grabbing"; });
+$("iso").addEventListener("click", ev => {        // a click without drag picks the face under the cursor
+  if (C3.movido) { C3.movido = false; return; }
+  const cv = $("iso"), r = cv.getBoundingClientRect();
+  const px = (ev.clientX - r.left) * cv.width / r.width, py = (ev.clientY - r.top) * cv.height / r.height;
+  let mejor = null;
+  for (const q of C3.caras || []) {
+    if (!q.vis || !enPoligono(px, py, q.pts.map(p => p[0]), q.pts.map(p => p[1]))) continue;
+    const prof = q.pts.reduce((s, p) => s + p[2], 0) / 4;
+    if (!mejor || prof < mejor.prof) mejor = { c: q.c, prof };
+  }
+  if (mejor) ponerCara(mejor.c);
+});
+window.addEventListener("mousemove", ev => { if (!C3.arr) return;
+  const [x0, y0, yw, pt] = C3.arr; C3.yaw = yw + (ev.clientX - x0) * 0.01;
+  if (Math.abs(ev.clientX - x0) + Math.abs(ev.clientY - y0) > 3) C3.movido = true;
+  C3.pitch = Math.max(-1.55, Math.min(1.55, pt + (ev.clientY - y0) * 0.01)); dibujar3D(); });
+window.addEventListener("mouseup", () => { if (C3.arr) { C3.arr = null; $("iso").style.cursor = "grab"; } });
+$("iso").addEventListener("wheel", ev => { ev.preventDefault(); C3.zoom = Math.max(0.3, Math.min(6, C3.zoom * (ev.deltaY < 0 ? 1.12 : 1 / 1.12))); dibujar3D(); }, { passive: false });
+$("iso").addEventListener("dblclick", () => { C3.yaw = -0.6; C3.pitch = 0.9; C3.zoom = 1; dibujar3D(); });
+
+// ------------------------------------------------------------- keyboard
+window.addEventListener("keydown", ev => {
+  const enCampo = ["INPUT", "SELECT", "TEXTAREA"].includes(document.activeElement.tagName);
+  const ctrl = ev.ctrlKey || ev.metaKey;
+  if (ctrl && !enCampo && ev.key.toLowerCase() === "z") { ev.preventDefault(); ev.shiftKey ? rehacer() : deshacer(); return; }
+  if (ctrl && !enCampo && ev.key.toLowerCase() === "y") { ev.preventDefault(); rehacer(); return; }
+  if (enCampo) return;
+  if (ev.key === "[" || ev.key === "]") { S.k = Math.max(0, Math.min(S.caja.Nz - 1, S.k + (ev.key === "]" ? 1 : -1))); sincronizarCaja(); todo(); return; }
+  const e = S.elems[S.sel];
+  if (ev.key === "Enter") { if (S.poli) guardarUndo(); cerrarPoli(); }
+  else if (ev.key === "Escape") { S.poli = null; S.arr = null; todo(); }
+  else if (e && e.tipo !== "voxeles") {
+    const d = S.caja.dx;
+    if (ev.key === "Delete" || ev.key === "Backspace") accion(S.sel, "del");
+    else if (ev.key === "r" || ev.key === "R") { guardarUndo(); e.rot = (e.rot || 0) + (ev.key === "r" ? 5 : -5); todo(); }
+    else if (ev.key.startsWith("Arrow")) {
+      ev.preventDefault(); guardarUndo();
+      const [mx, my] = { ArrowLeft: [-d, 0], ArrowRight: [d, 0], ArrowUp: [0, d], ArrowDown: [0, -d] }[ev.key];
+      if (e.puntos) e.puntos = e.puntos.map(p => [p[0] + mx, p[1] + my]); else { e.x += mx; e.y += my; }
+      todo();
+    }
+  }
+});
+
+// ------------------------------------------------------------- controls
+for (const k of Object.keys(S.caja)) $(k).addEventListener("change", () => {
+  const v = +$(k).value; if (!(v > 0) && k !== "margen") return;
+  guardarUndo();
+  const vieja = Object.assign({}, S.caja);
+  S.caja[k] = ["Nx", "Ny", "Nz", "margen"].includes(k) ? Math.round(v) : v;
+  if (["Nx", "Ny", "Nz"].includes(k)) S.vox = nuevaVox(S.caja.Nx, S.caja.Ny, S.caja.Nz, S.vox, vieja);
+  sincronizarCaja(); todo();
+});
+$("kSlider").oninput = () => { S.k = +$("kSlider").value; todo(); };
+$("jCorte").oninput = () => { S.jc = +$("jCorte").value; todo(); };
+$("iCorte").oninput = () => { S.ic = +$("iCorte").value; todo(); };
+$("soloHuecos").onchange = dibujar3D; $("planos3d").onchange = dibujar3D;
+$("fisica3d").onchange = todo; $("espejo").onchange = todo;
+$("bUndo").onclick = deshacer; $("bRedo").onclick = rehacer;
+$("nombre").oninput = () => { $("snippet").textContent = `GEOM_MODE="CUSTOM", geom_file="julia/shapes/${$("nombre").value}.toml"`; };
+$("pAdd").onclick = () => {
+  const ch = $("pCh").value;
+  if (!ch || ch === "." || ch === " " || ch === '"' || ch === "\\" || ch === "|") { msg("character not valid for the palette", true); return; }
+  guardarUndo();
+  S.paleta[ch] = { z: zNueva("p"), f: Math.max(0, +$("pF").value), color: S.paleta[ch]?.color || colorNuevo() };
+  S.pincel = ch; pintarPaleta(); todo();
+};
+function msg(t, mal) { $("msg").textContent = t; $("msg").className = mal ? "bad" : "good"; }
+function desdeDatos(d) { guardarUndo(); aplicarDatos(d); sincronizarCaja(); pintarPaleta(); todo(); }
+const servidor = location.protocol.startsWith("http");
+async function listar() {
+  if (!servidor) { $("selCargar").disabled = true; return; }
+  try { const r = await fetch("/shapes"); const L = await r.json();
+    const cat = L.filter(n => n.startsWith("cat_")), mias = L.filter(n => !n.startsWith("cat_"));
+    $("selCargar").innerHTML = `<option value="">load…</option>` +
+      (mias.length ? `<optgroup label="my shapes">${mias.map(n => `<option value="${n}">${n}</option>`).join("")}</optgroup>` : "") +
+      (cat.length ? `<optgroup label="catalogue (templates, box 40×24×6)">${cat.map(n => `<option value="${n}">${n.slice(4)}</option>`).join("")}</optgroup>` : "");
+  } catch (e) {}
+}
+async function cargar(n) {
+  const r = await fetch(`/shape?name=${encodeURIComponent(n)}`); const d = await r.json();
+  if (!r.ok) { msg(d.error, true); return; }
+  const m = d.text.match(/^# editor-json: (.*)$/m);
+  desdeDatos(m ? JSON.parse(m[1]) : d.toml);
+  $("nombre").value = n.startsWith("cat_") ? n.slice(4).toLowerCase() + "_mod" : n;
+  $("selCargar").value = "";
+  msg(n.startsWith("cat_") ? `template ${n.slice(4)} loaded; it will be saved as ${$("nombre").value}` : `loaded ${n}`);
+}
+$("selCargar").onchange = () => { const n = $("selCargar").value; if (n) cargar(n); };
+$("fImport").onchange = async () => {
+  const f = $("fImport").files[0]; if (!f) return;
+  const t = await f.text(); const m = t.match(/^# editor-json: (.*)$/m);
+  if (!m) { msg("that .toml was not written by the editor: open it through the server (python3 julia/editor/server.py)", true); return; }
+  desdeDatos(JSON.parse(m[1])); $("nombre").value = f.name.replace(/\.toml$/, ""); msg(`imported ${f.name}`);
+};
+$("bGuardar").onclick = async () => {
+  const n = $("nombre").value.trim(), t = aToml();
+  if (!/^[A-Za-z0-9_\-]{1,64}$/.test(n)) { msg("name: letters, digits, _ and -", true); return; }
+  if (servidor) {
+    const r = await fetch(`/save?name=${encodeURIComponent(n)}`, { method: "POST", body: t });
+    const d = await r.json();
+    if (!r.ok) { msg(d.error, true); return; }
+    msg(`saved to ${d.path}` + (d.previous ? ` (the previous one is in ${d.previous})` : "")); listar();
+  } else {
+    const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([t], { type: "text/plain" }));
+    a.download = `${n}.toml`; a.click(); msg(`downloaded ${n}.toml (no server)`);
+  }
+};
+window.addEventListener("resize", todo);
+// theme and cell colour, remembered in this browser (if storage is available)
+const guardar = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
+const leer = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
+function ponerTema(t) {
+  if (t === "auto") delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme = t;
+  $("bTema").textContent = { auto: "◐ auto", light: "☀ light", dark: "☾ dark" }[t];
+  guardar("tema", t); ponerColor(leer("colSC")); todo();
+}
+function ponerColor(c) {
+  if (c) document.documentElement.style.setProperty("--sc", c); else document.documentElement.style.removeProperty("--sc");
+  $("colSC").value = c || css("--sc");
+}
+$("bTema").onclick = () => { const s = ["auto", "light", "dark"]; ponerTema(s[(s.indexOf(leer("tema") || "auto") + 1) % 3]); };
+$("colSC").oninput = () => { ponerColor($("colSC").value); guardar("colSC", $("colSC").value); todo(); };
+ponerTema(leer("tema") || "auto");
+document.querySelectorAll("#caras button").forEach(b => b.onclick = () => ponerCara(b.dataset.c));
+document.querySelectorAll(".pestanas button").forEach(b => b.onclick = () => pestana(b.dataset.t));
+document.querySelectorAll("button.ayuda").forEach(b => b.onclick = () => { const d = $(b.dataset.a); d.hidden = !d.hidden; });
+$("cDesde").onchange = () => {
+  const d = Math.max(0, Math.min(nEje(S.cara) - 1, Math.round(+$("cDesde").value))), idx = planoDe(S.cara, d);
+  if (VISTA_CARA[S.cara] === "top") S.k = idx; else if (VISTA_CARA[S.cara] === "xz") S.jc = idx; else S.ic = idx;
+  sincronizarCaja(); todo();
+};
+$("cProf").onchange = todo; $("cModo").onchange = todo;
+$("cTodo").onclick = () => { $("cDesde").value = 0; $("cProf").value = nEje(S.cara); $("cDesde").onchange(); };
+$("bQuit").onclick = async () => {
+  if (!servidor) { msg("no server: this page was opened as a file", true); return; }
+  try { await fetch("/quit"); } catch (e) {}
+  msg("server closed: saving no longer works and F5 will not reload; reopen it with the e key of the terminal menu or python3 julia/editor/server.py, then F5");
+  $("bGuardar").disabled = true; $("bQuit").disabled = true;
+};
+function ayudaGradiente() {
+  $("gAyuda").textContent = $("gModo").value === "f"
+    ? "Drag a rectangle on the top view: f goes from f0 (where you start) to f1 along the longer side, in n bands, through the from/depth of the top or bottom face."
+    : `Pick the gradient tool and drag a rectangle on the top view: a staircase of n steps; the first removes one plane from the ${$("gModo").value}, the last the whole thickness (f = f1 there).`;
+}
+$("gModo").onchange = ayudaGradiente; ayudaGradiente();
+S.cara = "top"; S.k = S.caja.Nz - 1; $("cProf").value = S.caja.Nz;
+sincronizarCaja(); pintarTools(); pintarPaleta(); botonesUndo(); listar(); todo();
+// ?load=<name> opens that shape at start (used by the terminal menu)
+const pedida = new URLSearchParams(location.search).get("load");
+// keeps the local server alive while this tab is open (it stops after 30 min idle)
+if (servidor) setInterval(() => fetch("/ping").catch(() => {}), 5 * 60 * 1000);
+
+if (pedida && servidor) cargar(pedida);
+["dZ", "dZ0", "dZ1"].forEach(id => $(id).addEventListener("input", infoZFigura));
+</script>
+</body>
+</html>

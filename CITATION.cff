@@ -1,0 +1,43 @@
+cff-version: 1.2.0
+title: "juliaTDGL: a three-dimensional two-band time-dependent Ginzburg-Landau solver"
+message: >
+  If you use this software, please cite it using the metadata below.
+type: software
+authors:
+  - family-names: Robles Calderón
+    given-names: Jorge Alfredo
+    alias: georgeotjg
+    affiliation: Universidad Nacional de Colombia
+    orcid: "https://orcid.org/0009-0007-0557-0263"
+abstract: >
+  Three-dimensional two-band time-dependent Ginzburg-Landau solver in Julia for the
+  geometric superconducting diode effect in two-gap superconductors (MgB2 as target).
+  Link variables, self-consistent vector potential, optional scalar potential by Coulomb
+  projection, Josephson voltmeter with a crossing-count verdict rule. Optional terms, all off
+  by default, add interband drag, a temperature field with Joule heating, a diffused gauge
+  residual and a bath temperature.
+keywords:
+  - time-dependent Ginzburg-Landau
+  - superconducting diode effect
+  - two-band superconductivity
+  - MgB2
+  - vortex dynamics
+  - Julia
+license: MIT
+version: 1.0.0
+date-released: "2026-10-09"
+repository-code: "https://github.com/georgeotjg/juliaTDGL"
+preferred-citation:
+  type: article
+  title: "Silent failure modes in three-dimensional two-band time-dependent Ginzburg-Landau simulations of geometric superconducting diodes"
+  authors:
+    - family-names: Robles Calderón
+      given-names: Jorge Alfredo
+      orcid: "https://orcid.org/0009-0007-0557-0263"
+      affiliation: Universidad Nacional de Colombia
+  year: 2026
+  month: 10
+  publisher:
+    name: Zenodo
+  doi: "10.5281/zenodo.23163207"
+  url: "https://zenodo.org/records/23163207"

@@ -1,0 +1,2 @@
+fecha,geom,tag,axis,mesh,kappa_s,H,gamma12,m_ratio,a2n,T_red,z_mode,defect_model,x_shift,y_shift,J_max,dt,Ic_plus,Ic_minus,eta_pct,wall_min
+2026-08-31 22:19:55,WEDGE,transporte,x,20x14x4,2.000,0.500,0.0010,1.003,0.590,0.000,through,soft,0.000,0.000,1.600,4.9500e-03,NaN,NaN,NaN,1.6

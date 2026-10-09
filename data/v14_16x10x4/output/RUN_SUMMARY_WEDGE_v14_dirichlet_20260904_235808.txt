@@ -1,0 +1,60 @@
+==============================================================
+ TDGL-SDE-MgB2 — port a Julia de v13.3 — RESUMEN DE CORRIDA
+==============================================================
+[RUN]
+  fecha        : 2026-09-04 23:58:08
+  geometria    : WEDGE
+  tag          : v14_dirichlet
+  tiempo pared : 0.0 min (0.00 h)
+  julia        : 1.12.7
+
+[RESULTADO]
+  Ic+  = NaN J0
+  Ic-  = NaN J0
+  eta  = NaN %
+  (recordar protocolo: margen limpio + _REF invierte signo
+   conservando |Ic| + robustez x_shift/y_shift, ANTES de
+   reportar cualquier eta como fisico)
+
+[MALLA]
+  Nx x Ny x Nz : 16 x 10 x 4 (SC) | dx=dy=dz=0.500 xi
+  muestra      : 8.0 x 5.0 x 2.0 xi
+
+[FISICA]
+  kappa_s=2.00 | kappa_p=2.00 | T_red=0.000
+  xi_ratio: pedido=1.3 | REALIZADO=1.300 | Hc2_pi/Hc2_sigma=0.5917
+  a2n=0.590 | m_ratio=1.003 | gamma12=0.0010
+  gamma_ratio = 1.0000  =>  xi_pi/xi_sigma INTEGRADO = 1.3000 (independiente de Gamma_r)
+  (G6: aqui Gamma_r divide los TRES terminos de la banda pi, luego es una
+   tasa de relajacion y no mueve la estatica. Hasta v13.2 dividia solo la
+   condensacion y entonces daba xi_pi/xi_sigma=1.3000 y Hc2_pi=0.5917.)
+  H=0.500 Hc2 | J||x | defect_model=soft | z_mode=through
+  INYECCION: inject_mode=selffield | inject_gain=1
+  VOLTAJE: relacion de Josephson, V = d(fase gauge-invariante)/dt
+
+[NUMERICA]
+  dt=4.9500e-03 t_GL (limita dt3)
+  eps_conv=1.0e-14 (semilla J=0: 1.0e-14) | iter_min=120 | lMax=40 | mMax=120 | V_thr=1.0e-04
+  modo numerico: Strict (glibc hypot/sincos, bit a bit vs Octave)
+  hilos        : no
+
+[v14]
+  use_phi=true | phi_bc=dirichlet | phi_metodo=separable | f22_supercorriente=true
+  V_Phi depende del gauge (factor ~15 entre Dirichlet y
+  Neumann). El voltaje fisico es V_Josephson, invariante.
+  Ver documentacion/02_V14.md §4.
+
+[GEOMETRIA] 1 defecto(s)
+  #01 wedge     xc=10 yc=2 half=3 depth=4 dir=1 zlo=2 zhi=5 f=0.0
+
+[CONVERGENCIA J+]  (iters = ciclos m; res = residuo final;
+                    '*' = agoto mMax sin bajar de eps => NO convergido)
+             J              V    iters     res_Psi1     res_Psi2   conv
+       +0.0000    3.07379e-05      121    2.331e-07    7.026e-07      *
+       +0.0800    1.31217e-03      121    6.666e-05    1.202e-04      *
+
+[CONVERGENCIA J-]  (iters = ciclos m; res = residuo final;
+                    '*' = agoto mMax sin bajar de eps => NO convergido)
+             J              V    iters     res_Psi1     res_Psi2   conv
+       -0.0000    3.07379e-05      121    2.331e-07    7.026e-07      *
+       -0.0800    9.47689e-05      121    1.901e-06    3.528e-06      *

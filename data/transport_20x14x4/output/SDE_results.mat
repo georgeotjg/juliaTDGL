@@ -1,0 +1,995 @@
+# Created by Octave 11.3.0, Mon Aug 31 22:19:55 2026 -05
+# name: SDE
+# type: scalar struct
+# ndims: 2
+ 1 1
+# length: 41
+# name: cfg
+# type: scalar struct
+# ndims: 2
+ 1 1
+# length: 85
+# name: Nx_sc
+# type: scalar
+20
+
+
+# name: Ny_sc
+# type: scalar
+14
+
+
+# name: Nz_sc
+# type: scalar
+4
+
+
+# name: dx
+# type: scalar
+0.5
+
+
+# name: dy
+# type: scalar
+0.5
+
+
+# name: dz
+# type: scalar
+0.5
+
+
+# name: buf
+# type: scalar
+1
+
+
+# name: kappa_s
+# type: scalar
+2
+
+
+# name: kappa_p
+# type: scalar
+2
+
+
+# name: T_red
+# type: scalar
+0
+
+
+# name: beta1
+# type: scalar
+1
+
+
+# name: beta2
+# type: scalar
+1
+
+
+# name: a2n
+# type: scalar
+0.58999999999999997
+
+
+# name: m_ratio
+# type: scalar
+1.0029084344599337
+
+
+# name: xi_ratio
+# type: scalar
+1.3
+
+
+# name: gamma12
+# type: scalar
+0.001
+
+
+# name: kappa_list
+# type: matrix
+# rows: 0
+# columns: 0
+
+
+# name: H_const
+# type: scalar
+0.5
+
+
+# name: J_max
+# type: scalar
+1.6000000000000001
+
+
+# name: J_list
+# type: scalar
+0.10000000000000001
+
+
+# name: dJ_fine
+# type: scalar
+0.0050000000000000001
+
+
+# name: dJ_coarse
+# type: scalar
+0.02
+
+
+# name: J_tr
+# type: scalar
+0.40000000000000002
+
+
+# name: current_axis
+# type: sq_string
+# elements: 1
+# length: 1
+x
+
+
+# name: inject_mode
+# type: sq_string
+# elements: 1
+# length: 9
+selffield
+
+
+# name: inject_gain
+# type: scalar
+1
+
+
+# name: h_tilt
+# type: scalar
+0
+
+
+# name: V_threshold
+# type: scalar
+0.0001
+
+
+# name: eps_conv
+# type: scalar
+1e-14
+
+
+# name: eps_conv_seed
+# type: scalar
+1e-14
+
+
+# name: iter_min
+# type: scalar
+400
+
+
+# name: lMax
+# type: scalar
+40
+
+
+# name: mMax
+# type: scalar
+400
+
+
+# name: t_min_GL
+# type: scalar
+0
+
+
+# name: delta_v
+# type: scalar
+6
+
+
+# name: fix_M_window
+# type: bool
+0
+
+
+# name: strict_two_rung
+# type: bool
+0
+
+
+# name: inject_standoff
+# type: sq_string
+# elements: 1
+# length: 6
+domain
+
+
+# name: explicit_h_bc
+# type: bool
+0
+
+
+# name: tie_seed_tolerance
+# type: bool
+0
+
+
+# name: gamma_ratio
+# type: scalar
+1.3
+
+
+# name: vtk_every
+# type: scalar
+0
+
+
+# name: v13_diag
+# type: bool
+1
+
+
+# name: dump_split
+# type: bool
+0
+
+
+# name: dump_band_lines
+# type: bool
+0
+
+
+# name: use_Vconv
+# type: bool
+0
+
+
+# name: V_win
+# type: scalar
+40
+
+
+# name: V_win_min_res
+# type: scalar
+400
+
+
+# name: t_min_GL_res
+# type: scalar
+0
+
+
+# name: tol_V
+# type: scalar
+0.002
+
+
+# name: floor_k
+# type: scalar
+160
+
+
+# name: floor_mult
+# type: scalar
+5
+
+
+# name: tol_res
+# type: scalar
+0.14999999999999999
+
+
+# name: eps_relax
+# type: scalar
+0.001
+
+
+# name: vtrace_every
+# type: scalar
+0
+
+
+# name: vtrace_Jmin
+# type: scalar
+0
+
+
+# name: run_mode
+# type: sq_string
+# elements: 1
+# length: 2
+VI
+
+
+# name: H_list
+# type: double_range
+# base, limit, increment
+0 1 0.02
+
+
+# name: MH_updown
+# type: bool
+0
+
+
+# name: defect_model
+# type: sq_string
+# elements: 1
+# length: 4
+soft
+
+
+# name: wedge_depth
+# type: scalar
+0.34999999999999998
+
+
+# name: wedge_half
+# type: scalar
+0.20000000000000001
+
+
+# name: wedge_depth2
+# type: scalar
+0
+
+
+# name: GEOM_MODE
+# type: sq_string
+# elements: 1
+# length: 5
+WEDGE
+
+
+# name: fgrad_flo
+# type: scalar
+1
+
+
+# name: fgrad_fhi
+# type: scalar
+1.5
+
+
+# name: fgrad_nper
+# type: scalar
+2
+
+
+# name: fgrad_dir
+# type: scalar
+1
+
+
+# name: inj_margin
+# type: scalar
+6
+
+
+# name: strict_margin
+# type: bool
+1
+
+
+# name: x_shift
+# type: scalar
+0
+
+
+# name: y_shift
+# type: scalar
+0
+
+
+# name: z_mode
+# type: sq_string
+# elements: 1
+# length: 7
+through
+
+
+# name: use_parallel
+# type: bool
+0
+
+
+# name: early_exit
+# type: bool
+0
+
+
+# name: snap_every
+# type: scalar
+0
+
+
+# name: restart_pos
+# type: bool
+0
+
+
+# name: restart_neg
+# type: bool
+0
+
+
+# name: selftest
+# type: bool
+0
+
+
+# name: make_figs
+# type: bool
+0
+
+
+# name: force_long
+# type: bool
+0
+
+
+# name: preflight
+# type: bool
+0
+
+
+# name: sec_per_step
+# type: scalar
+0.035000000000000003
+
+
+# name: run_tag
+# type: sq_string
+# elements: 1
+# length: 10
+transporte
+
+
+# name: out_dir
+# type: sq_string
+# elements: 1
+# length: 6
+otrans
+
+
+
+
+# name: Ic_plus
+# type: scalar
+NaN
+
+
+# name: Ic_minus
+# type: scalar
+NaN
+
+
+# name: eta
+# type: scalar
+NaN
+
+
+# name: Jp
+# type: matrix
+# rows: 2
+# columns: 1
+ 0
+ 0.10000000000000001
+
+
+# name: Vp
+# type: matrix
+# rows: 2
+# columns: 1
+ -2.9207587318062334e-05
+ 0.15101792142198844
+
+
+# name: Jn
+# type: matrix
+# rows: 2
+# columns: 1
+ -0
+ -0.10000000000000001
+
+
+# name: Vn
+# type: matrix
+# rows: 2
+# columns: 1
+ -2.9207587318062334e-05
+ 5.3323790608558375e-05
+
+
+# name: defects
+# type: scalar struct
+# ndims: 2
+ 1 1
+# length: 24
+# name: type
+# type: sq_string
+# elements: 1
+# length: 5
+wedge
+
+
+# name: xc
+# type: scalar
+12
+
+
+# name: yc
+# type: scalar
+2
+
+
+# name: zc
+# type: null_matrix
+# rows: 0
+# columns: 0
+
+
+# name: R
+# type: null_matrix
+# rows: 0
+# columns: 0
+
+
+# name: n
+# type: null_matrix
+# rows: 0
+# columns: 0
+
+
+# name: phi
+# type: null_matrix
+# rows: 0
+# columns: 0
+
+
+# name: hx
+# type: null_matrix
+# rows: 0
+# columns: 0
+
+
+# name: hy
+# type: null_matrix
+# rows: 0
+# columns: 0
+
+
+# name: hz
+# type: null_matrix
+# rows: 0
+# columns: 0
+
+
+# name: half
+# type: scalar
+4
+
+
+# name: depth
+# type: scalar
+5
+
+
+# name: f
+# type: scalar
+0
+
+
+# name: xa
+# type: null_matrix
+# rows: 0
+# columns: 0
+
+
+# name: xb
+# type: null_matrix
+# rows: 0
+# columns: 0
+
+
+# name: ya
+# type: null_matrix
+# rows: 0
+# columns: 0
+
+
+# name: yb
+# type: null_matrix
+# rows: 0
+# columns: 0
+
+
+# name: flo
+# type: null_matrix
+# rows: 0
+# columns: 0
+
+
+# name: fhi
+# type: null_matrix
+# rows: 0
+# columns: 0
+
+
+# name: nper
+# type: null_matrix
+# rows: 0
+# columns: 0
+
+
+# name: dir
+# type: scalar
+1
+
+
+# name: zmode
+# type: null_matrix
+# rows: 0
+# columns: 0
+
+
+# name: zlo
+# type: scalar
+2
+
+
+# name: zhi
+# type: scalar
+5
+
+
+
+
+# name: wall_s
+# type: scalar
+94.992702960968018
+
+
+# name: dt
+# type: scalar
+0.0049499999999999995
+
+
+# name: sym
+# type: scalar struct
+# ndims: 2
+ 1 1
+# length: 7
+# name: J
+# type: scalar
+0.10000000000000001
+
+
+# name: Vp
+# type: scalar
+0.1510471290093065
+
+
+# name: Vn
+# type: scalar
+2.4116203290496041e-05
+
+
+# name: rel
+# type: scalar
+1.9993614614546522
+
+
+# name: relmed
+# type: scalar
+1.9993614614546522
+
+
+# name: relmax
+# type: scalar
+1.9993614614546522
+
+
+# name: J_atmax
+# type: scalar
+0.10000000000000001
+
+
+
+
+# name: M_pos
+# type: matrix
+# rows: 2
+# columns: 1
+ -0.16359981017275366
+ -0.14684245677699559
+
+
+# name: Nv1_pos
+# type: matrix
+# rows: 2
+# columns: 1
+ 1
+ 1
+
+
+# name: Nv2_pos
+# type: matrix
+# rows: 2
+# columns: 1
+ 1
+ 1
+
+
+# name: cflag_pos
+# type: sq_string
+# elements: 2
+# length: 1
+*
+# length: 1
+*
+
+
+# name: cflag_neg
+# type: sq_string
+# elements: 2
+# length: 1
+*
+# length: 1
+*
+
+
+# name: vtrace_pos
+# type: struct
+# ndims: 2
+ 0 0
+# length: 5
+# name: J
+# type: cell
+# rows: 0
+# columns: 0
+
+
+# name: V
+# type: cell
+# rows: 0
+# columns: 0
+
+
+# name: T
+# type: cell
+# rows: 0
+# columns: 0
+
+
+# name: dt_cyc
+# type: cell
+# rows: 0
+# columns: 0
+
+
+# name: conv
+# type: cell
+# rows: 0
+# columns: 0
+
+
+
+
+# name: vtrace_neg
+# type: struct
+# ndims: 2
+ 0 0
+# length: 5
+# name: J
+# type: cell
+# rows: 0
+# columns: 0
+
+
+# name: V
+# type: cell
+# rows: 0
+# columns: 0
+
+
+# name: T
+# type: cell
+# rows: 0
+# columns: 0
+
+
+# name: dt_cyc
+# type: cell
+# rows: 0
+# columns: 0
+
+
+# name: conv
+# type: cell
+# rows: 0
+# columns: 0
+
+
+
+
+# name: ps1_pos
+# type: matrix
+# rows: 2
+# columns: 1
+ 0.7862951443496724
+ 0.76713258423909059
+
+
+# name: ps2_pos
+# type: matrix
+# rows: 2
+# columns: 1
+ 0.41386574476876509
+ 0.38197433952058324
+
+
+# name: ps1_neg
+# type: matrix
+# rows: 2
+# columns: 1
+ 0.7862951443496724
+ 0.79476456775310855
+
+
+# name: ps2_neg
+# type: matrix
+# rows: 2
+# columns: 1
+ 0.41386574476876509
+ 0.42020558755087173
+
+
+# name: rhos_pos
+# type: matrix
+# rows: 2
+# columns: 1
+ 1.198960678458608
+ 1.1479991981750641
+
+
+# name: rhos_neg
+# type: matrix
+# rows: 2
+# columns: 1
+ 1.198960678458608
+ 1.2137515591000829
+
+
+# name: lamef_pos
+# type: matrix
+# rows: 2
+# columns: 1
+ 1.8265330109857321
+ 1.8666341342453376
+
+
+# name: lamef_neg
+# type: matrix
+# rows: 2
+# columns: 1
+ 1.8265330109857321
+ 1.8153697536411602
+
+
+# name: rpi_pos
+# type: matrix
+# rows: 2
+# columns: 1
+ 0.52482269167545526
+ 0.4964808193015951
+
+
+# name: rpi_neg
+# type: matrix
+# rows: 2
+# columns: 1
+ 0.52482269167545526
+ 0.52718378290504186
+
+
+# name: Itot_pos
+# type: matrix
+# rows: 2
+# columns: 1
+ 0
+ 1.0714285714285721
+
+
+# name: Itot_neg
+# type: matrix
+# rows: 2
+# columns: 1
+ 0
+ 1.071428571428571
+
+
+# name: Isam_pos
+# type: matrix
+# rows: 2
+# columns: 1
+ 0
+ 0.99999999999999911
+
+
+# name: Isam_neg
+# type: matrix
+# rows: 2
+# columns: 1
+ 0
+ 1.0000000000000002
+
+
+# name: nslipw_pos
+# type: matrix
+# rows: 2
+# columns: 1
+ 3.2150717932371473e-05
+ 0.2098338930416333
+
+
+# name: nslipw_neg
+# type: matrix
+# rows: 2
+# columns: 1
+ 3.2150717932371473e-05
+ 6.4564173213225054e-05
+
+
+# name: thmax_pos
+# type: matrix
+# rows: 2
+# columns: 1
+ 14.707004233405394
+ 28.965526619447758
+
+
+# name: thmax_neg
+# type: matrix
+# rows: 2
+# columns: 1
+ 14.707004233405394
+ 29.068784684475187
+
+
+# name: dphcyc_pos
+# type: matrix
+# rows: 2
+# columns: 1
+ 5.7831022889763414e-06
+ 0.02990154844155371
+
+
+# name: dphcyc_neg
+# type: matrix
+# rows: 2
+# columns: 1
+ 5.7831022889763414e-06
+ 1.0558110540494557e-05
+
+
+# name: nslip_pos
+# type: matrix
+# rows: 2
+# columns: 1
+ 37.425171575707985
+ 86.127508925694769
+
+
+# name: nslip_neg
+# type: matrix
+# rows: 2
+# columns: 1
+ 37.425171575707985
+ 15.400537590294773
+
+
+
+

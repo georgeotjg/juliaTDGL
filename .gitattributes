@@ -1,0 +1,5 @@
+# The language statistics of GitHub count the solver, not the reference Octave
+# implementation nor the stored states.
+octave/** linguist-vendored
+data/** linguist-vendored
+docs/** linguist-documentation

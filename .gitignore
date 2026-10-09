@@ -1,0 +1,35 @@
+# Simulation output: never in the public repository
+runs/
+**/runs/
+*.mat
+# ...except the reference states used by the acceptance tests
+!data/**/*.mat
+*.vtk
+*.pid
+STOP.txt
+# Manuscripts are kept out of the code repository for now
+articulos*/
+articles/
+papers/
+paper/
+# Shapes replaced in the editor are moved here, never deleted
+trash_/
+# Julia
+*.jl.cov
+*.jl.*.cov
+*.jl.mem
+# LaTeX build files
+*.aux
+*.log
+*.out
+*.toc
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+*.blg
+# Editors and OS
+__pycache__/
+*.pyc
+*~
+*.swp
+.DS_Store
