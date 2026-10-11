@@ -4,6 +4,8 @@
   tdgl_tui.py              interactive (live runs; a = all)
   tdgl_tui.py --once       print the table once
   tdgl_tui.py RUNDIR       details of one run directory
+  tdgl_tui.py --add-dir [PATH]   watch a folder of runs from now on (default: the current one)
+  tdgl_tui.py --rm-dir PATH      stop watching it;  --dirs lists them
 """
 from __future__ import annotations
 
@@ -29,6 +31,62 @@ ROOTS = [BASE / "julia" / "runs"] + sorted(
     d for patron in ("*/runs", "*/*/runs") for d in BASE.glob(patron)
     if d.is_dir() and d != BASE / "julia" / "runs"
     and not any(x.startswith((".", "trash_")) for x in d.relative_to(BASE).parts))
+# Extra folders to watch, read-only, outside the project.  Two sources, in this order:
+#   TDGL_TUI_EXTRA=/path/a:/path/b;
+#   CARPETAS, one path per line, edited with --add-dir / --rm-dir (see main).
+# Their runs are listed like the article runs, and Julia processes started from
+# scripts under them show as live.  A Julia process whose script loads TDGL shows as
+# live wherever it is, listed or not (_julia_externos).
+CARPETAS = Path(os.environ.get("XDG_CONFIG_HOME", "~/.config")).expanduser() / "tdgl_tui" / "carpetas.txt"
+
+
+def _carpetas_guardadas() -> list[str]:
+    try:
+        lineas = CARPETAS.read_text().splitlines()
+    except OSError:
+        return []
+    return [x.strip() for x in lineas if x.strip() and not x.lstrip().startswith("#")]
+
+
+ROOTS_PROYECTO = list(ROOTS)
+EXTRA: list[Path] = []
+
+
+def _recargar_carpetas() -> None:
+    """Recompute EXTRA and ROOTS in place (at start, and after a change from the menu)."""
+    extra = os.environ.get("TDGL_TUI_EXTRA", "").split(":") + _carpetas_guardadas()
+    extra = list(dict.fromkeys(Path(p).expanduser().resolve() for p in extra if p))
+    EXTRA[:] = [d for d in extra if d.is_dir()]
+    ROOTS[:] = ROOTS_PROYECTO + [d for d in EXTRA if d not in ROOTS_PROYECTO]
+
+
+def _ruta_pegada(texto: str) -> Path:
+    """A path typed, pasted or dragged from Dolphin ('...', file:///..., ~/...)."""
+    texto = texto.strip().strip("'\"")
+    if texto.startswith("file://"):
+        from urllib.parse import unquote
+        texto = unquote(texto[len("file://"):])
+    return Path(texto or ".").expanduser().resolve()
+
+
+def _cambiar_carpeta(d: Path, quitar: bool) -> str:
+    """Add or remove d in CARPETAS; returns the message for the user."""
+    guardadas = [Path(x).expanduser().resolve() for x in _carpetas_guardadas()]
+    if not quitar and not d.is_dir():
+        return f"not a folder: {d}"
+    if quitar and d not in guardadas:
+        return f"not in the list: {d}"
+    if quitar:
+        guardadas.remove(d)
+    elif d not in guardadas:
+        guardadas.append(d)
+    CARPETAS.parent.mkdir(parents=True, exist_ok=True)
+    CARPETAS.write_text("".join(f"{x}\n" for x in guardadas))
+    _recargar_carpetas()
+    return ("no longer watching " if quitar else "watching ") + str(d)
+
+
+_recargar_carpetas()
 # One solver, julia/: the two-band kernel plus optional terms, all off by default.
 JULIA = BASE / "julia"
 LANZAR = JULIA / "scripts" / "pin_cpu.sh"
@@ -129,6 +187,16 @@ def _ps(pid: str) -> tuple[str, str]:
     return "—", "—"
 
 
+def _carga_tdgl(script: Path) -> bool:
+    """True when the script loads the TDGL package (using/import in its first 16 kB)."""
+    try:
+        with open(script, "rb") as fh:
+            cabeza = fh.read(16384).decode(errors="replace")
+    except OSError:
+        return False
+    return re.search(r"^\s*(using|import)\s+TDGL\b", cabeza, flags=re.M) is not None
+
+
 def _julia_externos(conocidos: set[str]) -> list[dict]:
     """Julia processes running a .jl of this project that the menu did not launch
     (campaign or verification scripts): one row each, so they show as live."""
@@ -152,7 +220,10 @@ def _julia_externos(conocidos: set[str]) -> list[dict]:
         except OSError:
             cwd = BASE
         script = (cwd / jl).resolve() if not Path(jl).is_absolute() else Path(jl)
-        if BASE not in script.parents or script.parent.name == "test":
+        if script.parent.name == "test":
+            continue
+        if BASE not in script.parents and not any(d in script.parents for d in EXTRA) \
+                and not _carga_tdgl(script):
             continue
         rundir = script.parent
         et, pc = _ps(pid)
@@ -179,7 +250,12 @@ def _julia_externos(conocidos: set[str]) -> list[dict]:
                 if hits:
                     last, conv = f"J{hits[-1][1]}", hits[-1][2]
         extra = " ".join(a for a in args[args.index(jl) + 1:])
-        tag = str(rundir.relative_to(BASE)) + (f" [{extra}]" if extra else "")
+        base = BASE if BASE in rundir.parents else next((d for d in EXTRA if d in rundir.parents), None)
+        if base is None:                       # outside every watched folder: path from ~
+            sitio = str(rundir).replace(str(Path.home()), "~", 1)
+        else:
+            sitio = str(rundir.relative_to(base.parent if base != BASE else BASE))
+        tag = sitio + (f" [{extra}]" if extra else "")
         filas.append({
             "tag": tag + (f" · case {caso}" if caso > 1 else ""),
             "on": True, "etime": et, "pcpu": pc, "last": last, "age_min": None,
@@ -1041,21 +1117,26 @@ PARAMS = [
     ("t", "time per J", "t_GL", "minimum if the point is static / if it flows (voltage window)", "tiempos"),
     ("z", "defect in z", "", "through = full thickness · half = lower half · buried = inside", "z"),
     ("cpus", "cores", "", "CPUs to pin the run to (e.g. 0,1); one thread per run", "texto"),
+    ("scheme", "scheme", "", "prod = fast (1.1) · legacy = explicit, as in 1.0.0", "scheme"),
 ]
 
 PRESETS = [
     ("quick test", "κ=2, box 20×14×4, one current; minutes: check that it runs",
      {"kappa": "2", "H": "0.5", "xi": "1.3", "g12": "0.001", "T": "0", "J": "0.10,0.10,0.10",
-      "malla": "20x14x4,0.5", "t": "20,40", "z": "through", "cpus": "8,9"}),
-    ("production box, κ=2", "40×24×6, vortex flow; hours",
+      "malla": "20x14x4,0.5", "t": "20,40", "z": "through", "cpus": "8,9",
+      "scheme": "prod"}),
+    ("production box, κ=2", "40×24×6, vortex flow; minutes per current (prod)",
      {"kappa": "2", "H": "0.03", "xi": "4", "g12": "0.001", "T": "0", "J": "0.40,0.80,0.40",
-      "malla": "40x24x6,0.5", "t": "20,200", "z": "through", "cpus": "8,9"}),
-    ("production box, κ=25", "40×24×6, onset near J≈0.7; hours to a day",
+      "malla": "40x24x6,0.5", "t": "20,200", "z": "through", "cpus": "8,9",
+      "scheme": "prod"}),
+    ("production box, κ=25", "40×24×6, onset near J≈0.7; minutes per current (prod; hours with legacy)",
      {"kappa": "25", "H": "0.03", "xi": "4", "g12": "0.001", "T": "0", "J": "0.68,0.76,0.02",
-      "malla": "40x24x6,0.5", "t": "200,1200", "z": "through", "cpus": "0,1"}),
+      "malla": "40x24x6,0.5", "t": "200,1200", "z": "through", "cpus": "0,1",
+      "scheme": "prod"}),
     ("custom", "your own mesh, κ, field, currents and times (asked in step 3)",
      {"kappa": "2", "H": "0.03", "xi": "4", "g12": "0.001", "T": "0", "J": "0.40,0.80,0.40",
-      "malla": "40x24x6,0.5", "t": "20,200", "z": "through", "cpus": "8,9"}),
+      "malla": "40x24x6,0.5", "t": "20,200", "z": "through", "cpus": "8,9",
+      "scheme": "prod"}),
 ]
 
 
@@ -1100,6 +1181,10 @@ def _valida(clave: str, v: str) -> str:
         if a <= 0 or b < a:
             raise ValueError("static > 0 and flowing >= static")
         return f"{a:g},{b:g}"
+    if tipo == "scheme":
+        if v not in ("prod", "legacy"):
+            raise ValueError("prod or legacy")
+        return v
     if tipo == "z":
         if v not in ("through", "half", "buried"):
             raise ValueError("through, half or buried")
@@ -1127,7 +1212,8 @@ def _tabla_parametros(par: dict) -> bool:
         lin = []
         for i, (k, nombre, unid, que, _) in enumerate(PARAMS, 1):
             u = f" [{unid}]" if unid else ""
-            lin.append(f"{_K(str(i))} {nombre + u:<20} {_col('1', _mostrar_valor(k, par[k])):<28}  {_dim(que)}")
+            sp = " " * (len(str(len(PARAMS))) - len(str(i)) + 1)     # [1] and [11] line up
+            lin.append(f"{_K(str(i))}{sp}{nombre + u:<20} {_col('1', _mostrar_valor(k, par[k])):<28}  {_dim(que)}")
         lin.append("")
         lin.append(_dim("number = change that parameter  ·  Enter = continue  ·  b = previous step"))
         caja("parameters", lin, color="36")
@@ -1286,6 +1372,11 @@ def _w_resumen(s: dict) -> str:
         lin.append(f"{nombre:<12}{_mostrar_valor(k, par[k])}" + (f"  {unid}" if unid and k not in ('malla', 'J') else ""))
     lin += [f"Φ           {_phi_texto(par.get('phi', 'off'))}",
             f"term        {_term_texto(s['term'])}", "writes to   julia/runs/"]
+    t = s["term"] or {}
+    if par.get("scheme") == "prod" and (par.get("phi", "off") != "off" or t.get("qss")):
+        lin.append(_dim("prod has no scalar potential; with Φ or Q this run uses legacy (1.0.0)"))
+    elif par.get("scheme") == "prod" and (float(par.get("T", 0) or 0) > 0 or t.get("drag") or t.get("calor")):
+        lin.append(_dim("with heat, drag or T the faster scheme is used: prod at large κ, legacy otherwise"))
     caja("about to launch", lin, color="32")
     k = _ask("launch? y/N", "N")
     if k is None:
@@ -1327,6 +1418,7 @@ def _spawn(geom: str, par: dict, *, rotate: str = "", forma: str = "", terminos:
         "--xi-ratio", str(par["xi"]), "--gamma12", str(par["g12"]), "--J", js,
         "--Nx", nx, "--Ny", ny, "--Nz", nz, "--dx", dx,
         "--tmin", tmin, "--tminres", tres, "--z", par["z"], "--cpus", str(par["cpus"]),
+        "--scheme", par.get("scheme", "legacy"),
     ]
     if mMax:
         cmd += ["--mMax", str(mMax)]
@@ -1377,6 +1469,7 @@ def _par_de_job(job: dict) -> dict:
         "malla": f"{job.get('Nx', 20)}x{job.get('Ny', 14)}x{job.get('Nz', 4)},{job.get('dx', 0.5)}",
         "t": f"{job.get('t_min_GL', 20)},{job.get('t_min_GL_res', 40)}",
         "z": str(job.get("z_mode", "through")), "cpus": str(job.get("cpus", "8,9")),
+        "scheme": str(job.get("scheme", "legacy")),
         "J_lista": ",".join(f"{float(x):g}" for x in jl),
         "phi": (f"tf,{job.get('lambda_TF', 2)}" if job.get("phi") == "tf"
                 else str(job.get("phi", "off")) if not job.get("qss") else "off"),
@@ -1495,6 +1588,37 @@ def _figuras(r: dict) -> None:
     _volver()
 
 
+def _carpetas_menu() -> None:
+    """Watched folders: add one (typed, pasted or dragged from Dolphin) or remove one."""
+    while True:
+        os.system("clear")
+        guardadas = [Path(x).expanduser().resolve() for x in _carpetas_guardadas()]
+        lineas = [_dim("project (always): ") + ", ".join(str(d.relative_to(BASE)) for d in ROOTS_PROYECTO)]
+        for d in EXTRA:
+            if d not in guardadas:
+                lineas.append(_dim("fixed: ") + str(d))
+        for i, d in enumerate(guardadas, 1):
+            lineas.append(f"{_K(str(i))} {d}" + ("" if d.is_dir() else _dim("  (missing)")))
+        lineas += ["", _dim("A Julia script that loads TDGL shows as live from any folder, listed or not."),
+                   _dim("Listing a folder adds its finished runs to the table and to the results.")]
+        caja("watched folders", lineas, color="36")
+        print(f"{_K('+')} add: paste or drag the folder here (Enter alone = the current one)   "
+              f"{_K('-')} number: remove   Enter: back")
+        r = input("> ").strip()
+        if not r:
+            return
+        if r.startswith("-"):
+            n = r[1:].strip()
+            if n.isdigit() and 1 <= int(n) <= len(guardadas):
+                print(_cambiar_carpeta(guardadas[int(n) - 1], quitar=True))
+                time.sleep(0.8)
+            continue
+        if r.startswith("+"):
+            r = r[1:].strip() or input("folder > ").strip()
+        print(_cambiar_carpeta(_ruta_pegada(r), quitar=False))
+        time.sleep(0.8)
+
+
 def _accion(key: str, rows: list[dict], show: list[dict], only_on: bool) -> None:
     """One key of the main screen. Runs inside _seguro."""
     if key in ("g", "G"):
@@ -1521,6 +1645,8 @@ def _accion(key: str, rows: list[dict], show: list[dict], only_on: bool) -> None
         r and _figuras(r)
     elif key in ("v", "V"):
         _resultados(show if show else collect())
+    elif key in ("c", "C"):
+        _carpetas_menu()
     elif key.isdigit() and 1 <= int(key) <= len(show):
         detail(show[int(key) - 1])
 
@@ -1543,7 +1669,7 @@ def interactive() -> None:
             f"{_K('l')} launch   {_K('s')} stop   {_K('u')} resume   {_K('d')} to trash_   "
             + _dim("number = details"),
             f"{_K('a')} live/all   {_K('r')} refresh   {_K('o')} folder   {_K('f')} figures   {_K('v')} results",
-            f"{_K('g')} geometries and shape editor   {_K('h')} help   {_K('q')} quit (runs continue)",
+            f"{_K('c')} watched folders   {_K('g')} geometries and shape editor   {_K('h')} help   {_K('q')} quit (runs continue)",
             _dim("In every menu: Enter = default, b = previous step, Ctrl+C = back here."),
         ], color="33")
         try:
@@ -1560,14 +1686,30 @@ def interactive() -> None:
 
 
 def main() -> None:
-    ap = argparse.ArgumentParser(add_help=False)
-    ap.add_argument("--once", action="store_true")
+    ap = argparse.ArgumentParser(description="Terminal menu for TDGL runs: launch, watch, stop, resume.")
+    ap.add_argument("--once", action="store_true", help="print the table of live runs once and exit")
     ap.add_argument("--watch", action="store_true", help="no menu: notify on the desktop when a run finishes")
     ap.add_argument("--results", action="store_true", help="print the quick results of every run and exit")
-    ap.add_argument("--on", action="store_true")
-    ap.add_argument("--all", action="store_true")
-    ap.add_argument("rundir", nargs="?")
-    args, _ = ap.parse_known_args()
+    ap.add_argument("--on", action="store_true", help=argparse.SUPPRESS)
+    ap.add_argument("--all", action="store_true", help="with --once: every run, not only the live ones")
+    ap.add_argument("--add-dir", nargs="?", const=".", metavar="PATH",
+                    help=f"watch PATH (default: the current folder) from now on; saved in {CARPETAS}")
+    ap.add_argument("--rm-dir", metavar="PATH", help="stop watching PATH")
+    ap.add_argument("--dirs", action="store_true", help="list the watched folders")
+    ap.add_argument("--notify", action="store_true", help="with --add-dir/--rm-dir: also a desktop notification")
+    ap.add_argument("rundir", nargs="?", help="show the details of one run and exit")
+    args = ap.parse_args()
+    if args.add_dir or args.rm_dir:
+        msg = _cambiar_carpeta(_ruta_pegada(args.add_dir or args.rm_dir), quitar=bool(args.rm_dir))
+        print(msg)
+        if args.notify:
+            _notificar("TDGL", msg)
+        return
+    if args.dirs:
+        for d in ROOTS:
+            print(d)
+        print(f"(list: {CARPETAS}; a Julia script that loads TDGL shows as live from any folder)")
+        return
     if args.rundir:
         p = Path(args.rundir)
         if not p.is_absolute():

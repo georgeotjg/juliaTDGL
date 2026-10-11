@@ -72,6 +72,18 @@ struct Params
     T_physical::Bool
     unwrap_every::Int
     keep_rung_states::Bool
+    maxwell_implicit::Bool
+    # pi substeps per step (1 = off) and their work array (empty when off)
+    n_pi::Int
+    n_sig::Int
+    conv_by_time::Bool
+    blas_threads::Int
+    Wpi::Array{ComplexF64,3}             # band substep work array
+    pi_extrap::Bool
+    Lpi::Vector{Array{ComplexF64,3}}     # substep links and rotations, allocated on first use
+    # charge residual read from a checkpoint, copied into the Phi solver when a
+    # sweep starts (empty unless use_phi and tau_Q > 0)
+    Q_restart::Array{Float64,3}
 end
 
 """
@@ -138,8 +150,48 @@ function derive_params(cfg::Config)
     dt2s = bt_cfl * dl / (4 * cfg.kappa_s^2)
     dt2p = bt_cfl * dl / (4 * cfg.kappa_p^2)
     dt3  = nu_cfl * dl / (4 * zeta_cfl^2)
+    dt_leg = 0.99 * min(dt1, dt1p, dt2s, dt2p, dt3)    # the 1.0.0 step, for eps_conv_legacy
+    if !cfg.cfl_legacy
+        # Explicit Euler is stable when dt*lambda_max <= 2, with lambda_max the largest
+        # eigenvalue of the linearised right-hand side: the lattice Laplacian (8/dl)
+        # plus the reaction term of the amplitude mode, 3|Psi|^2 - alpha <= 2 alpha in
+        # equilibrium (alpha = 1 for sigma, a2n for pi).  dl/4 alone is the bound of
+        # pure diffusion and is a few per cent too large.
+        dt1  = 2 / (8 / dl + 2)                                      # sigma
+        dt1p = 2 * gr_ / (8 / (dl * cfg.m_ratio) + 2 * alpha2_n)     # pi: (1/Gamma_r)[(1/m_r) lap + ...]
+        dt3  = Inf
+    end
+    if cfg.maxwell_implicit
+        cfg.use_phi && error("maxwell_implicit with use_phi is not implemented")
+        dt2s = Inf; dt2p = Inf             # the implicit curl-curl has no step bound
+    end
+    cfg.blas_threads >= 0 || error("blas_threads must be >= 0, not $(cfg.blas_threads)")
+    cfg.pi_substeps >= 0 || error("pi_substeps must be >= 0, not $(cfg.pi_substeps)")
+    cfg.sigma_substeps >= 1 || error("sigma_substeps must be >= 1, not $(cfg.sigma_substeps)")
+    n_sig = cfg.sigma_substeps
+    if n_sig > 1
+        (cfg.use_heat || cfg.T_physical || cfg.use_phi || (cfg.use_drag && cfg.nu_drag != 0.0)) &&
+            error("sigma_substeps > 1 is implemented only for the plain kernel (no heat, T_physical, Phi or drag)")
+        dt1 *= n_sig
+    end
+    n_pi = 1
+    terms = cfg.use_heat || cfg.T_physical || cfg.use_phi || (cfg.use_drag && cfg.nu_drag != 0.0)
+    # automatic substeps (pi_substeps = 0, as in :prod) fall back to one substep when a term is on:
+    # the implicit curl-curl alone is validated with heat and drag (CHANGELOG 1.1)
+    if cfg.pi_substeps == 0 && terms
+        cfg.verbose && println("pi band: no substeps with heat, T_physical, Phi or drag (one per step)")
+    elseif cfg.pi_substeps != 1
+        terms &&
+            error("pi_substeps > 1 is implemented only for the plain kernel (no heat, T_physical, Phi or drag)")
+        # automatic: as many substeps as the step the other bounds give, after dt_scale
+        n_pi = cfg.pi_substeps == 0 ?
+               max(1, ceil(Int, cfg.dt_scale * min(dt1, dt2s, dt2p, dt3) / dt1p - 1e-12)) : cfg.pi_substeps
+        dt1p *= n_pi / cfg.dt_scale        # each substep keeps dt/n_pi <= 0.99 of the pi bound
+    end
     cands = (dt1, dt1p, dt2s, dt2p, dt3)
     dt = 0.99 * minimum(cands)
+    0 < cfg.dt_scale <= 1 || error("dt_scale must be in (0, 1], not $(cfg.dt_scale)")
+    cfg.dt_scale == 1 || (dt *= cfg.dt_scale)
     # Explicit diffusion of Q or T. Only if the flag is ON: otherwise dt is
     # unchanged and the bit does not move.
     if cfg.use_heat || cfg.use_Qss
@@ -152,10 +204,24 @@ function derive_params(cfg::Config)
             dt_dif < dt && (dt = dt_dif)
         end
     end
-    nombres = ("dt1 (difusion sigma)", "dt1p (difusion pi, m_r<1)",
+    nombres = ("dt1 (sigma diffusion)", "dt1p (pi diffusion, m_r<1)",
                "dt2s (Maxwell kappa_s)", "dt2p (Maxwell kappa_p)", "dt3")
     ilim = argmin(collect(cands))
     cfg.verbose && @printf("CFL: dt=%.3e t_GL (limited by %s)\n", dt, nombres[ilim])
+    cfg.verbose && n_pi > 1 && @printf("     pi band: %d substeps of %.3e\n", n_pi, dt / n_pi)
+    # The supercurrent enters block [C] explicitly.  Linearised in the link
+    # phase, its longitudinal mode (which the implicit curl-curl does not touch)
+    # decays at |Psi_s|^2 + |Psi_p|^2/m_r: explicit Euler needs dt below 2 over
+    # that, ~0.3 at m_r = 0.106.  No bound used today reaches it.
+    lam_L = abs(alpha1) + alpha2_n / cfg.m_ratio
+    dt > 2 / lam_L && @warn @sprintf("dt = %.3g exceeds the explicit supercurrent bound 2/(|a1| + a2n/m_r) = %.3g", dt, 2 / lam_L)
+    # Stable is not accurate.  Above half its bound the stiffest sigma mode changes
+    # sign every step and barely decays (factor 1 - dt*lambda_max -> -0.98 at 0.99 of
+    # the bound); in strong flow at kappa = 25 that gives V 7 % low.  At or below
+    # half the bound no mode changes sign.
+    cfg.verbose && !cfg.cfl_legacy && dt > 0.5 * dt1 &&
+        @warn @sprintf("dt = %.3g is %.0f %% of the sigma stability bound; use dt_scale <= 0.5 for accurate flowing states",
+                       dt, 100 * dt / dt1)
 
     rx = dt/cfg.dx^2; ry = dt/cfg.dy^2; rz = dt/cfg.dz^2
     c1 = dt
@@ -175,8 +241,10 @@ function derive_params(cfg::Config)
     szx = (dt*ks2)*(cfg.dz/cfg.dx); szy = (dt*ks2)*(cfg.dz/cfg.dy)
 
     cfg.eps_conv_rate >= 0 || error("eps_conv_rate must be >= 0, not $(cfg.eps_conv_rate)")
-    # Fixed-point tolerance per cycle: eps_conv, or a rate times the cycle length.
-    eps_c = cfg.eps_conv_rate > 0 ? cfg.eps_conv_rate * (cfg.lMax * dt) : cfg.eps_conv
+    # Fixed-point tolerance per cycle: eps_conv, or a rate times the cycle length
+    # (eps_conv_legacy: the rate of eps_conv per cycle of the 1.0.0 step).
+    eps_c = cfg.eps_conv_rate > 0 ? cfg.eps_conv_rate * (cfg.lMax * dt) :
+            cfg.eps_conv_legacy  ? cfg.eps_conv * (dt / dt_leg) : cfg.eps_conv
     eps_seed = cfg.tie_seed_tolerance ? min(cfg.eps_conv_seed, eps_c) :
                                         cfg.eps_conv_seed
 
@@ -237,7 +305,10 @@ function derive_params(cfg::Config)
            cfg.T_red, cfg.a2n, cfg.beta2,
            fill(cfg.T_red, Nx+1, Ny+1, Nz+1),
            zeros(3), cfg.use_joule, cfg.heat_margin, cfg.T_physical,
-           cfg.unwrap_every, cfg.keep_rung_states)
+           cfg.unwrap_every, cfg.keep_rung_states, cfg.maxwell_implicit,
+           n_pi, n_sig, cfg.conv_by_time, cfg.blas_threads, (n_pi > 1 || n_sig > 1) ? zeros(ComplexF64, Nx+1, Ny+1, Nz+1) : zeros(ComplexF64, 0, 0, 0),
+           cfg.pi_link_extrapolation, Array{ComplexF64,3}[],
+           (cfg.use_phi && cfg.tau_Q > 0) ? zeros(Nx+1, Ny+1, Nz+1) : zeros(0, 0, 0))
 end
 
 """

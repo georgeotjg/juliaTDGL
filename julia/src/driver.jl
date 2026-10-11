@@ -178,7 +178,8 @@ function _preflight(cfg::Config, p::Params)
     @printf("  EFFECTIVE floor in cycles : %d  (t_min_GL=%.1f)\n", it_min, p.t_min_GL)
     @printf("  ceiling mMax              : %d cycles = %.1f t_GL\n", p.mMax, p.mMax*dt_cyc)
     @printf("  fixed-point tolerance     : %.2e per cycle = %.2e per t_GL%s\n",
-            p.eps_conv, p.eps_conv/dt_cyc, cfg.eps_conv_rate > 0 ? " (eps_conv_rate)" : "")
+            p.eps_conv, p.eps_conv/dt_cyc, cfg.eps_conv_rate > 0 ? " (eps_conv_rate)" :
+            cfg.eps_conv_legacy ? " (eps_conv per cycle of the 1.0.0 step)" : "")
     floor_GL = max(p.t_min_GL, cfg.use_Vconv ? p.t_min_GL_res : 0.0)
     if p.mMax*dt_cyc < floor_GL
         @printf("  WARNING: the ceiling (%.1f t_GL) is below the floor (%.1f t_GL): every point\n",
@@ -335,6 +336,8 @@ function write_summary(sde::SDE)
                 p.eps_conv, p.eps_seed, c.iter_min, c.lMax, c.mMax, c.V_threshold)
         c.eps_conv_rate > 0 &&
             @printf(io, "  eps_conv is per cycle, from eps_conv_rate=%.2e per t_GL\n", c.eps_conv_rate)
+        c.eps_conv_rate > 0 || !c.eps_conv_legacy ||
+            @printf(io, "  eps_conv is per cycle, from eps_conv=%.1e per cycle of the 1.0.0 step\n", c.eps_conv)
         @printf(io, "  numerical mode: %s\n", mode_name(sde.mode))
         @printf(io, "  threads      : %s\n", p.hilos ? "yes" : "no")
         if c.use_phi

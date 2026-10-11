@@ -28,6 +28,9 @@ cfg_fixture(; kw...) = Config(; GEOM_MODE="WEDGE",
     include("test_eigenproblem.jl")
     include("test_vtk.jl")
     include("test_optional_terms.jl")
+    include("test_maxwell_implicit.jl")
+    include("test_pi_substeps.jl")
+    include("test_restart_dt.jl")
     include("test_shapes.jl")
     include("test_observables.jl")
 end

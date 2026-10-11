@@ -222,7 +222,42 @@ above $\kappa\simeq2.9$ the field branch $\mathrm dl/4\kappa^2$ takes over,
 so a run at $\kappa=25$ takes about $160$ times more steps per unit of
 physical time than one at $\kappa=2$. Optional diffusive terms add the
 condition $\mathrm dt\le0.15\,\mathrm dx^2/D$. A \emph{cycle} is
-\code{lMax}$=40$ substeps; convergence is tested once per cycle.
+\code{lMax}$=40$ substeps; convergence is tested once per cycle. This is the
+scheme of release 1.0.0 and the library default, \code{Config(:legacy)}.
+
+\paragraph{The production scheme.} \code{Config(:prod)} (release 1.1) removes
+the three bounds that do not belong to the equations integrated here:
+\begin{itemize}
+\item the term $\kappa^2\nabla\times\nabla\times\theta$ of block [C] is taken
+  at the new time level (\code{maxwell\_implicit}); the matrix is constant and
+  separable for $\mathrm dx=\mathrm dy=\mathrm dz$, so one solve per step
+  costs a few transforms per axis, and the bound $\mathrm dl/4\kappa^2$
+  disappears;
+\item the diffusion bounds are those of explicit Euler on diffusion plus
+  reaction, $2/(8/\mathrm dl+2)$ for $\sigma$ (\code{cfl\_legacy=false}),
+  without the factor $1/\sqrt{1+\gamma^2}$ and the fixed $0.03\,\mathrm dl$;
+\item the $\pi$ band, whose bound is the smallest at $\xi_\pi/\xi_\sigma=4$,
+  advances in substeps with $\sigma$ frozen in the coupling
+  (\code{pi\_substeps=0}, automatic);
+\item the step is half the bound of $\sigma$ (\code{dt\_scale=0.5}): at
+  $0.99$ of it the stiffest mode changes sign every step and a flowing state
+  at $\kappa=25$ loses $7\,\%$ of its voltage.
+\end{itemize}
+It also closes a resistive point once it carries ten crossings per line
+after \code{t\_min\_GL\_res} (\code{conv\_by\_time}), reads \code{eps\_conv}
+per cycle of the 1.0.0 step so that the fixed-point criterion is the same in
+physical time (\code{eps\_conv\_legacy}), and uses one BLAS thread. Against
+the explicit scheme it gives the same onset brackets at $\kappa=2$ and
+$\kappa=25$ and flowing voltages within $0.16\,\%$, at about three times the
+speed per unit time at $\kappa=2$ and about a hundred times at $\kappa=25$.
+The step cannot grow much further: in strong flow at $\kappa=25$ the voltage
+is $0.16\,\%$ off at $\mathrm dt=0.03$ and $3\,\%$ off at $0.04$, because the
+field and the links are updated once per step during a phase slip. With heat,
+a bath temperature or drag the $\pi$ band takes no substeps and only the
+curl-curl term is implicit, about thirty times faster than the explicit scheme
+at $\kappa=25$; heated and dragged flowing and collapsed states at $\kappa=25$
+agree with the explicit ones within $0.25\,\%$ in $V$. The scalar potential
+runs in the explicit scheme only.
 
 \subsection{Symmetry}
 
@@ -507,7 +542,10 @@ geometry (\code{--geom}, \code{--shape}), the parameters (\code{--kappa},
 (\code{--J}), the mesh (\code{--mesh} or \code{--Nx --Ny --Nz --dx}), the
 times (\code{--window} or \code{--tmin --tminres}), the scalar potential
 (\code{--phi off|coulomb|tf}) and one optional term (\code{--drag},
-\code{--heat}, \code{--qss}). \code{python3 julia/scripts/tdgl\_tui.py} builds
+\code{--heat}, \code{--qss}), and the scheme (\code{--scheme prod|legacy};
+prod unless $\Phi$ or $Q$ needs legacy; with heat, drag or $T$, prod only where
+its step is at least twice the explicit one; a resumed run keeps its
+scheme). \code{python3 julia/scripts/tdgl\_tui.py} builds
 the same command step by step, lists the runs, stops them cleanly and
 resumes them.
 
@@ -582,17 +620,17 @@ shapes read from files; and the VTK writer.
   for three targets of a material such as MgB$_2$ (coherence-length ratio,
   stiffness partition and gap ratio); not all can be matched at once.
 \item A notch ($f=0$) is locally at $T_c$: neither vacuum nor a normal metal.
-\item The buffer is a normal metal and a systematic: absolute thresholds depend on its width.
-\item Explicit time stepping: large $\kappa$ costs time steps
-  quadratically.
+\item The buffer is a normal metal and a systematic: absolute thresholds depend on its width. The
+  box has no common electrodes at its ends, so a thick buffer carries normal current in parallel with
+  a silent sample (with $24$ cells around the $40\times24\times6$ box, $62\,\%$ of it); one cell keeps
+  that path small. A thicker buffer is not a closer model of a film in vacuum.
+\item The explicit scheme costs time steps quadratically in $\kappa$; the
+  production scheme removes it except with the scalar potential.
 \item The silent state is driven, not an equilibrium. The current enters
   through the contact faces as normal current and turns into supercurrent
   within one or two $\xi_\sigma$; those layers carry a steady electric field.
   The current at which the silent state starts to flow therefore depends on
   the relaxation rates and on the contact, not only on the free energy.
-\item Checkpoints store $\Psi$ and the link variables, not the temperature
-  nor the charge residual; a resumed run restarts them from the bath and
-  from zero.
 \end{itemize}
 
 \end{document}

@@ -59,9 +59,20 @@ Optional terms, all off by default and meant to be switched on one at a time:
 - **Discretisation.** Staggered Cartesian mesh with gauge-invariant link variables
   U = exp(−i A·dl): gauge invariance holds exactly on the lattice, and the flux through each
   plaquette is the lattice curl of the link phases.
-- **Time stepping.** Explicit, with the step set by the most restrictive of the diffusion branches
-  of both bands and the Maxwell branch (∝ dx²/κ²). The order-parameter update is a Jacobi sweep over
-  interior nodes; Neumann conditions are imposed on every face of the sample.
+- **Time stepping.** Two schemes, chosen in one word:
+  - `Config(:prod)`, recommended for new work: the curl-curl term of the field equation implicit
+    (one separable solve per step), the π band in substeps, and the step at half the stability
+    bound of σ. It gives the onset brackets of the explicit scheme and its flowing voltages within
+    0.2 %, about 3 times faster per unit time at κ = 2 and about 100 times at κ = 25. With heat, a
+    bath temperature or drag the π band runs without substeps and only the curl-curl term is
+    implicit: about 30 times faster at κ = 25, validated against the explicit heat and drag runs.
+    The scalar potential is not available in it.
+  - `Config(:legacy)`, the library default: explicit, with the step set by the most restrictive of
+    the diffusion branches of both bands and the Maxwell branch (∝ dx²/κ²). It is the scheme of
+    release 1.0.0 and of the published runs, and existing scripts reproduce them unchanged.
+
+  The order-parameter update is a Jacobi sweep over interior nodes; Neumann conditions are imposed
+  on every face of the sample.
 - **Scalar potential.** The projection solves one Poisson problem per step on a constant matrix,
   diagonalised once by separation of variables (an exact direct method, no iteration).
 - **Voltage.** The voltage is the time derivative of the gauge-invariant phase difference between
@@ -129,7 +140,8 @@ polarities dissipate. Here the windows are far too short and +0.15 is undecided,
 formed. A simpler threshold estimate (where |V| first exceeds V_th) is printed next to it and
 withheld when the drive is even in J, when there is no vortex, or when the threshold is already
 crossed at the first current of the grid. The protocol of the paper uses windows of 1500/2000 t_GL
-(`--window paper` below, or `Config(:paper)`).
+(`--window paper` below, or `Config(:paper)`). The same keywords in `Config(:prod; ...)` run the
+production scheme.
 
 From the command line, one run per call (writes `julia/runs/<name>/` with `job.json`,
 `j_history.csv`, snapshots and checkpoints for restarting):
@@ -138,6 +150,10 @@ From the command line, one run per call (writes `julia/runs/<name>/` with `job.j
 julia --project=julia julia/scripts/run_preset.jl \
     --geom WEDGE --kappa 2 --mesh production --window paper --J 0.0,0.040,0.045
 ```
+
+`run_preset.jl` and the terminal menu use the production scheme unless `--scheme legacy` is given.
+With Φ they use the explicit scheme; with heat, drag or a bath temperature, the faster of the two
+(prod at large κ). A resumed run keeps the scheme it started with.
 
 ## Shapes
 
@@ -156,10 +172,13 @@ where either band turns normal. Shapes are saved as TOML in `julia/shapes/` and 
 
 `python3 julia/scripts/tdgl_tui.py` launches, stops and resumes runs and lists every Julia run of
 the project with its progress. The launch wizard goes through a starting point, the geometry
-(catalogue, a saved shape, or a new one drawn in the editor), a parameter table, the scalar
-potential and at most one optional term. Key `v` gives the result of every run with the verdict
-rule; while the menu is open (or with `--watch`) a desktop notification is sent when a run
-finishes.
+(catalogue, a saved shape, or a new one drawn in the editor), a parameter table (including the
+scheme, `prod` by default), the scalar potential and at most one optional term. Key `v` gives the
+result of every run with the verdict rule; key `c` adds or removes folders to watch (runs started
+from your own scripts elsewhere show up too); while the menu is open (or with `--watch`) a desktop
+notification is sent when a run finishes. `--help` lists the command-line options.
+
+![Launch wizard of the terminal menu, step 3: the parameter table](docs/img/tui_parameters.svg)
 
 ```
 │ #   run                 term     state     progress        last J          %CPU │
@@ -181,7 +200,7 @@ mask: the six faces unfolded, the mid plane and how many z planes each column ha
 
 To compare shapes before committing hours, `julia/scripts/scout_shapes.jl a.toml b.toml …` runs
 each on the production box with short windows and prints a ranking (minutes per shape; a ranking,
-not a measurement: the winner then needs the full protocol, its mirror and a wider buffer).
+not a measurement: the winner then needs the full protocol and its mirror).
 
 Long runs save a checkpoint after every current point and resume from it (`restart_pos`,
 `restart_neg`); `guard_hours` stops cleanly before a queue limit, and `keep_rung_states` keeps the
@@ -234,29 +253,41 @@ examples/       the first run and the demonstration run of this README, and a Sl
   the onset moves from 0.52 to 0.80 J₀ as Γr goes from 0.5 to 2, because the contact layer divides
   the current between the bands differently and the onset comes at a fixed load of one band. Quote
   onsets for the relaxation rates and contact used.
+- **The buffer is normal metal and there are no common electrodes.** A buffer of a few cells or more
+  carries normal current in parallel with the sample, even when the sample is silent (with 24 cells
+  around the production box, 62 % of the current), so a thicker buffer is not a closer model of a
+  film in vacuum. One cell, the default, keeps that path small; quote results for the buffer used.
 - **The fixed-point tolerance is per cycle** (`eps_conv`), so the same value is a different
-  criterion when dt or lMax change. `eps_conv_rate` sets it per unit time. Neither tells a point
+  criterion when dt or lMax change. `eps_conv_rate` sets it per unit time, and `:prod` keeps the
+  criterion of the explicit scheme in physical time. Neither tells a point
   that sits in the bottleneck of a slow cycle from a fixed point; the crossing-count verdict of the
   protocol does.
-- **Checkpoints store Ψ and the link variables, not the temperature θ nor the charge residual Q**:
-  a resumed run with heat or `tau_Q` restarts them from the bath and from zero.
 - **`STOP.txt` is looked for up to eight folders above the run folder**: one file stops every run
   below it.
-- **Explicit time step:** at large κ the step is set by the Maxwell term (dt ∝ 1/κ²), so κ = 25 costs
-  about forty times more per unit time than κ = 2.
+- **The step of `:prod` cannot grow much further.** In strong flow the error comes from updating the
+  field and the links once per step during a phase slip: at κ = 25 the voltage is 0.16 % off at
+  dt = 0.03 and 3 % off at 0.04. Larger steps (`sigma_substeps`) give the same onset verdicts but
+  voltages a few per cent off near onset; re-measure the voltages you quote at the production step.
+- **The scalar potential runs only in the explicit scheme.** Heat, bath temperature and drag run in
+  `:prod` without π substeps, so at κ = 2 they gain nothing over the explicit scheme.
 - **Memory:** a few per-cycle series are allocated with `mMax` entries when a sweep starts (40 bytes
-  per cycle); keep `mMax` at the ceiling you need, not at an arbitrary large number.
+  per cycle); keep `mMax` at the ceiling you need, not at an arbitrary large number. A sweep warns
+  above 1 GB.
+- **Campaigns:** run one single-threaded process per physical core (`:prod` sets one BLAS thread).
+  On hybrid processors the efficiency cores are slower, so a campaign is paced by them.
 
-## Possible extensions
+## Planned
 
-The optional terms (heat, drag) exist and are off by default. Two directions are planned, each
-validated against this release before it is used:
-- a semi-implicit treatment of the transverse Maxwell term, for large κ;
-- a two-band generalised TDGL with a band-resolved charge imbalance (Kramer–Watts-Tobin with two
-  bands). It would compute what TDGL leaves as free parameters (the relaxation rates and how a
-  contact divides the current between the bands) and would let the solver ask whether quasiparticles
-  left by one band change vortex entry in the other. It needs a derivation that does not exist yet,
-  and nothing of it is in this code.
+Each item is validated against this release before it is used; none of it is in this code yet.
+- **An insulating buffer** on the faces parallel to the current, so that all of the current crosses
+  the sample, as in a film in vacuum with leads at its ends. It removes the parallel normal path of
+  the known limitations and makes the magnitude of a diode efficiency a number that can be compared
+  with an experiment.
+- **A multiband generalised TDGL** with a band-resolved charge imbalance (Kramer–Watts-Tobin
+  generalised to several bands). It would compute what TDGL leaves as free parameters, the
+  relaxation rates and how a contact divides the current between the bands, and would let the
+  solver ask whether quasiparticles left by one band change vortex entry in another. Two bands
+  (MgB₂) first; the data structures for N bands from the start.
 
 ## Citing
 
@@ -266,9 +297,8 @@ The solver, the measurement protocol and the failure modes it guards against are
 > Ginzburg–Landau simulations of geometric superconducting diodes* (Version 1.0.0) [Preprint].
 > Zenodo. https://doi.org/10.5281/zenodo.23163207
 
-With its default settings, version 1.0.0 of this repository gives the results of that work. The
-options added since (second-half voltages, a per-time tolerance, the `:paper` preset) are off by
-default. `CITATION.cff` has the metadata, and GitHub's "Cite this repository" button reads it.
+With its default settings (`Config(:legacy)`), this repository gives the results of that work; the
+options added since, including the production scheme, are off by default in the library. `CITATION.cff` has the metadata, and GitHub's "Cite this repository" button reads it.
 
 ## License
 

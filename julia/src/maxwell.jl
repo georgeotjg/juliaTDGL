@@ -500,11 +500,13 @@ Blocks [A]..[I] in order.  It is the time unit `dt` of the scheme; a CYCLE
 is `lMax` of these.
 """
 function substep!(s::State, p::Params, g::Geometry, mode::NumMode;
-                  H::Float64, HJ::Float64, J_cur::Float64)
+                  H::Float64, HJ::Float64, J_cur::Float64, mi=nothing)
     psi_update!(s.F1, s.F2, s.G1, s.G2, s.Vx, s.Vy, s.Vz, g.fmask, p, mode)
+    (p.n_pi > 1 || p.n_sig > 1) && pi_substeps!(s, p, g.fmask, mode)
     block_B!(s, p, mode)
     p.use_heat && paso_heat!(s, p, g)
     bloque_C!(s, p, g)
+    mi === nothing || implicit_curl!(s, mi)
     p.selffield || bloque_D!(s, p, g, J_cur)
     bloque_E!(s, p, mode)
     bloque_F!(s, p)

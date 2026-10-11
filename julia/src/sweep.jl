@@ -81,6 +81,11 @@ function sweep(J_range::Vector{Float64}, H_range::Vector{Float64},
     # [v14] The Phi solver is built —and FACTORISED— once for the whole
     # sweep: the matrix depends neither on time nor on the current point.
     sp = p.use_phi ? SolverPhi(p; bc=p.phi_bc, metodo=p.phi_method) : nothing
+    if sp !== nothing && sp.tau_Q > 0 && length(p.Q_restart) == length(sp.Qimb) && any(!iszero, p.Q_restart)
+        sp.Qimb .= p.Q_restart; fill!(p.Q_restart, 0.0)     # residual of a resumed checkpoint
+    end
+    p.blas_threads > 0 && BLAS.set_num_threads(p.blas_threads)
+    mi = p.maxwell_implicit ? MaxwellImplicit(p, g) : nothing
     if sp !== nothing && p.verbose
         @printf("[phi] scalar potential ON | gauge=%s | method=%s | F22 (1-T) on J_s: %s\n",
                 p.phi_bc, p.phi_method, p.f22_supercurrent ? "KEPT" : "removed")
@@ -144,12 +149,20 @@ function sweep(J_range::Vector{Float64}, H_range::Vector{Float64},
                        "measuring planes. Lower cfg.delta_v or check the geometry.")
 
     nwin = max(2, p.V_win)
+    # five per-cycle series of mMax + 1 entries each (40 bytes per cycle of ceiling),
+    # two more with v13_diag
+    nbytes = (p.v13_diag ? 56 : 40) * (mMax + 1)
+    nbytes > 1e9 && @warn @sprintf("sweep: mMax = %d reserves %.1f GB for the per-cycle series; use the ceiling you need", mMax, nbytes / 1e9)
     Vser  = zeros(mMax + 1)     # V series per cycle, within one current point
     Tser  = zeros(mMax + 1)     # unwrapped gauge-invariant phase (sigma)
     Tser2 = zeros(mMax + 1)     # same, pi band
     Tser_f1 = zeros(mMax + 1)   # same, f = 1 lines only (diagnostic)
     dmax_cur = 0.0              # largest per-line increment of this point
     nbig_cur = 0                # per-line increments above 2 rad
+    # total and sample current through the mid plane, per cycle (v13_diag): the
+    # share of the sample fluctuates by a few per cent as vortices cross, so the
+    # point reports its mean over the second half, not one instant
+    ItSer = zeros(p.v13_diag ? mMax + 1 : 0); IsSer = zeros(p.v13_diag ? mMax + 1 : 0)
     TAser = zeros(mMax + 1)     # Theta_A: link phases of A summed along the path, line mean
 
     nl_1, nl_2 = size(line_ok)
@@ -178,7 +191,7 @@ function sweep(J_range::Vector{Float64}, H_range::Vector{Float64},
         while m <= mMax
             for l in 1:lMax
                 if sp === nothing
-                    substep!(s, p, g, mode; H=H, HJ=HJ, J_cur=J_cur)
+                    substep!(s, p, g, mode; H=H, HJ=HJ, J_cur=J_cur, mi=mi)
                 else
                     substep_phi!(s, p, g, mode, sp; H=H, HJ=HJ, J_cur=J_cur)
                 end
@@ -255,6 +268,8 @@ function sweep(J_range::Vector{Float64}, H_range::Vector{Float64},
                 Tser2[m] = sumlin(Tmat2[i] for i in eachindex(Tmat2) if line_ok[i])/nlin
             end
 
+            p.v13_diag && ((ItSer[m], IsSer[m]) = _midplane_current(s, p))
+
             # --- [J2] CONVERGENCE.  Two routes; converges by EITHER --------
             #  (a) FIXED POINT in |psi| and hz -> Meissner or pinned vortices.
             #  (b) STATIONARY <V> -> resistive limit cycle.  There (a) is
@@ -289,7 +304,8 @@ function sweep(J_range::Vector{Float64}, H_range::Vector{Float64},
             # NaN and is found broken hours later.  The message names the
             # three real causes, by frequency.
             if p.guard_psi > 0 && (!isfinite(amax) || amax > p.guard_psi)
-                save_checkpoint(p, s, label, jp, V_arr, J_arr)
+                save_checkpoint(p, s, label, jp, V_arr, J_arr;
+                                Qimb = (sp !== nothing && sp.tau_Q > 0) ? sp.Qimb : nothing)
                 error("""
                 [GUARD] The scheme DIVERGED in $label, point jp=$jp (J=$J_cur), cycle m=$m.
                         max|Psi| = $amax  (equilibrium = 1, threshold cfg.guard_psi = $(p.guard_psi))
@@ -308,14 +324,22 @@ function sweep(J_range::Vector{Float64}, H_range::Vector{Float64},
             r1_arr[jp] = diff_F1; r2_arr[jp] = diff_F2
 
             if m >= iter_min && max(diff_F1, diff_F2) < eps_here && diffh < eps_here
-                conv_mode = 'F'; break
+                # conv_by_time: not while the second half of the point carries one or
+                # more phase crossings per line (a flowing state can look fixed for one
+                # short cycle)
+                if !p.conv_by_time || m < 2 ||
+                   max(abs(Tser[m] - Tser[max(1, m ÷ 2)]), abs(Tser2[m] - Tser2[max(1, m ÷ 2)])) < 2pi
+                    conv_mode = 'F'; break
+                end
             end
             # Route (b) requires J != 0.  At J=0 the state MUST be a
             # true fixed point; and since the voltmeter carries a STATIC
             # offset (mode M1) above V_threshold, the stationarity test was
             # satisfied TRIVIALLY.  In M(H) mode ALL points have J=0, so
             # 'jp>1' was not enough.
-            if p.use_Vconv && jp > 1 && abs(J_cur) > 0 && m >= max(iter_min, 2nwin)
+            # conv_by_time: also on the first point of a sweep (a ladder resumed from a
+            # rung state, or one rung per call, starts at jp = 1); J = 0 stays excluded.
+            if p.use_Vconv && (jp > 1 || p.conv_by_time) && abs(J_cur) > 0 && m >= max(iter_min, 2nwin)
                 # NO EARLY STOP IN THE RESISTIVE STATE.  Agreement
                 # between windows is the wrong test —with 34 % scatter per
                 # window it fires only when the noise cancels by chance, and
@@ -324,7 +348,15 @@ function sweep(J_range::Vector{Float64}, H_range::Vector{Float64},
                 # LONG ENOUGH, and stop when the residual stalls, which is the
                 # signature of the limit cycle.
                 res_now = max(diff_F1, diff_F2)
-                res_plateau = res_prev > 0 && abs(res_now - res_prev) <= p.tol_res*res_now
+                if p.conv_by_time
+                    # the verdict rule decides: ten or more phase crossings per line (the
+                    # second-half winding times two, as the crossings/line of the RES
+                    # lines).  A stall of the residual needs windows longer than the
+                    # crossing period (~100 t_GL near onset) and never fired there.
+                    res_plateau = abs(Tser[m] - Tser[max(1, m ÷ 2)]) * 2 >= 10 * 2pi
+                else
+                    res_plateau = res_prev > 0 && abs(res_now - res_prev) <= p.tol_res*res_now
+                end
                 res_prev = res_now
                 if res_plateau && m >= it_res_min
                     conv_mode = 'V'; break
@@ -412,7 +444,8 @@ function sweep(J_range::Vector{Float64}, H_range::Vector{Float64},
         if p.v13_diag
             _diagnosticos_v13!(jp, s, p, g, H, J_cur, V_cur, dt_cyc, wq, Tser,
                                ps1_arr, ps2_arr, rhos_arr, lamef_arr, rpi_arr,
-                               Itot_arr, Isam_arr, nslipw_arr, thmax_arr, dphcyc_arr)
+                               Itot_arr, Isam_arr, nslipw_arr, thmax_arr, dphcyc_arr;
+                               ItSer=ItSer, IsSer=IsSer, mlast=mlast)
         end
 
         if lok && (nl1v != Nv1 || nl2v != Nv2)
@@ -439,7 +472,7 @@ function sweep(J_range::Vector{Float64}, H_range::Vector{Float64},
             @printf("   [voltmeter] max per-line increment=%.3f rad (%d above 2 rad) | V(f=1 lines)=%+.4e on %d of %d lines | V_A=%+.4e | V(2nd half)=%+.4e, %.2f crossings/line | Vpi(2nd half)=%+.4e\n",
                     dmax_cur, nbig_cur, Vf1_arr[jp], nlin_f1, nlin, VA_arr[jp],
                     Vh_arr[jp], abs(Vh_arr[jp]) * mlast * dt_cyc / (2pi), Vh2_arr[jp])
-            p.v13_diag && @printf("   [v13] J=%+.3f | <|Ps|^2>=%.4f <|Pp|^2>=%.4f | rho_s=%.4f lam_ef=%.4f rho_p/rho_s=%.4f | I/Inom=%.4f frac_muestra=%.3f | cruces_ventana=%.2f | max|th|=%.3g dphi_ciclo=%.4f\n",
+            p.v13_diag && @printf("   [v13] J=%+.3f | <|Ps|^2>=%.4f <|Pp|^2>=%.4f | rho_s=%.4f lam_ef=%.4f rho_p/rho_s=%.4f | I/Inom=%.4f frac_sample=%.3f | crossings_window=%.2f | max|th|=%.3g dphi_cycle=%.4f\n",
                     J_cur, ps1_arr[jp], ps2_arr[jp], rhos_arr[jp], lamef_arr[jp],
                     rpi_arr[jp], Itot_arr[jp], Isam_arr[jp], nslipw_arr[jp],
                     thmax_arr[jp], dphcyc_arr[jp])
@@ -462,7 +495,8 @@ function sweep(J_range::Vector{Float64}, H_range::Vector{Float64},
         end
 
         ck = save_checkpoint(p, s, label, jp, V_arr, J_arr;
-                           VPhi_arr = sp === nothing ? nothing : VPhi_arr)
+                           VPhi_arr = sp === nothing ? nothing : VPhi_arr,
+                           Qimb = (sp !== nothing && sp.tau_Q > 0) ? sp.Qimb : nothing)
         if p.keep_rung_states && ck !== nothing
             dr = joinpath(dirname(ck), "rungs"); mkpath(dr)
             cp(ck, joinpath(dr, @sprintf("state_%s_J%+.4f.mat", label, J_cur)); force=true)
@@ -679,10 +713,28 @@ function _calor_por_z(s::State, p::Params, J_cur)
     end
 end
 
+# Total current and current through the sample across the mid plane x = Nx/2.
+# j_x = kappa^2 [ (hz(j)-hz(j-1))/dy - (hy(k)-hy(k-1))/dz ] at node (j,k),
+# where phix lives.  The solver evaluates it only for j=2..Ny, k=2..Nz: THAT is
+# the range that carries current.
+function _midplane_current(s::State, p::Params)
+    (; Nx, Ny, Nz, y1, y2, z1, z2, dy, dz) = p
+    ii = oround(Nx/2)
+    Itot = 0.0; Isam = 0.0
+    @inbounds for kk in 2:Nz, jj in 2:Ny
+        jx = p.ks2*((s.hz[ii,jj,kk] - s.hz[ii,jj-1,kk])/dy -
+                    (s.hy[ii,jj,kk] - s.hy[ii,jj,kk-1])/dz)
+        Itot += jx
+        (y1 <= jj <= y2+1 && z1 <= kk <= z2+1) && (Isam += jx)
+    end
+    (Itot*dy*dz, Isam*dy*dz)
+end
+
 function _diagnosticos_v13!(jp, s::State, p::Params, g::Geometry, H, J_cur,
                             V_cur, dt_cyc, wq, Tser, ps1_arr, ps2_arr,
                             rhos_arr, lamef_arr, rpi_arr, Itot_arr, Isam_arr,
-                            nslipw_arr, thmax_arr, dphcyc_arr)
+                            nslipw_arr, thmax_arr, dphcyc_arr;
+                            ItSer=Float64[], IsSer=Float64[], mlast=0)
     (; Nx, Ny, Nz, x1, x2, y1, y2, z1, z2, dx, dy, dz, mr) = p
 
     ps1 = meanlin(abs2(s.F1[i,j,k]) for k in z1:z2+1, j in y1:y2+1, i in x1:x2+1)
@@ -694,18 +746,13 @@ function _diagnosticos_v13!(jp, s::State, p::Params, g::Geometry, H, J_cur,
     lamef_arr[jp] = p.kappa_s/sqrt(max(rhos, eps()))
     rpi_arr[jp] = (ps2/mr)/max(ps1, eps())
 
-    # j_x = kappa^2 [ (hz(j)-hz(j-1))/dy - (hy(k)-hy(k-1))/dz ] at node
-    # (j,k), where phix lives.  The solver evaluates it only for j=2..Ny,
-    # k=2..Nz: THAT is the range that carries current.
-    ii = oround(Nx/2)
-    Itot = 0.0; Isam = 0.0; cel = dy*dz
-    for kk in 2:Nz, jj in 2:Ny
-        jx = p.ks2*((s.hz[ii,jj,kk] - s.hz[ii,jj-1,kk])/dy -
-                    (s.hy[ii,jj,kk] - s.hy[ii,jj,kk-1])/dz)
-        Itot += jx
-        (y1 <= jj <= y2+1 && z1 <= kk <= z2+1) && (Isam += jx)
+    # mean over the second half of the point (one instant if there is no series)
+    if mlast >= 2 && length(ItSer) >= mlast
+        r = (mlast ÷ 2 + 1):mlast
+        Itot = sum(@view ItSer[r]) / length(r); Isam = sum(@view IsSer[r]) / length(r)
+    else
+        Itot, Isam = _midplane_current(s, p)
     end
-    Itot *= cel; Isam *= cel
     Inom = J_cur*((z2-z1+1)*dz)*((y2-y1+1)*dy)
     if abs(Inom) > 0
         Itot_arr[jp] = abs(Itot)/abs(Inom)
@@ -788,45 +835,41 @@ end
 #  CHECKPOINT
 # ---------------------------------------------------------------------------
 """
-    save_checkpoint(p, s, label, jp, V_arr, J_arr)
+    save_checkpoint(p, s, label, jp, V_arr, J_arr; VPhi_arr, Qimb)
 
-Writes `restart/state_Jpos.mat` or `state_Jneg.mat` with the same eleven
-fields and in the same text format as `parsave` of the .m, so Octave opens
-it with `load` without conversion and the port can continue a sweep started
-there (and vice versa).
+Writes `restart/state_Jpos.mat` or `state_Jneg.mat` (text `.mat`): Ψ of both
+bands, the link phases, the fields, the point index and the V(J) so far.
+With heat on it also stores the temperature field θ, and with a relaxing
+residual (tau_Q > 0) the residual Q, so that a resumed run continues with
+them instead of restarting them from the bath and from zero.
 """
 function save_checkpoint(p::Params, s::State, label::String, jp::Int,
-                            V_arr, J_arr; VPhi_arr=nothing)
+                            V_arr, J_arr; VPhi_arr=nothing, Qimb=nothing)
     isempty(p.out_dir) && return nothing
     ckl = replace(replace(label, "+" => "pos"), "-" => "neg")
     ruta = joinpath(p.out_dir, "restart", "state_$(ckl).mat")
-    # VPhi is a diagnostic: Phi is recomputed every substep and is not
-    # needed to restart.  Saved only with use_phi, so as not to change the
-    # format of the v13 checkpoints.
-    if VPhi_arr === nothing
-        write_octave_text(ruta,
-            "G1" => s.G1, "G2" => s.G2,
-            "thetax" => s.thetax, "thetay" => s.thetay, "thetaz" => s.thetaz,
-            "hx" => s.hx, "hy" => s.hy, "hz" => s.hz,
-            "jp" => Float64(jp), "V_arr" => reshape(V_arr, :, 1),
-            "J_arr" => reshape(J_arr, :, 1))
-    else
-        write_octave_text(ruta,
-            "G1" => s.G1, "G2" => s.G2,
-            "thetax" => s.thetax, "thetay" => s.thetay, "thetaz" => s.thetaz,
-            "hx" => s.hx, "hy" => s.hy, "hz" => s.hz,
-            "jp" => Float64(jp), "V_arr" => reshape(V_arr, :, 1),
-            "J_arr" => reshape(J_arr, :, 1),
-            "VPhi_arr" => reshape(VPhi_arr, :, 1))
-    end
+    campos = Pair{String,Any}["G1" => s.G1, "G2" => s.G2,
+        "thetax" => s.thetax, "thetay" => s.thetay, "thetaz" => s.thetaz,
+        # link phases of the previous step (after the swap of [I] they are in phi):
+        # with them a resumed run rotates the links of its first step as if it had
+        # not stopped (pi_substeps).  Optional on load.
+        "thetax_prev" => s.phix, "thetay_prev" => s.phiy, "thetaz_prev" => s.phiz,
+        "hx" => s.hx, "hy" => s.hy, "hz" => s.hz,
+        "jp" => Float64(jp), "V_arr" => reshape(V_arr, :, 1),
+        "J_arr" => reshape(J_arr, :, 1)]
+    # VPhi is a diagnostic: Phi is recomputed every substep and is not needed to restart
+    VPhi_arr === nothing || push!(campos, "VPhi_arr" => reshape(VPhi_arr, :, 1))
+    p.use_heat && push!(campos, "Temp" => p.Temp)
+    Qimb === nothing || push!(campos, "Qimb" => Qimb)
+    write_octave_text(ruta, campos...)
     ruta
 end
 
 """
     load_checkpoint(ruta, p, mode) -> (State, jp, V_arr, J_arr)
 
-Rebuilds a full `State` from an archived `.mat` (Octave text or binary v7).
-It is the door through which the port inherits everything already run.
+Rebuilds a full `State` from a saved `.mat` (text or binary v7), and restores
+θ and Q when the checkpoint has them and the run uses them.
 """
 function load_checkpoint(ruta::AbstractString, p::Params, mode::NumMode)
     w = read_state(ruta)
@@ -834,6 +877,15 @@ function load_checkpoint(ruta::AbstractString, p::Params, mode::NumMode)
                       Float64.(w["thetax"]), Float64.(w["thetay"]),
                       Float64.(w["thetaz"]), Float64.(w["hx"]),
                       Float64.(w["hy"]), Float64.(w["hz"]), mode)
+    # temperature and charge residual, when the checkpoint has them and the run uses them
+    p.use_heat && haskey(w, "Temp") && size(w["Temp"]) == size(p.Temp) && (p.Temp .= w["Temp"])
+    haskey(w, "Qimb") && size(w["Qimb"]) == size(p.Q_restart) && (p.Q_restart .= w["Qimb"])
+    # previous-step links (older checkpoints do not have them: then U = V, frozen first step)
+    for (k, ph, U) in (("thetax_prev", s.phix, s.Ux), ("thetay_prev", s.phiy, s.Uy), ("thetaz_prev", s.phiz, s.Uz))
+        if haskey(w, k) && size(w[k]) == size(ph)
+            ph .= w[k]; U .= emiphi.(Ref(mode), ph)
+        end
+    end
     jp = Int(w["jp"])
     (s, jp, vec(Float64.(w["V_arr"])), vec(Float64.(w["J_arr"])))
 end

@@ -164,6 +164,14 @@ end
     @test cp.eps_conv == 1e-5 && cp.eps_conv_seed == 5e-4
     @test cp.t_min_GL == 1500.0 && cp.t_min_GL_res == 2000.0 && cp.use_Vconv
     @test Config(:paper; t_min_GL=400.0).t_min_GL == 400.0
-    @test Config().eps_conv == 1e-4 && Config().eps_conv_rate == 0.0
+    @test Config().eps_conv == 1e-4 && Config().eps_conv_rate == 0.0 && !Config().eps_conv_legacy
+    # (5) eps_conv_legacy (set by :prod): eps_conv per cycle of the 1.0.0 step, whatever dt is
+    q0 = derive_params(Config(; kw..., eps_conv=1e-5))
+    q1 = derive_params(Config(:prod; kw..., eps_conv=1e-5))
+    @test Config(:prod).eps_conv_legacy && q1.dt > 2 * q0.dt
+    @test q1.eps_conv / (q1.lMax * q1.dt) ≈ q0.eps_conv / (q0.lMax * q0.dt)
+    @test derive_params(Config(:prod; kw..., eps_conv_rate=1e-4)).eps_conv ≈ 1e-4 * q1.lMax * q1.dt
     @test_throws ErrorException Config(:fast)
+    cl, cd = Config(:legacy; kappa_s=25.0), Config(; kappa_s=25.0)
+    @test all(isequal(getfield(cl, f), getfield(cd, f)) for f in fieldnames(Config))
 end

@@ -85,7 +85,7 @@
 #  Attractor: Q -> D(delta'), in the same units as Phi_projection (which
 #  already carries dt).  The old formula Q <- (Q+sigma)/(1+dt/tau_Q) had the
 #  attractor (tau_Q/dt)*sigma ~ 2000 sigma; that rotation killed the
-#  condensate at J=0 (measured, articulo_IV/runs/TAU_Q_DIAG/log_euler_viejo.txt).
+#  condensate at J=0 (measured).
 #  The rotation of Psi uses mu = Phi + Q, not Phi.  Q does NOT feed back into
 #  the Poisson problem of Phi: putting it there (rhs = D(delta) - Q) was an
 #  unstable loop, Q ~ 2^n.  WITHOUT lambda_TF the source D(delta') vanishes

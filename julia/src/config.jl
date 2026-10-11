@@ -57,6 +57,44 @@ Base.@kwdef mutable struct Config
     # the tolerance per cycle is eps_conv_rate*lMax*dt and eps_conv is ignored.
     # 0 = per cycle, as always.
     eps_conv_rate::Float64 = 0.0
+    # true: eps_conv is read per cycle of the 1.0.0 step (legacy bounds, explicit
+    # curl-curl) and turned into a rate, so a larger step keeps the fixed-point
+    # criterion of the explicit scheme in physical time.  Ignored if
+    # eps_conv_rate > 0.  Config(:prod) sets it.
+    eps_conv_legacy::Bool = false
+    # Curl-curl term of the field equation at the new time level (see
+    # src/maxwell_implicit.jl).  Removes the Maxwell bound dl/(4 kappa^2) from
+    # the step; the other bounds stay.  Off = the explicit scheme, to the bit.
+    maxwell_implicit::Bool = false
+    # Multiplies the time step chosen by the stability bounds (0 < dt_scale <= 1),
+    # for convergence tests in dt.  1 = the step as always.
+    dt_scale::Float64 = 1.0
+    # true: the historical step (dt1 with the gama factor, dt3 = 0.03 dl); both
+    # come from the generalised TDGL the code descends from and bound no
+    # equation integrated here.  false: only the stability bounds of the
+    # equations this code integrates (diffusion of sigma and pi, Maxwell when
+    # explicit, heat or Q when on).  Accuracy is then a matter of dt_scale.
+    cfl_legacy::Bool = true
+    # Substeps of the pi band per step (multirate).  pi is advanced pi_substeps
+    # times with dt/pi_substeps, with sigma frozen in the coupling and the links
+    # rotated at the previous step's rate (pi_link_extrapolation), and the pi
+    # diffusion bound on dt is relaxed by that factor.  The step is then set by
+    # sigma: use dt_scale <= 0.5 (see the warning in params.jl).
+    # 0 = automatic: as many as the other bounds need.  1 = the scheme as
+    # always, to the bit.  Substeps need the plain kernel: with heat, T_physical
+    # or drag, 0 means one substep, and n > 1 is an error.
+    pi_substeps::Int = 1
+    # With pi substeps: rotate the links inside the step at the rate of the
+    # previous step (see pi_substeps! in src/kernel.jl) instead of freezing them.
+    pi_link_extrapolation::Bool = true
+    # BLAS threads set when a sweep starts (0 = leave as is).  The separable
+    # field solve is the only BLAS user; with many processes, one thread each
+    # avoids oversubscribing the cores.  Results do not depend on it.
+    blas_threads::Int = 0
+    # Substeps of the sigma band per step, same scheme (1 = off, to the bit).
+    # The sigma bound is relaxed by that factor; with dt_scale = 0.5 each sigma
+    # substep stays at half its bound.  For accuracy studies of larger steps.
+    sigma_substeps::Int = 1
     iter_min::Int = 40                 # floor in CYCLES
     lMax::Int = 40                     # substeps per cycle
     mMax::Int = 4000
@@ -68,6 +106,14 @@ Base.@kwdef mutable struct Config
     V_win_min_res::Int = 400
     tol_V::Float64 = 2e-3
     tol_res::Float64 = 0.15            # STALLED residual => limit cycle
+    # Closing tests by physical content, not per cycle (off = as always).  The
+    # per-cycle tests depend on the cycle length in t_GL: a prod cycle is 8 times
+    # longer than an explicit one, its resistive points never "stalled" and ran to
+    # the ceiling, while the explicit ones closed near onset by a spurious 'F'.
+    # On: a resistive point closes after t_min_GL_res once it has ten or more
+    # phase crossings per line (the verdict rule), and a fixed point ('F') is not
+    # accepted while the second half carries one or more crossings per line.
+    conv_by_time::Bool = false
     eps_relax::Float64 = 1e-3
     floor_k::Float64 = 160.0
     floor_mult::Float64 = 5.0
@@ -243,12 +289,43 @@ physical-time floors of 1500 t_GL (fixed point) and 2000 t_GL (resistive),
 convergence by stationarity of V allowed, V_threshold 1e-4 for comparison,
 and a ceiling of 600000 cycles.  Any keyword overrides the preset.  The
 library defaults are not changed.
+
+    Config(:prod; kwargs...)
+
+The production scheme of release 1.1, recommended for new work: implicit
+curl-curl, pi substeps, half the sigma bound, closing by the verdict rule in
+physical time, one BLAS thread, and the fixed-point criterion of the explicit
+scheme in physical time.  Same onset brackets as 1.0.0; x3 per t_GL at
+kappa = 2, ~x100 at kappa = 25.  With heat, T_physical or drag the pi band
+takes one substep and only the curl-curl is implicit (~x30 at kappa = 25).  No
+Phi.  Combine with :paper by passing its keywords.
+
+    Config(:legacy; kwargs...)
+
+The explicit scheme of release 1.0.0 and of the published runs: the library
+defaults, named.
 """
 function Config(preset::Symbol; kw...)
-    preset === :paper || error("unknown preset: $preset (use :paper)")
-    Config(; eps_conv=1e-5, eps_conv_seed=5e-4, t_min_GL=1500.0,
-           t_min_GL_res=2000.0, use_Vconv=true, V_threshold=1e-4,
-           mMax=600_000, kw...)
+    if preset === :paper
+        return Config(; eps_conv=1e-5, eps_conv_seed=5e-4, t_min_GL=1500.0,
+                      t_min_GL_res=2000.0, use_Vconv=true, V_threshold=1e-4,
+                      mMax=600_000, kw...)
+    elseif preset === :prod
+        # 1.1 production scheme: implicit curl-curl, stability-only step bounds,
+        # pi substeps, half the sigma bound (accurate in strong flow), closing
+        # tests in physical time, one BLAS thread per process, and the fixed-point
+        # tolerance of the explicit scheme in physical time (eps_conv per cycle of
+        # the 1.0.0 step: 40 x 6.6e-5 t_GL at kappa = 25, 40 x 2.518e-3 at kappa = 2
+        # in the production box).  Validated against the explicit scheme: same onset
+        # brackets at kappa = 2 and 25, flowing voltages within 0.16 % (CHANGELOG 1.1).
+        return Config(; maxwell_implicit=true, cfl_legacy=false, pi_substeps=0,
+                      dt_scale=0.5, conv_by_time=true, blas_threads=1,
+                      eps_conv_legacy=true, kw...)
+    elseif preset === :legacy
+        # the explicit scheme of release 1.0.0 and of the published runs: the library defaults
+        return Config(; kw...)
+    end
+    error("unknown preset: $preset (use :paper, :prod or :legacy)")
 end
 
 """

@@ -20,6 +20,13 @@
 #       tf = Thomas–Fermi screening λ_TF (changes the physics). --qss implies tf.
 # Custom mesh and window (override the preset): --Nx 40 --Ny 24 --Nz 6 --dx 0.5 --buf 4
 #       --tmin 200 --tminres 1200   (minimum t_GL per static / flowing point)
+# Scheme: --scheme prod|legacy   prod (default) = Config(:prod), the 1.1 production scheme
+#       (implicit curl-curl, pi substeps, half the sigma bound; same brackets as 1.0.0, x3 per
+#       t_GL at kappa = 2, ~x100 at kappa = 25).  legacy = the explicit 1.0.0 scheme of the
+#       published runs.  With --heat, --drag or --T, prod keeps the implicit curl-curl without
+#       pi substeps and is used only where its step is at least twice the legacy one (large
+#       kappa); with --phi or --qss the run falls back to legacy.  --restart keeps the scheme of the job.json (legacy if
+#       the job predates the flag).
 # Bath temperature (not a term; combines with any of them):
 #       --T 0.3                     T_red = 0.3 with T_physical = true (both bands
 #                                   feel T). Without --T: T_red = 0.
@@ -70,7 +77,7 @@ function parse_cli(args)
         "tmin" => NaN, "tminres" => NaN, "mMax" => 0,
         "rotate" => NaN, "forma" => "",
         "calor" => NaN, "eta" => 0.05, "joule" => false, "margen" => 0, "qss" => false,
-        "T" => 0.0, "dx" => NaN, "phi" => "off", "lambda_tf" => 2.0,
+        "T" => 0.0, "dx" => NaN, "phi" => "off", "lambda_tf" => 2.0, "scheme" => "",
     )
     # positional back-compat: GEOM KAPPA J DRAG
     i = 1
@@ -121,6 +128,7 @@ function parse_cli(args)
         elseif a == "--Nz" && i < length(args); i += 1; o["Nz"] = parse(Int, args[i])
         elseif a == "--buf" && i < length(args); i += 1; o["buf"] = parse(Int, args[i])
         elseif a == "--dx" && i < length(args); i += 1; o["dx"] = parse(Float64, args[i])
+        elseif a == "--scheme" && i < length(args); i += 1; o["scheme"] = lowercase(args[i])
         else
             error("unknown flag: $a")
         end
@@ -243,6 +251,19 @@ if !isempty(forma)
         cp(forma, copia_forma)
     end
 end
+# Scheme: explicit flag; on --restart the one of the job.json (legacy if it has none); else prod.
+scheme = opt["scheme"]
+jprev = joinpath(sal, "job.json")
+scheme_job = !(opt["restart"] && isfile(jprev)) ? "" :
+             (m = match(r"\"scheme\":\s*\"(\w+)\"", read(jprev, String)); m === nothing ? "legacy" : m[1])
+isempty(scheme) && (scheme = isempty(scheme_job) ? "prod" : scheme_job)
+isempty(scheme_job) || scheme == scheme_job ||
+    error("--restart: this run started with --scheme $scheme_job; resume it with that scheme, or start a new folder")
+scheme in ("prod", "legacy") || error("--scheme prod|legacy")
+if scheme == "prod" && (qss || phi != "off")
+    println("NOTE: the prod scheme has no scalar potential; with Φ or Q this run uses legacy (1.0.0).")
+    scheme = "legacy"
+end
 statusf = joinpath(sal, "STATUS.txt")
 logf = joinpath(sal, "log.txt")
 stopf = joinpath(sal, "STOP.txt")
@@ -264,24 +285,7 @@ end
 
 dir = joinpath(sal, geom, "A")
 mkpath(dir)
-_write_job(joinpath(sal, "job.json"), Dict{String,Any}(
-    "geom" => geom, "kappa" => kappa, "gamma12" => g12,
-    "J_list" => Jlist, "drag" => drag, "nu_drag" => (drag ? opt["nu"] : 0.0),
-    "Nx" => Nx, "Ny" => Ny, "Nz" => Nz, "dx" => dx, "buf" => buf,
-    "t_min_GL" => tmin, "t_min_GL_res" => tres, "mMax" => mMax,
-    "z_mode" => zmode, "H" => H, "xi_ratio" => xi,
-    "cpus" => opt["cpus"], "n_expected" => n_expected,
-    "mesh" => mesh, "window" => win, "restart" => opt["restart"],
-    "project" => "julia",
-    "rotate_deg" => (isfinite(opt["rotate"]) ? opt["rotate"] : NaN),
-    "geom_file" => (isempty(copia_forma) ? "" : "forma.toml"), "forma_origen" => forma,
-    "calor" => (calor ? opt["calor"] : NaN), "eta" => opt["eta"], "joule" => opt["joule"],
-    "margen" => opt["margen"], "qss" => qss,
-    "T_red" => Tb, "T_physical" => Tb > 0, "phi" => phi, "lambda_TF" => lTF,
-))
-marcar(opt["restart"] ? "resume $geom/A" : "running $geom/A")
-
-cfg = Config(
+kwc = (;
     GEOM_MODE=geom, geom_file=copia_forma, Nx_sc=Nx, Ny_sc=Ny, Nz_sc=Nz, buf=buf,
     dx=dx, dy=dx, dz=dx, kappa_s=kappa, kappa_p=kappa,
     xi_ratio=xi, gamma12=g12, H_const=H,
@@ -299,6 +303,36 @@ cfg = Config(
     restart_pos=opt["restart"], restart_neg=opt["restart"],
     out_dir=dir, run_tag=token,
 )
+# With heat, drag or T, prod has no pi substeps and only gains where the Maxwell bound binds the
+# explicit step (large kappa).  Elsewhere legacy is faster (kappa = 2, xi_pi/xi_sigma = 4: prod
+# takes 1.7 times longer), so prod is kept only if its step is at least twice the legacy one.
+if scheme == "prod" && (calor || drag || Tb > 0) && !opt["restart"]
+    dtp = derive_params(Config(:prod; kwc..., verbose=false)).dt
+    dtl = derive_params(Config(:legacy; kwc..., verbose=false)).dt
+    if dtp < 2 * dtl
+        println(@sprintf("NOTE: with this term prod has no pi substeps; its step (%.2e) is not twice the legacy one (%.2e), so this run uses legacy.", dtp, dtl))
+        scheme = "legacy"
+    end
+end
+_write_job(joinpath(sal, "job.json"), Dict{String,Any}(
+    "geom" => geom, "kappa" => kappa, "gamma12" => g12,
+    "J_list" => Jlist, "drag" => drag, "nu_drag" => (drag ? opt["nu"] : 0.0),
+    "Nx" => Nx, "Ny" => Ny, "Nz" => Nz, "dx" => dx, "buf" => buf,
+    "t_min_GL" => tmin, "t_min_GL_res" => tres, "mMax" => mMax,
+    "z_mode" => zmode, "H" => H, "xi_ratio" => xi,
+    "cpus" => opt["cpus"], "n_expected" => n_expected,
+    "mesh" => mesh, "window" => win, "restart" => opt["restart"],
+    "project" => "julia",
+    "rotate_deg" => (isfinite(opt["rotate"]) ? opt["rotate"] : NaN),
+    "geom_file" => (isempty(copia_forma) ? "" : "forma.toml"), "forma_origen" => forma,
+    "calor" => (calor ? opt["calor"] : NaN), "eta" => opt["eta"], "joule" => opt["joule"],
+    "margen" => opt["margen"], "qss" => qss,
+    "T_red" => Tb, "T_physical" => Tb > 0, "phi" => phi, "lambda_TF" => lTF,
+    "scheme" => scheme,
+))
+marcar(opt["restart"] ? "resume $geom/A" : "running $geom/A")
+
+cfg = Config(scheme == "prod" ? :prod : :legacy; kwc...)
 # Geometry preview before the first current point: output/geometry_mask.txt (f on the sample
 # nodes) and, if python3 with matplotlib is there, figures/geometry.png drawn in the background.
 try

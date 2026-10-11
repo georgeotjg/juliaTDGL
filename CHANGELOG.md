@@ -1,5 +1,80 @@
 # Changelog
 
+## 1.1.0 (2026-10-10)
+
+- `maxwell_implicit` (off by default): the curl-curl term of the field equation at the new time
+  level. It removes the Maxwell bound on dt; the step is then set by the π-band diffusion. Separable
+  solver for dx = dy = dz, sparse LU otherwise. Validated at κ = 25 against the explicit scheme:
+  onset brackets, flowing voltages to 0.3 %, fixed points to 10⁻⁸; about 20 times faster per unit
+  time at κ = 25, no gain at κ = 2.
+- `dt_scale` (default 1): multiplies the time step, for convergence tests in dt.
+- `cfl_legacy` (default true): the historical step keeps two bounds inherited from a generalised
+  TDGL that this code does not integrate (the factor 1/√(1+γ²) on the diffusion bound and a fixed
+  0.03 dl). With `cfl_legacy=false` the step is set only by the stability of the equations integrated
+  here: explicit Euler on diffusion plus reaction, Maxwell when explicit, heat or the residual when
+  on. Measured on a flowing state: twice the step and V within 0.01 % in the explicit scheme, eight
+  times the step and V within 0.25 % with `maxwell_implicit`; the error is first order in dt.
+- `pi_substeps` (default 1, off; 0 = automatic): the π band, whose diffusion bound is the smallest
+  at ξπ/ξσ = 4, advances with n substeps per step, σ frozen in the coupling and the links rotated at
+  the previous step's rate. With `maxwell_implicit`, `cfl_legacy=false` and `dt_scale=0.5` the
+  step is set by σ. Validated at ξπ/ξσ = 4 against one substep: onset brackets identical at κ = 2 and
+  κ = 25, flowing V to 0.12 %, π current share at the contacts to 0.02 %, η = 0 by symmetry to
+  10⁻¹². Against 1.0.0, 3 times faster per unit time at κ = 2 and about 100 times at κ = 25. Not
+  available with heat, `T_physical`, Φ or drag.
+- The share of the current that crosses the sample (`Isam_arr`, and `Itot_arr`) is the mean over
+  the second half of each point, not its last instant: in flow it fluctuates by one to five per
+  cent as vortices cross. Dynamics unchanged.
+- `Config(:prod)`: the production scheme in one word (implicit curl-curl, stability-only bounds,
+  π substeps, half the σ bound, `conv_by_time`, one BLAS thread, `eps_conv_legacy`). Validated
+  against the explicit scheme: onset brackets identical at κ = 2 and κ = 25, flowing voltages within
+  0.16 %. Recommended for new work; `Config(:legacy)` names the 1.0.0 scheme, which stays the
+  library default so that existing scripts reproduce the published numbers.
+- `eps_conv_legacy` (off by default; on in `:prod`): `eps_conv` is read per cycle of the 1.0.0
+  step and turned into a rate, so a larger step keeps the fixed-point criterion of the explicit
+  scheme in physical time.
+- `run_preset.jl --scheme prod|legacy` and a `scheme` row in the menu's launch wizard: prod by
+  default; runs with Φ or Q fall back to legacy, and runs with heat, drag or a bath temperature use
+  prod only where its step is at least twice the explicit one (large κ); a resumed run keeps
+  the scheme it started with (legacy for runs that predate the option), and `--restart` with a
+  different `--scheme` is refused.
+- `Config(:prod)` with heat, a bath temperature or drag: the π band takes one substep (automatic
+  substeps fall back to one; n > 1 is still an error) and the curl-curl term stays implicit. Against
+  the explicit runs at κ = 25, J = 0.72: a heated flowing state (γ = 0.08) and a collapsed one
+  (γ = 0.04) within 0.24 % and 0.01 % in V, with the same maximum temperature and the π band
+  extinct in the collapse; drag (ν = 0.05) within 0.24 % in both polarities; a bath temperature
+  T = 0.3 (small box, J = ±0.45) within 0.05 %; 20–40 times faster. At κ = 2 with contact heat the
+  deciding reverse rung gives the same crossings (3.43 per line) and voltage to four digits, but
+  there the explicit scheme is faster.
+- `blas_threads` is applied when the implicit solver is built, so scripts that step with `substep!`
+  get it too, and `pin_cpu.sh` sets one OpenBLAS thread. On a box with thick padding six OpenBLAS
+  threads took six cores and ran slower than one.
+- The terminal menu watches only the project's run folders and the ones the user adds
+  (`TDGL_TUI_EXTRA`, the `c` key, `--add-dir`); `--help` lists its options and an unknown option is
+  an error.
+- Printed labels in English (the step limiter, the `v13_diag` line).
+- The README and the guide state that a thick buffer carries normal current in parallel with a
+  silent sample (no common electrodes), so it is not a closer model of a film in vacuum.
+- `conv_by_time` (off by default; on in `:prod`): a resistive point closes once it carries ten
+  phase crossings per line after `t_min_GL_res` (the verdict rule), the resistive test is active from
+  the first point of a sweep, and a fixed point is not accepted while the second half carries
+  crossings. The per-cycle tests depended on the length of a cycle in time.
+- Checkpoints carry the link phases of the previous step: a resumed run with substeps is
+  bit-identical to the uninterrupted one. Older checkpoints still load.
+- `sigma_substeps` (default 1, off): the same substeps for σ, for accuracy studies of larger steps.
+  They showed that the production step cannot grow much: in strong flow at κ = 25 the voltage is
+  0.16 % off at dt = 0.03 and 3 % off at dt = 0.04, with σ and π each at half their bound. The
+  error comes from the field and the links being updated once per step during a phase slip; Strang
+  splitting does not reduce it.
+- With `cfl_legacy=false`, a warning when σ runs above half its stability bound: there explicit
+  Euler is stable but its stiffest mode changes sign every step, and in strong flow at κ = 25 the
+  voltage came out 7 % low at the full step.
+- `maxwell_implicit` is first order in dt: in a slowly evolving driven state the error at the full
+  step is a few per cent in M and halves with `dt_scale=0.5`.
+- Checkpoints store the temperature field and the charge residual when they are in use, and a resumed
+  run continues with them.
+- A sweep warns when `mMax` reserves more than 1 GB for the per-cycle series.
+- The geometry preview also draws the cut cells in 3D (`figures/geometry3d.png`).
+
 ## 1.0.0 (2026-10-09)
 
 First public release.

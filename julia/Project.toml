@@ -1,6 +1,6 @@
 name = "TDGL"
 uuid = "7c1d4a6e-0b3f-4b2e-9a11-5d2c8e4f0a13"
-version = "1.0.0"
+version = "1.1.0"
 authors = ["Jorge Alfredo Robles Calderón"]
 # Two-band TDGL solver (MgB2). Bit-exact port of tdgl_mgb2_3d_v13_3.m
 # plus coupled scalar potential (v14). See README.md. License: MIT.

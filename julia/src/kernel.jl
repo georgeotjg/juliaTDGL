@@ -69,6 +69,18 @@ function psi_update!(F1::Array{ComplexF64,3}, F2::Array{ComplexF64,3},
                      Vx::Array{ComplexF64,3}, Vy::Array{ComplexF64,3},
                      Vz::Array{ComplexF64,3}, fmask::Array{Float64,3},
                      p::Params, mode::NumMode)
+    if p.n_pi > 1 || p.n_sig > 1
+        # A band with substeps is redone by pi_substeps!: compute only the other one,
+        # with the same stencil and arithmetic as _A_plano! (same bits).
+        if p.n_sig == 1
+            _pi_pass!(F1, G1, G2, Vx, Vy, Vz, (p.rx, p.ry, p.rz, p.c1, 1.0, p.dt * p.gamma12), fmask, p, mode)
+        end
+        if p.n_pi == 1
+            kx2, ky2, kz2, _, cpl2 = coef_pi(p)
+            _pi_pass!(F2, G2, G1, Vx, Vy, Vz, (kx2, ky2, kz2, p.c2, p.alpha2_n, cpl2), fmask, p, mode)
+        end
+        return (F1, F2)
+    end
     if p.use_heat || p.T_physical      # α per node: θ = T(r) with heating, or a fixed T_red
         if p.use_drag && p.nu_drag != 0.0
             for k in p.z1+1:p.z2
@@ -99,6 +111,159 @@ function psi_update!(F1::Array{ComplexF64,3}, F2::Array{ComplexF64,3},
         end
     end
     (F1, F2)
+end
+
+# --- band substeps (multirate), only with pi_substeps != 1 or sigma_substeps > 1
+# Called by `substep!` right after `psi_update!`, which already wrote F1 and F2
+# (one step dt).  A band with n > 1 is redone with n substeps of dt/n: the same
+# stencil with every dt-proportional coefficient divided by n, the other band
+# frozen at the start of the step in the coupling.  G1 and G2 are not touched
+# (block [B] reads them).  Between substeps the band's ghosts are refreshed
+# with the covariant Neumann condition of block [H]: at the start of a step
+# that is exactly what [H] left before the swap of [I].  Buffers ping-pong
+# between Wpi and F so that the last substep lands in F.  sigma substeps exist
+# to measure the accuracy ceiling of a larger step (CHANGELOG 1.1); pi
+# substeps lift the light-band bound in production.
+#
+# Links.  With pi_link_extrapolation the link of substep m is V * Q^((m-1)/n),
+# Q = V conj(U) = exp(-i dtheta) the rotation of the previous step: in the
+# Phi = 0 gauge the links rotate wherever E != 0 (the contact layers even in
+# the silent state), and freezing them for n substeps lags the band behind that
+# rotation (measured: the contact current share off by 3-6 %).  After the swap
+# of [I], U holds the links of the previous step until block [E] overwrites
+# them.  Q^(1/n) from short series (asin, cos, sin; error <= 3e-8 for
+# |sin dtheta| <= 0.05, measured |dtheta| <= 0.042 per step at dt = 0.04) and
+# exactly (angle, cis) above that.  Without it (or on the first step after a
+# load, where U = V) the links are frozen.
+function pi_substeps!(s, p::Params, fmask, mode::NumMode)
+    size(p.Wpi) == size(s.F2) || error("Wpi has size $(size(p.Wpi)), F2 $(size(s.F2))")
+    if p.n_sig > 1
+        n = p.n_sig
+        cf = (p.rx / n, p.ry / n, p.rz / n, p.c1 / n, 1.0, p.dt * p.gamma12 / n)
+        _band_substeps!(s.F1, s.G1, s.G2, cf, s, p, fmask, mode, n)
+    end
+    if p.n_pi > 1
+        n = p.n_pi
+        kx2, ky2, kz2, cpl1, cpl2 = coef_pi(p)
+        cf = (kx2 / n, ky2 / n, kz2 / n, p.c2 / n, p.alpha2_n, cpl2 / n)
+        _band_substeps!(s.F2, s.G2, s.G1, cf, s, p, fmask, mode, n)
+    end
+    s
+end
+
+function _band_substeps!(F, G, Go, cf, s, p::Params, fmask, mode::NumMode, n::Int)
+    if p.pi_extrap
+        Lx, Ly, Lz, Rx, Ry, Rz = _pi_links!(p, s, n)
+        _pi_loop!(F, p.Wpi, G, Go, Lx, Ly, Lz, Rx, Ry, Rz, cf, fmask, p, mode, n, true)
+    else
+        _pi_loop!(F, p.Wpi, G, Go, s.Vx, s.Vy, s.Vz, s.Vx, s.Vy, s.Vz, cf, fmask, p, mode, n, false)
+    end
+    F
+end
+
+# Link ranges the band stencil and its ghosts read (the rest are never used here).
+_pi_rx(p) = CartesianIndices((p.x1:p.x2,   p.y1:p.y2+1, p.z1:p.z2+1))
+_pi_ry(p) = CartesianIndices((p.x1:p.x2+1, p.y1:p.y2,   p.z1:p.z2+1))
+_pi_rz(p) = CartesianIndices((p.x1:p.x2+1, p.y1:p.y2+1, p.z1:p.z2))
+
+function _pi_links!(p::Params, s, n::Int)
+    if isempty(p.Lpi)
+        for f in (s.Vx, s.Vy, s.Vz, s.Vx, s.Vy, s.Vz); push!(p.Lpi, similar(f)); end
+    end
+    Lx, Ly, Lz, Rx, Ry, Rz = p.Lpi
+    _pi_rot!(Lx, Rx, s.Vx, s.Ux, n, _pi_rx(p))
+    _pi_rot!(Ly, Ry, s.Vy, s.Uy, n, _pi_ry(p))
+    _pi_rot!(Lz, Rz, s.Vz, s.Uz, n, _pi_rz(p))
+    (Lx, Ly, Lz, Rx, Ry, Rz)
+end
+
+function _pi_rot!(L, R, V, U, n::Int, rng)
+    @inbounds for I in rng
+        v = V[I]; L[I] = v
+        q = v * conj(U[I])                        # Q = exp(-i dtheta)
+        sf = -imag(q)                             # sin(dtheta)
+        if abs(sf) <= 0.05
+            a = (sf + sf*sf*sf/6) / n             # dtheta/n  (asin to third order)
+            a2 = a*a
+            R[I] = complex(1 - a2/2, -a*(1 - a2/6))   # exp(-i dtheta/n)
+        else
+            R[I] = cis(angle(q) / n)              # large rotation (large steps): exact
+        end
+    end
+    L
+end
+
+function _pi_advance_links!(Lx, Ly, Lz, Rx, Ry, Rz, p::Params)
+    @inbounds for I in _pi_rx(p); Lx[I] *= Rx[I]; end
+    @inbounds for I in _pi_ry(p); Ly[I] *= Ry[I]; end
+    @inbounds for I in _pi_rz(p); Lz[I] *= Rz[I]; end
+    nothing
+end
+
+function _pi_loop!(F, W, G, Go, Lx, Ly, Lz, Rx, Ry, Rz, cf, fmask, p::Params, mode::NumMode, n::Int, extrap::Bool)
+    src = G
+    for m in 1:n
+        dst = iseven(n - m) ? F : W
+        _pi_pass!(dst, src, Go, Lx, Ly, Lz, cf, fmask, p, mode)
+        if m < n
+            extrap && _pi_advance_links!(Lx, Ly, Lz, Rx, Ry, Rz, p)
+            ghosts_pi!(dst, Lx, Ly, Lz, p, mode)
+        end
+        src = dst
+    end
+    F
+end
+
+function _pi_pass!(dst, src, Go, Lx, Ly, Lz, cf, fmask, p::Params, mode::NumMode)
+    if p.hilos
+        Threads.@threads for k in p.z1+1:p.z2
+            _A_band_plano!(dst, src, Go, Lx, Ly, Lz, cf, fmask, p, mode, k)
+        end
+    else
+        for k in p.z1+1:p.z2
+            _A_band_plano!(dst, src, Go, Lx, Ly, Lz, cf, fmask, p, mode, k)
+        end
+    end
+    dst
+end
+
+# One band, one z plane: the stencil of _A_plano! with coefficients
+# cf = (kx, ky, kz, c, a_eq, cpl) (sigma: rx, ry, rz, c1, 1, dt g12; pi: coef_pi,
+# c2, a2n, its coupling), all already divided by the number of substeps.
+@inline function _A_band_plano!(D, S, Go, Vx, Vy, Vz, cf, fmask, p::Params, mode::NumMode, k::Int)
+    kx, ky, kz, c, aeq, cpl = cf
+    hard = p.hard
+    @inbounds for j in p.y1+1:p.y2, i in p.x1+1:p.x2
+        g = S[i,j,k]; fm = fmask[i,j,k]
+        if hard && fm == 0.0
+            D[i,j,k] = 0.0 + 0.0im
+            continue
+        end
+        tx = kx*((cmul(mode,Vx[i,j,k],S[i+1,j,k]) - 2*g) + cmul(mode,conj(Vx[i-1,j,k]),S[i-1,j,k]))
+        ty = ky*((cmul(mode,Vy[i,j,k],S[i,j+1,k]) - 2*g) + cmul(mode,conj(Vy[i,j-1,k]),S[i,j-1,k]))
+        tz = kz*((cmul(mode,Vz[i,j,k],S[i,j,k+1]) - 2*g) + cmul(mode,conj(Vz[i,j,k-1]),S[i,j,k-1]))
+        nl = (c*g)*(fm*aeq - cabs2(mode, g))
+        D[i,j,k] = ((((g + tx) + ty) + tz) + nl) + cpl*Go[i,j,k]
+    end
+    nothing
+end
+
+# Block [H] for pi alone, with the links of the current step.
+function ghosts_pi!(X, Vx, Vy, Vz, p::Params, mode::NumMode)
+    (; x1, x2, y1, y2, z1, z2) = p
+    @inbounds for k in z1:z2+1, j in y1:y2+1
+        X[x1,j,k]   = cmul(mode, Vx[x1,j,k], X[x1+1,j,k])
+        X[x2+1,j,k] = cmul(mode, conj(Vx[x2,j,k]), X[x2,j,k])
+    end
+    @inbounds for k in z1:z2+1, i in x1:x2+1
+        X[i,y1,k]   = cmul(mode, Vy[i,y1,k], X[i,y1+1,k])
+        X[i,y2+1,k] = cmul(mode, conj(Vy[i,y2,k]), X[i,y2,k])
+    end
+    @inbounds for j in y1:y2+1, i in x1:x2+1
+        X[i,j,z1]   = cmul(mode, Vz[i,j,z1], X[i,j,z1+1])
+        X[i,j,z2+1] = cmul(mode, conj(Vz[i,j,z2]), X[i,j,z2])
+    end
+    X
 end
 
 # One z plane of the update.  Each plane writes different cells and reads only

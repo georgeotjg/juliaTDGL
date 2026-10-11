@@ -52,6 +52,7 @@ export vacuum_source, solve_poisson, vacuum_from_file, full_potential
 export supercurrent_x, curl_x, divergence_x, divergence_A
 export supercurrent, divergence, curl_curl_A, div_curl_identity, drift_div_A
 export phi_fields
+export MaxwellImplicit, implicit_curl!
 export SolverPhi, substep_phi!, block_C2!, apply_phi_psi!, phi_voltage
 export link_divergence, residual_div_increment, solve!
 export eigenproblem, step1_one_band, step2_two_bands, step3_boundary
@@ -66,6 +67,7 @@ include("geometry.jl")
 include("shapes.jl")
 include("kernel.jl")
 include("maxwell.jl")
+include("maxwell_implicit.jl")
 include("observables.jl")
 include("vtk.jl")
 include("sweep.jl")

@@ -13,7 +13,8 @@ abstract: >
   Three-dimensional two-band time-dependent Ginzburg-Landau solver in Julia for the
   geometric superconducting diode effect in two-gap superconductors (MgB2 as target).
   Link variables, self-consistent vector potential, optional scalar potential by Coulomb
-  projection, Josephson voltmeter with a crossing-count verdict rule. Optional terms, all off
+  projection, Josephson voltmeter with a crossing-count verdict rule, and a production scheme
+  with the curl-curl term implicit and the light band in substeps. Optional terms, all off
   by default, add interband drag, a temperature field with Joule heating, a diffused gauge
   residual and a bath temperature.
 keywords:
@@ -24,8 +25,8 @@ keywords:
   - vortex dynamics
   - Julia
 license: MIT
-version: 1.0.0
-date-released: "2026-10-09"
+version: 1.1.0
+date-released: "2026-10-10"
 repository-code: "https://github.com/georgeotjg/juliaTDGL"
 preferred-citation:
   type: article

@@ -32,8 +32,9 @@ Diffusion can lower the time step: dt ≤ 0.15 dx²/D for the largest active D.
 20/200, `long` 200/1200, `hard` 1200/1200, `paper` 1500/2000 (the protocol of the methods paper). Optional terms: `--drag 1 --nu ν`, `--heat γ [--joule 1] [--margin m]`, `--qss 1`;
 scalar potential: `--phi off|coulomb|tf [--lambda-tf 2]`; geometry from a file: `--shape shape.toml`;
 bath temperature: `--T 0.3`, which switches on `T_physical`; custom mesh and times: `--Nx --Ny --Nz --dx`,
-`--tmin --tminres`. The terminal menu `julia/scripts/tdgl_tui.py` builds the same command, one term at
-a time.
+`--tmin --tminres`; scheme: `--scheme prod|legacy` (prod by default; with Φ or Q legacy, and with
+heat, drag or T the faster of the two, which is prod at large κ). The terminal menu
+`julia/scripts/tdgl_tui.py` builds the same command, one term at a time.
 
 ## Geometry from a file
 
