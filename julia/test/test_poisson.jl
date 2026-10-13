@@ -30,7 +30,7 @@ end
     sde = run_case(cfg; mode=Strict())
     p, g = sde.p, sde.geom
     s_mem = sde.pos.estado
-    s_ck, _, _, _ = load_checkpoint(joinpath(sal,"restart","state_Jpos.mat"),
+    s_ck, _, _, _ = load_checkpoint(checkpoint_path(joinpath(sal,"restart"), "Jpos"),
                                       p, Strict())
     @test all(s_ck.Vx .=== s_mem.Vx)
     @test maximum(abs, [cis(+t) for t in s_mem.thetax] .- s_mem.Vx) > 1.0

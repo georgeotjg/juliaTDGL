@@ -29,7 +29,7 @@
 module TDGL
 
 using LinearAlgebra, SparseArrays, Printf, Dates, Statistics
-import MAT
+import JLD2
 import TOML
 using PrecompileTools
 
@@ -44,7 +44,7 @@ export psi_update!, psi_update_ref!, run_selftest, coef_pi
 export initial_state, substep!, block_B!
 export sweep, run_case, write_summary, ic_guards, bracket_Ic, eta_bracket, brackets
 export save_checkpoint, load_checkpoint
-export read_state, read_octave_text, write_octave_text
+export read_state, read_octave_text, write_octave_text, write_jld2, read_jld2, checkpoint_path
 export magnetization, count_vortices, extract_Ic, efficiency, symmetry_table
 export write_vtk, vtk_from_checkpoint, write_snapshot_xy
 export assemble_laplacian, poisson_convergence, poisson_cost

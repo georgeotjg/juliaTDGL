@@ -1,7 +1,7 @@
 # Shape editor
 
 ```
-python3 julia/editor/server.py      # or, in the terminal menu: g → e, or l → geometry → e
+julia julia/editor/server.jl        # or, in the terminal menu: g → e, or l → geometry → e
 ```
 
 Opens `http://127.0.0.1:8765/`. Saves to `julia/shapes/<name>.toml`; if the

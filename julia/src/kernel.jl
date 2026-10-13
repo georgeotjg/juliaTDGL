@@ -33,8 +33,8 @@
 #      v13.2:  xi_pi/xi_sigma = 1.300*sqrt(Gamma_r)   Hc2_pi = 0.5917/Gamma_r
 #      v13.3:  xi_pi/xi_sigma = 1.300                 Hc2_pi = 0.5917
 #
-#  Found by the linear eigenproblem and confirmed by run 122.  See
-#  docs/HALLAZGO_G6_gamma_r.md and `hc2_pi` in params.jl.
+#  Found by the linear eigenproblem and confirmed by a run.  See failure
+#  mode M16 of the methods paper and `hc2_pi` in params.jl.
 #
 #  WHY THE TEST BANK RUNS AT Gamma_r = 1.3.  At Gamma_r = 1 the two versions
 #  are IDENTICAL TO THE BIT (c2 = dt), so a port that inherited the v13.2

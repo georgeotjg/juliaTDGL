@@ -39,7 +39,7 @@ end
 function sweep(J_range::Vector{Float64}, H_range::Vector{Float64},
                  label::String, g::Geometry, p::Params, mode::NumMode;
                  estado::Union{State,Nothing}=nothing, jp_start::Int=1,
-                 J_arr0=nothing, V_arr0=nothing)
+                 J_arr0=nothing, V_arr0=nothing, VPhi_arr0=nothing)
 
     (; Nx, Ny, Nz, x1, x2, y1, y2, z1, z2, dx, dy, dz, dt, lMax, mMax) = p
     Npts = length(J_range)
@@ -73,6 +73,10 @@ function sweep(J_range::Vector{Float64}, H_range::Vector{Float64},
     Itot_arr = zeros(Npts); Isam_arr = zeros(Npts); nslipw_arr = zeros(Npts)
     thmax_arr = zeros(Npts); dphcyc_arr = zeros(Npts)
     VPhi_arr = fill(NaN, Npts)
+    if VPhi_arr0 !== nothing                    # the Phi drops of the points before a resume
+        n0 = min(length(VPhi_arr0), Npts)
+        VPhi_arr[1:n0] .= VPhi_arr0[1:n0]
+    end
     dmax_arr = zeros(Npts); Vf1_arr = fill(NaN, Npts)
     VA_arr = fill(NaN, Npts); nbig_arr = zeros(Int, Npts); Vh_arr = fill(NaN, Npts)
     Vh2_arr = fill(NaN, Npts)
@@ -499,7 +503,7 @@ function sweep(J_range::Vector{Float64}, H_range::Vector{Float64},
                            Qimb = (sp !== nothing && sp.tau_Q > 0) ? sp.Qimb : nothing)
         if p.keep_rung_states && ck !== nothing
             dr = joinpath(dirname(ck), "rungs"); mkpath(dr)
-            cp(ck, joinpath(dr, @sprintf("state_%s_J%+.4f.mat", label, J_cur)); force=true)
+            cp(ck, joinpath(dr, @sprintf("state_%s_J%+.4f", label, J_cur) * p.ck_ext); force=true)
         end
         _append_j_history(p, label, J_cur, V_cur, conv_mode, m, Nv1, Nv2,
                           p.v13_diag ? ps2_arr[jp] : NaN)
@@ -837,7 +841,8 @@ end
 """
     save_checkpoint(p, s, label, jp, V_arr, J_arr; VPhi_arr, Qimb)
 
-Writes `restart/state_Jpos.mat` or `state_Jneg.mat` (text `.mat`): Ψ of both
+Writes `restart/state_Jpos.jld2` or `state_Jneg.jld2` (`.mat`, Octave text, with
+`checkpoint_format = "octave"`): Ψ of both
 bands, the link phases, the fields, the point index and the V(J) so far.
 With heat on it also stores the temperature field θ, and with a relaxing
 residual (tau_Q > 0) the residual Q, so that a resumed run continues with
@@ -847,7 +852,7 @@ function save_checkpoint(p::Params, s::State, label::String, jp::Int,
                             V_arr, J_arr; VPhi_arr=nothing, Qimb=nothing)
     isempty(p.out_dir) && return nothing
     ckl = replace(replace(label, "+" => "pos"), "-" => "neg")
-    ruta = joinpath(p.out_dir, "restart", "state_$(ckl).mat")
+    ruta = joinpath(p.out_dir, "restart", "state_$(ckl)" * p.ck_ext)
     campos = Pair{String,Any}["G1" => s.G1, "G2" => s.G2,
         "thetax" => s.thetax, "thetay" => s.thetay, "thetaz" => s.thetaz,
         # link phases of the previous step (after the swap of [I] they are in phi):
@@ -861,14 +866,14 @@ function save_checkpoint(p::Params, s::State, label::String, jp::Int,
     VPhi_arr === nothing || push!(campos, "VPhi_arr" => reshape(VPhi_arr, :, 1))
     p.use_heat && push!(campos, "Temp" => p.Temp)
     Qimb === nothing || push!(campos, "Qimb" => Qimb)
-    write_octave_text(ruta, campos...)
+    p.ck_ext == ".jld2" ? write_jld2(ruta, campos...) : write_octave_text(ruta, campos...)
     ruta
 end
 
 """
     load_checkpoint(ruta, p, mode) -> (State, jp, V_arr, J_arr)
 
-Rebuilds a full `State` from a saved `.mat` (text or binary v7), and restores
+Rebuilds a full `State` from a saved checkpoint (JLD2, Octave text or binary v7), and restores
 θ and Q when the checkpoint has them and the run uses them.
 """
 function load_checkpoint(ruta::AbstractString, p::Params, mode::NumMode)

@@ -108,7 +108,7 @@
     paso!(x) = substep!(x, qp, gp, Strict(); H=0.03, HJ=0.0, J_cur=0.4, mi=mip)
     for _ in 1:60; paso!(sa); end
     save_checkpoint(qp, sa, "J+", 1, [0.0], [0.4])
-    sb, = load_checkpoint(joinpath(dir, "restart", "state_Jpos.mat"), qp, Strict())
+    sb, = load_checkpoint(checkpoint_path(joinpath(dir, "restart"), "Jpos"), qp, Strict())
     for _ in 1:60; paso!(sa); paso!(sb); end
     @test sa.G1 == sb.G1 && sa.G2 == sb.G2 && sa.thetax == sb.thetax && sa.hz == sb.hz
 end

@@ -32,7 +32,7 @@ Base.@kwdef mutable struct Config
     # static quantity.  CAUTION when reading the archive: up to v13.2 it
     # divided only the condensation term and then DID move xi_pi and Hc2_pi
     # (1.300*sqrt(Gr) and 0.5917/Gr).  See `hc2_pi` and `hc2_pi_f21` in
-    # params.jl and docs/HALLAZGO_G6_gamma_r.md.
+    # params.jl, and failure mode M16 of the methods paper (Zenodo, see README).
     gamma_ratio::Float64 = 1.0
     H_const::Float64 = 0.30           # applied H [Hc2] in VI mode
 
@@ -169,8 +169,8 @@ Base.@kwdef mutable struct Config
     # Each plane writes different memory and there is no reduction, so the
     # result is BIT FOR BIT the same with any number of threads: the
     # acceptance test still holds.  Acts only if julia started with -t N.
-    # See documentacion/01_ESCALADO.md: on the target laptop it scales poorly
-    # (8 of 10 cores are E-cores); a cluster node is where it pays.
+    # On a hybrid laptop processor (most cores are efficiency cores) it scales
+    # poorly; for a campaign, one single-threaded process per core is better.
     use_threads::Bool = true
     # VTK dump for ParaView.  0 = none.  n>0 writes
     # output/vtk/estado_<tag>_<pol>_J<...>.vtk every n current points,
@@ -202,7 +202,8 @@ Base.@kwdef mutable struct Config
     # The PHYSICAL gauge of this setup is :neumann: there are no electrodes,
     # the current enters through the Ampere self-field.  Dirichlet Phi=0 on
     # the box is an arbitrary ground and moves V_Phi by a factor ~15.  See
-    # 02_V14.md §4.  The default is kept so as not to break the numerical anchor.
+    # the guide (docs/solver_guide.pdf, scalar potential).  The default is kept
+    # so as not to break the numerical anchor.
     phi_bc::Symbol = :dirichlet        # :dirichlet | :neumann
     # Method of the Phi solve.  `:separable` diagonalises the Laplacian into
     # three small 1-D eigenproblems and solves with BLAS-3; it is DIRECT AND
@@ -275,6 +276,10 @@ Base.@kwdef mutable struct Config
     # the last one of each polarity, for analysis after the run (edge fields,
     # current maps).  Off by default: one checkpoint per rung.
     keep_rung_states::Bool = false
+    # Checkpoint format: "jld2" (compressed binary, exact, about a quarter of the text size, 5-10 times
+    # faster) or "octave" (the text .mat of the releases up to 1.1, exact). Either is read back by
+    # `read_state` and resumed by `run_case`; `checkpoint_path(dir, label)` finds whichever exists.
+    checkpoint_format::String = "jld2"
     # Vacuum padding per axis; -1 = use `buf`. Allows separating the padding
     # across the faces y (edge field) from that across the faces z.
     bufx::Int = -1; bufy::Int = -1; bufz::Int = -1

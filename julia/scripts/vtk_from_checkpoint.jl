@@ -1,7 +1,7 @@
 # ============================================================================
 #  scripts/vtk_from_checkpoint.jl — checkpoint to ParaView, no simulation
 #
-#  Reads a state_J*.mat (Octave text or binary v7) and writes legacy ASCII
+#  Reads a state_J*.jld2 or state_J*.mat (Octave text) and writes legacy ASCII
 #  VTK.  Works for Octave checkpoints as well as Julia ones.
 #
 #  Usage:
@@ -16,7 +16,7 @@ using Pkg
 Pkg.activate(joinpath(@__DIR__, ".."); io=devnull)
 using TDGL
 
-length(ARGS) >= 2 || error("usage: vtk_from_checkpoint.jl INPUT.mat OUTPUT.vtk [--xi DX]")
+length(ARGS) >= 2 || error("usage: vtk_from_checkpoint.jl INPUT.jld2|INPUT.mat OUTPUT.vtk [--xi DX]")
 fmat = ARGS[1]
 fout = ARGS[2]
 xi = nothing

@@ -84,6 +84,7 @@ struct Params
     # charge residual read from a checkpoint, copied into the Phi solver when a
     # sweep starts (empty unless use_phi and tau_Q > 0)
     Q_restart::Array{Float64,3}
+    ck_ext::String                       # ".jld2" or ".mat" (Octave text)
 end
 
 """
@@ -308,7 +309,14 @@ function derive_params(cfg::Config)
            cfg.unwrap_every, cfg.keep_rung_states, cfg.maxwell_implicit,
            n_pi, n_sig, cfg.conv_by_time, cfg.blas_threads, (n_pi > 1 || n_sig > 1) ? zeros(ComplexF64, Nx+1, Ny+1, Nz+1) : zeros(ComplexF64, 0, 0, 0),
            cfg.pi_link_extrapolation, Array{ComplexF64,3}[],
-           (cfg.use_phi && cfg.tau_Q > 0) ? zeros(Nx+1, Ny+1, Nz+1) : zeros(0, 0, 0))
+           (cfg.use_phi && cfg.tau_Q > 0) ? zeros(Nx+1, Ny+1, Nz+1) : zeros(0, 0, 0),
+           _ck_ext(cfg.checkpoint_format))
+end
+
+function _ck_ext(f::AbstractString)
+    f == "jld2" && return ".jld2"
+    f == "octave" && return ".mat"
+    error("checkpoint_format = \"$f\": use \"jld2\" or \"octave\"")
 end
 
 """

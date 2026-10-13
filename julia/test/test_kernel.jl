@@ -139,6 +139,6 @@ end
     cbud = cfg_fixture(out_dir=sal, guard_hours=1e-9, J_list=[0.0, 0.05, 0.10],
                        mMax=40, iter_min=40)
     sde = run_case(cbud; mode=Fast())
-    @test isfile(joinpath(sal, "restart", "state_Jpos.mat"))
+    @test isfile(checkpoint_path(joinpath(sal, "restart"), "Jpos"))
     @test count(!=(' '), sde.pos.cflag) < 3     # did not reach the last point
 end

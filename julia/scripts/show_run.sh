@@ -5,7 +5,8 @@
 # Without arguments: one-shot list of all runs (the terminal menu's job table).
 set -euo pipefail
 if [[ $# -lt 1 ]]; then
-  exec python3 "$(cd "$(dirname "$0")" && pwd)/tdgl_tui.py" --once --on
+  JL=$(command -v julia || echo "$HOME/.juliaup/bin/julia")
+  exec "$JL" --startup-file=no "$(cd "$(dirname "$0")" && pwd)/tdgl_tui.jl" --once
 fi
 ROOT="$1"
 echo "=== $ROOT  $(date '+%H:%M:%S') ==="

@@ -1,2 +1,3 @@
 #!/usr/bin/env bash
-exec python3 "$(cd "$(dirname "$0")" && pwd)/tdgl_tui.py" "$@"
+JL=$(command -v julia || echo "$HOME/.juliaup/bin/julia")
+exec "$JL" --startup-file=no "$(cd "$(dirname "$0")" && pwd)/tdgl_tui.jl" "$@"

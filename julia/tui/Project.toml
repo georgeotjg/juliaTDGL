@@ -1,0 +1,12 @@
+name = "TDGLTUI"
+uuid = "f3496c27-cc1a-52cc-b563-2f98b2b89354"
+version = "0.1.0"
+authors = ["Jorge Alfredo Robles Calderón"]
+
+[deps]
+Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
+Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
+Sockets = "6462fe0b-24de-5631-8697-dd941f90decc"
+TOML = "fa267f1f-6049-4f14-aa54-33bafae1ed76"
+
+[apps.tdgl-tui]

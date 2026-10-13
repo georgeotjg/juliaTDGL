@@ -357,8 +357,10 @@ marked \code{*} and is not converged. \code{Config(:paper)} sets the
 protocol of the methods paper (tolerance, floors and ceiling).
 
 After each rung the state of that polarity is written to
-\code{restart/state\_Jpos.mat} or \code{state\_Jneg.mat}; a run restarted
-with \code{restart\_pos/restart\_neg} continues at the next rung. A file
+\code{restart/state\_Jpos.jld2} or \code{state\_Jneg.jld2} (compressed JLD2, exact;
+\code{checkpoint\_format="octave"} writes the text \code{.mat} of the earlier releases); a run restarted with \code{restart\_pos/restart\_neg} continues at the next
+rung, and \code{read\_state} and \code{load\_checkpoint} open either format, so older
+runs resume too. Binary MATLAB files need \code{using MAT} (an optional extension). A file
 \code{STOP.txt} in the run folder stops the run after the current rung.
 \code{guard\_hours} sets a wall-clock budget, and \code{guard\_psi} stops a
 run whose $|\Psi|$ diverges (usually a time step too large for $\kappa$).
@@ -456,7 +458,7 @@ f = 0.0
 \end{verbatim}
 Because positions are physical, the same file rasterises on any mesh; the
 catalogue shapes written as files reproduce the catalogue masks bit for
-bit. The browser editor (\code{python3 julia/editor/server.py}) draws these
+bit. The browser editor (\code{julia julia/editor/server.jl}) draws these
 files. One picks a face of the sample and paints from it inward, a given
 number of cells deep and starting a given number of cells inside, so cuts
 can be buried; figures, gradients of $f$ or of depth, and a palette of
@@ -545,7 +547,7 @@ times (\code{--window} or \code{--tmin --tminres}), the scalar potential
 \code{--heat}, \code{--qss}), and the scheme (\code{--scheme prod|legacy};
 prod unless $\Phi$ or $Q$ needs legacy; with heat, drag or $T$, prod only where
 its step is at least twice the explicit one; a resumed run keeps its
-scheme). \code{python3 julia/scripts/tdgl\_tui.py} builds
+scheme). \code{julia julia/scripts/tdgl\_tui.jl} builds
 the same command step by step, lists the runs, stops them cleanly and
 resumes them.
 
@@ -562,21 +564,27 @@ as read-only rows, with their progress read from their own output.
 
 \subsection{On a cluster}
 
-The menu is for a workstation; on a cluster a run is one batch job. Each job
-uses one process, with the kernel threaded over $z$ planes
-(\code{use\_threads}, \code{JULIA\_NUM\_THREADS}). A Slurm script:
+The menu is for a workstation; on a cluster a run is one batch job with one
+core (\code{JULIA\_NUM\_THREADS=1}, \code{OPENBLAS\_NUM\_THREADS=1}: more BLAS
+threads only oversubscribe). Ladders at different fields, shapes or
+parameters do not talk to each other, so the natural use of a cluster is a
+job array, one task per run: $N$ tasks give $N$ times the throughput with no
+change to the solver.
+\code{examples/slurm\_array.sh} runs the notched box at five fields:
 \begin{verbatim}
-#!/bin/bash
-#SBATCH --job-name=tdgl --cpus-per-task=2 --time=48:00:00
-export JULIA_NUM_THREADS=$SLURM_CPUS_PER_TASK
-julia --project=julia julia/scripts/run_preset.jl --geom WEDGE \
-      --mesh production --window paper --J 0.0,0.040,0.045 \
-      --dir runs/wedge_$SLURM_JOB_ID
+#SBATCH --array=0-4 --cpus-per-task=1 --mem=2G --time=24:00:00
+export JULIA_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1
+FIELDS=(0.015 0.03 0.06 0.09 0.12)
+H=${FIELDS[$SLURM_ARRAY_TASK_ID]}
+julia --project=julia julia/scripts/run_preset.jl --geom WEDGE --kappa 25 \
+      --xi-ratio 4 --H $H --J 0.02,0.04,0.06,0.08,0.10,0.20,0.30,0.40 \
+      --mesh production --window long --dir runs/field_H$H ${RESUME:+--restart}
 \end{verbatim}
-A job stopped by the time limit resumes from its last closed point with
-\code{--restart} and the same \code{--dir}. Results are read without the
-menu: \code{python3 julia/scripts/tdgl\_tui.py --results}, or
-\code{brackets(sde)} in Julia.
+A task stopped by the time limit resumes from its last closed point when it is
+submitted again with \code{RESUME=1}: the folder name must not depend on the
+job number. \code{examples/slurm\_job.sh} is the same for a single run.
+Results are read without the menu: \code{julia julia/scripts/tdgl\_tui.jl
+--results}, or \code{brackets(sde)} in Julia.
 
 \subsection{What a run writes}
 \begin{center}
@@ -588,7 +596,7 @@ file & content \\
 \code{j\_history.csv} & one line per closed rung: $J$, $V$, class, vortices \\
 \code{run\_info.txt} & time step and cycle length, to count crossings \\
 \code{output/RUN\_SUMMARY\_*.txt} & parameters, $I_c^\pm$, $\eta$ and a convergence table \\
-\code{restart/state\_J\{pos,neg\}.mat} & full state, text \code{.mat} format \\
+\code{restart/state\_J\{pos,neg\}.jld2} & full state (compressed JLD2; \code{.mat} with \code{checkpoint\_format="octave"}) \\
 \code{output/snapshots/} & mid-plane $|\Psi|^2$ as PGM and CSV \\
 \code{output/vtk/} & legacy VTK for ParaView (\code{vtk\_every}) \\
 \bottomrule

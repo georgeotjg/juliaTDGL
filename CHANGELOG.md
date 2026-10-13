@@ -1,5 +1,32 @@
 # Changelog
 
+## 1.2.0 (2026-10-13)
+
+Same solver and the same results as 1.1.0: the test suite reproduces its reference states to the
+bit. What changed is around it.
+
+- **Checkpoints are compressed JLD2** (`restart/state_J*.jld2`): about a quarter of the size of the
+  text `.mat`, 5–10 times faster to write and read, exact, stamped with the code version.
+  `checkpoint_format = "octave"` keeps the text `.mat` of the earlier releases. `read_state` and
+  `load_checkpoint` read both, and every earlier run resumes. A new test resumes a stopped ladder for
+  every kind of state (heat with Joule, Φ with τ_Q, drag, bath temperature, shape files, `:prod`) in
+  both formats and checks it against the same ladder run without a stop, to the bit. Scripts that
+  build the name `state_*.mat` by hand should use `checkpoint_path(dir, label)`.
+- **A resumed run with Φ keeps the V_Φ of the points before the stop** (it was NaN).
+- **MAT.jl is no longer a dependency** (54 packages instead of 83): it is a package extension, loaded
+  only to read binary MATLAB files.
+- **The terminal menu and the shape editor server are Julia** (`julia/tui/`, a small package with the
+  standard library only, Julia 1.11 or later): same screens and results as the Python versions, which
+  are retired. Python is needed only for the optional matplotlib figures. It is also a Pkg app (Julia
+  1.12 or later): `Pkg.Apps.develop(path="julia/tui")` installs the command `tdgl-tui`
+  (`--editor` opens the editor).
+- **Terminal menu:** live runs first, then the most recently active (it was alphabetical); folders
+  added with `--add-dir` are searched whole; the `runs/` folder at the root, where the examples write,
+  is listed; a long name is cut in the folder first, so the run name stays readable.
+- **Cluster:** `examples/slurm_array.sh`, a job array (one task per field); `slurm_job.sh` fixed (one
+  BLAS thread, a folder that does not change between submissions, so `RESUME=1` resumes).
+- Tested with Julia 1.12 and 1.13.
+
 ## 1.1.0 (2026-10-10)
 
 - `maxwell_implicit` (off by default): the curl-curl term of the field equation at the new time

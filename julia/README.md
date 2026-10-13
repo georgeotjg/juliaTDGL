@@ -34,7 +34,7 @@ scalar potential: `--phi off|coulomb|tf [--lambda-tf 2]`; geometry from a file: 
 bath temperature: `--T 0.3`, which switches on `T_physical`; custom mesh and times: `--Nx --Ny --Nz --dx`,
 `--tmin --tminres`; scheme: `--scheme prod|legacy` (prod by default; with Φ or Q legacy, and with
 heat, drag or T the faster of the two, which is prod at large κ). The terminal menu
-`julia/scripts/tdgl_tui.py` builds the same command, one term at a time.
+`julia/scripts/tdgl_tui.jl` builds the same command, one term at a time.
 
 ## Geometry from a file
 
@@ -48,7 +48,7 @@ A browser editor draws these files and checks, while you draw, the mirror symmet
 η = 0, contact with the injection faces, and normal shunts:
 
 ```bash
-python3 julia/editor/server.py        # http://127.0.0.1:8765/
+julia julia/editor/server.jl          # http://127.0.0.1:8765/
 ```
 
 Use one term at a time against a control run with the same protocol. With several terms on, a

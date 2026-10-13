@@ -11,9 +11,9 @@
 #  round trip for Float64), and any `state_J*.mat` of the archive opens from
 #  Julia with nothing installed.
 #
-#  `read_state` tries MAT.jl first (in case the file IS binary v7) and falls
-#  back to the text reader, so one function name serves both halves of the
-#  archive.
+#  `read_state` reads all three formats by their header or extension: JLD2
+#  (the checkpoints since v4), this Octave text, and binary v7 (only with
+#  `using MAT`, a package extension, since no checkpoint of this code is one).
 #
 #  The WRITER emits the same text format, so a checkpoint written by Julia is
 #  opened by Octave with `load` without conversion.  That is what allows the
@@ -110,17 +110,60 @@ end
 """
     read_state(ruta) -> Dict{String,Any}
 
-Opens an archived `.mat`, binary (MAT.jl) or Octave text.
-It is the entry point of the acceptance test.
+Opens a checkpoint: JLD2 (`.jld2`, the default format), Octave text (`.mat` of the releases up to
+1.1 and of the reference archive) or binary MATLAB v7 (only with `using MAT`, through the
+package extension). It is the entry point of the acceptance test.
 """
 function read_state(ruta::AbstractString)
     isfile(ruta) || error("does not exist: $ruta")
-    try
-        return MAT.matread(ruta)
-    catch
-        return read_octave_text(ruta)
+    endswith(lowercase(ruta), ".jld2") && return read_jld2(ruta)
+    if _es_mat_binario(ruta)
+        applicable(_read_mat_binary, ruta) ||
+            error("$ruta is a binary MATLAB file: `using MAT` (package extension) to read it")
+        return _read_mat_binary(ruta)
     end
+    return read_octave_text(ruta)
 end
+
+# Binary MATLAB files start with the text "MATLAB"; Octave text files with "# Created by".
+_es_mat_binario(ruta) = open(io -> String(read(io, 6)) == "MATLAB", ruta)
+
+# Reader for binary MATLAB files: no method here; `ext/TDGLMATExt.jl` adds one when MAT is loaded.
+function _read_mat_binary end
+
+"""
+    checkpoint_path(dir, label) -> String
+
+The checkpoint `state_<label>` in `dir`: the `.jld2` or the `.mat` that exists (the newer one if
+both do, as after a change of `checkpoint_format`); if neither, the `.jld2` name.
+"""
+function checkpoint_path(dir::AbstractString, label::AbstractString)
+    j = joinpath(dir, "state_$label.jld2"); m = joinpath(dir, "state_$label.mat")
+    isfile(j) && isfile(m) && return mtime(j) >= mtime(m) ? j : m
+    isfile(m) && !isfile(j) ? m : j
+end
+
+"""
+    write_jld2(ruta, pares...)
+
+Writes the pairs `"name" => value` to a compressed JLD2 file (exact Float64 and ComplexF64). It writes
+to a temporary file and renames it, so a run stopped while writing never leaves a broken checkpoint.
+"""
+function write_jld2(ruta::AbstractString, pares::Pair{String,<:Any}...)
+    mkpath(dirname(ruta))
+    tmp = ruta * ".tmp"
+    JLD2.jldopen(tmp, "w"; compress=true) do f      # zlib: about a quarter of the text size, exact
+        f["created_by"] = "TDGL.jl " * Dates.format(Dates.now(), "yyyy-mm-dd HH:MM:SS")
+        f["tdgl_version"] = string(something(pkgversion(@__MODULE__), "dev"))   # which code wrote this state
+        for (k, v) in pares
+            f[k] = v
+        end
+    end
+    mv(tmp, ruta; force=true)
+    ruta
+end
+
+read_jld2(ruta::AbstractString) = JLD2.jldopen(f -> Dict{String,Any}(k => f[k] for k in keys(f)), ruta, "r")
 
 # ---------------------------------------------------------------------------
 #  WRITING

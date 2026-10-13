@@ -16,7 +16,7 @@
     Q = 0.02 .* reshape(cos.(1:length(p.Q_restart)), size(p.Q_restart))
     TDGL.save_checkpoint(p, s, "J+", 3, [0.1, 0.2, 0.3], [0.0, 0.1, 0.2]; Qimb=Q)
     T0 = copy(p.Temp); fill!(p.Temp, 0.0)
-    s2, jp, V, J = load_checkpoint(joinpath(dir, "restart", "state_Jpos.mat"), p, Strict())
+    s2, jp, V, J = load_checkpoint(checkpoint_path(joinpath(dir, "restart"), "Jpos"), p, Strict())
     @test jp == 3 && V == [0.1, 0.2, 0.3]
     @test p.Temp == T0
     @test p.Q_restart == Q

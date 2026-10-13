@@ -85,7 +85,8 @@ function run_case(cfg::Config; mode::NumMode=Strict())
 
     est_p, jpp, Va_p, Ja_p = _quiza_restart(cfg, p, mode, "Jpos", cfg.restart_pos)
     res_p = sweep(J_pos, Hc, "J+", g, p, mode;
-                    estado=est_p, jp_start=jpp, J_arr0=Ja_p, V_arr0=Va_p)
+                    estado=est_p, jp_start=jpp, J_arr0=Ja_p, V_arr0=Va_p,
+                    VPhi_arr0=_vphi_previo(cfg, "Jpos", est_p))
 
     est_n, jpn, Va_n, Ja_n = _quiza_restart(cfg, p, mode, "Jneg", cfg.restart_neg)
     # θ lives in Params, not in the checkpoint. Without this the − sign
@@ -94,7 +95,8 @@ function run_case(cfg::Config; mode::NumMode=Strict())
         fill!(p.Temp, p.T_bath)
     end
     res_n = sweep(J_neg, Hc, "J-", g, p, mode;
-                    estado=est_n, jp_start=jpn, J_arr0=Ja_n, V_arr0=Va_n)
+                    estado=est_n, jp_start=jpn, J_arr0=Ja_n, V_arr0=Va_n,
+                    VPhi_arr0=_vphi_previo(cfg, "Jneg", est_n))
 
     Icp = extract_Ic(res_p.J_arr, res_p.V_arr, cfg.V_threshold; strict=cfg.strict_two_rung)
     Icn = extract_Ic(abs.(res_n.J_arr), res_n.V_arr, cfg.V_threshold; strict=cfg.strict_two_rung)
@@ -136,9 +138,16 @@ function _run_MH(cfg::Config, p::Params, g::Geometry, mode::NumMode, t0)
     sde
 end
 
+# The Phi drops (V_Phi, a diagnostic) of the points closed before a resume, from the checkpoint.
+function _vphi_previo(cfg::Config, ckl::String, est)
+    est === nothing && return nothing
+    w = read_state(checkpoint_path(joinpath(cfg.out_dir, "restart"), ckl))
+    haskey(w, "VPhi_arr") ? vec(Float64.(w["VPhi_arr"])) : nothing
+end
+
 function _quiza_restart(cfg::Config, p::Params, mode::NumMode, ckl::String, activo::Bool)
     activo || return (nothing, 1, nothing, nothing)
-    ruta = joinpath(cfg.out_dir, "restart", "state_$(ckl).mat")
+    ruta = checkpoint_path(joinpath(cfg.out_dir, "restart"), ckl)
     isfile(ruta) || (cfg.verbose && println("[restart] $ruta does not exist; starting from scratch");
                      return (nothing, 1, nothing, nothing))
     s, jp, V, J = load_checkpoint(ruta, p, mode)

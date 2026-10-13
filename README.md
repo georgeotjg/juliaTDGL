@@ -17,6 +17,15 @@ editor for three-dimensional shapes, a guide to the physics and the numerics
 **Author:** Jorge Alfredo Robles Calderón — Departamento de Física, Universidad Nacional de Colombia,
 Bogotá.
 
+**Quick start** (Julia 1.10 or later; everything else is installed by the first command):
+
+```bash
+git clone https://github.com/georgeotjg/juliaTDGL.git && cd juliaTDGL
+julia --project=julia -e 'using Pkg; Pkg.instantiate()'
+julia --project=julia examples/first_run.jl     # a notched box, both polarities, about a minute
+julia julia/scripts/tdgl_tui.jl                 # the terminal menu: launch, follow, stop, resume
+```
+
 ## What it solves
 
 Two order parameters Ψσ, Ψπ coupled by a Josephson term, and the vector potential **A**, on a
@@ -96,7 +105,7 @@ cluster, is in [`docs/solver_guide.pdf`](docs/solver_guide.pdf).
 The code is a Julia project, not a registered package: clone it and instantiate it once. The
 exact versions of every dependency are pinned in `julia/Manifest.toml`.
 
-1. Julia 1.10 or later. On Linux and macOS, `curl -fsSL https://install.julialang.org | sh`
+1. Julia 1.10 or later (1.11 or later for the terminal menu). On Linux and macOS, `curl -fsSL https://install.julialang.org | sh`
    installs `juliaup`; on Windows, follow
    [julialang.org/downloads](https://julialang.org/downloads/).
 2. Clone and instantiate:
@@ -113,8 +122,8 @@ exact versions of every dependency are pinned in `julia/Manifest.toml`.
    julia --project=julia julia/test/run.jl
    ```
 
-Optional: Python 3.10 or later for the terminal menu and the shape editor (standard library
-only), and matplotlib for the run figures.
+Everything runs in Julia, the terminal menu and the shape editor included. Optional: Python 3 with
+matplotlib, only for the quick run figures (`plot_summary.py`).
 
 ## A first run
 
@@ -158,7 +167,7 @@ With Φ they use the explicit scheme; with heat, drag or a bath temperature, the
 ## Shapes
 
 Any geometry can be drawn in the browser, with nothing to install:
-`python3 julia/editor/server.py` opens it. Pick a face of the sample (or click it on the 3D view)
+`julia julia/editor/server.jl` opens it. Pick a face of the sample (or click it on the 3D view)
 and paint from that face inward, `depth` cells deep and `from` cells inside, so cuts can also be
 buried in the sample; figures, f and depth gradients, and a palette of condensation strengths are
 there too. The 3D view shows the current, the field and the face through which vortices enter for
@@ -170,28 +179,31 @@ where either band turns normal. Shapes are saved as TOML in `julia/shapes/` and 
 
 ## The terminal menu
 
-`python3 julia/scripts/tdgl_tui.py` launches, stops and resumes runs and lists every Julia run of
+`julia julia/scripts/tdgl_tui.jl` launches, stops and resumes runs and lists every Julia run of
 the project with its progress. The launch wizard goes through a starting point, the geometry
 (catalogue, a saved shape, or a new one drawn in the editor), a parameter table (including the
 scheme, `prod` by default), the scalar potential and at most one optional term. Key `v` gives the
 result of every run with the verdict rule; key `c` adds or removes folders to watch (runs started
 from your own scripts elsewhere show up too); while the menu is open (or with `--watch`) a desktop
-notification is sent when a run finishes. `--help` lists the command-line options.
+notification is sent when a run finishes. `--help` lists the command-line options. The menu and the
+editor server are a small package of their own (`julia/tui/`, standard library only, Julia 1.11 or
+later); the first start compiles it once, later ones take a fraction of a second. To have it as a
+command anywhere (Julia 1.12 or later, Pkg apps):
+
+```bash
+julia -e 'using Pkg; Pkg.Apps.develop(path="julia/tui")'   # installs ~/.julia/bin/tdgl-tui
+tdgl-tui            # the menu;  tdgl-tui --editor  the shape editor;  tdgl-tui --help
+```
+
+`~/.julia/bin` must be on the `PATH`. After updating Julia, `Pkg.Apps.update()` refreshes the command.
+
+![The terminal menu: the runs, its keys and the verdict of each run](docs/img/tui_runs.svg)
 
 ![Launch wizard of the terminal menu, step 3: the parameter table](docs/img/tui_parameters.svg)
 
-```
-│ #   run                 term     state     progress        last J          %CPU │
-│ 1   julia/runs/demo     base     ● live    ██████░░ 19/26  J-0.120 V      98.9% │
-
-> v
-  demo: Ic+ ∈ (0.08, 0.14)  |Ic−| ∈ (0.16, 0.2)  η = -24.1 % [-42.9, -6.7]
-        undecided: +0.1 +0.12 −0.18  σ_V@0.2 = +21.0 %
-```
-
 ## What a run gives
 
-`python3 julia/scripts/plot_summary.py RUNDIR` draws V(J) for both polarities (linear, and
+`python3 julia/scripts/plot_summary.py RUNDIR` (optional: Python 3 with matplotlib) draws V(J) for both polarities (linear, and
 log|V| against V_th, where the thresholds are read) and the mid-plane |Ψσ|² of every closed
 current point. For ParaView, `vtk_from_checkpoint.jl` writes the full state as VTK.
 
@@ -202,8 +214,9 @@ To compare shapes before committing hours, `julia/scripts/scout_shapes.jl a.toml
 each on the production box with short windows and prints a ranking (minutes per shape; a ranking,
 not a measurement: the winner then needs the full protocol and its mirror).
 
-Long runs save a checkpoint after every current point and resume from it (`restart_pos`,
-`restart_neg`); `guard_hours` stops cleanly before a queue limit, and `keep_rung_states` keeps the
+Long runs save a checkpoint after every current point (`restart/state_J*.jld2`, compressed and exact;
+`checkpoint_format = "octave"` writes the text `.mat` of earlier releases, and both are read back) and
+resume from it (`restart_pos`, `restart_neg`); `guard_hours` stops cleanly before a queue limit, and `keep_rung_states` keeps the
 state of every point, not only the last.
 
 The figures below come from a run of about ten minutes: the notched box of the first run, H = 0.5,
@@ -240,7 +253,7 @@ those rungs are re-measured on doubled windows.
 julia/          solver (src), tests, scripts, terminal menu, shape files and editor
 data/           stored states used by the regression tests
 docs/           solver_guide.pdf: the model, the numerics, the optional terms and the protocol
-examples/       the first run and the demonstration run of this README, and a Slurm job
+examples/       the first run, the demonstration run of this README, and Slurm scripts (one run, a job array)
 ```
 
 ## Known limitations

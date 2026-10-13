@@ -24,7 +24,7 @@
     peor = 0.0
     for pol in ("Jpos", "Jneg")
         ref = read_state(joinpath(FIXT, "restart", "state_$pol.mat"))
-        got = read_state(joinpath(salida, "restart", "state_$pol.mat"))
+        got = read_state(checkpoint_path(joinpath(salida, "restart"), pol))
         for c in campos
             @test size(ref[c]) == size(got[c])
             @test all(ref[c] .=== got[c])          # === compares BITS, not values
@@ -54,7 +54,7 @@ end
     campos = ("G1", "G2", "thetax", "thetay", "thetaz", "hx", "hy", "hz")
     for pol in ("Jpos", "Jneg")
         ref = read_state(joinpath(ref_dir, "state_$pol.mat"))
-        got = read_state(joinpath(salida, "restart", "state_$pol.mat"))
+        got = read_state(checkpoint_path(joinpath(salida, "restart"), pol))
         for c in campos
             @test all(ref[c] .=== got[c])
         end
@@ -90,7 +90,7 @@ end
     cfg = cfg_fixture(out_dir=salida, mMax=3, iter_min=1, t_min_GL=0.0)
     sde = run_case(cfg; mode=Strict())
     p = sde.p
-    s, jp, V, J = load_checkpoint(joinpath(salida, "restart", "state_Jpos.mat"),
+    s, jp, V, J = load_checkpoint(checkpoint_path(joinpath(salida, "restart"), "Jpos"),
                                     p, Strict())
     @test jp == 1
     @test all(s.G1 .=== sde.pos.estado.G1)
