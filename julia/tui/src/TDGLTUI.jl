@@ -668,7 +668,9 @@ end
 function _editor_url(cargar="")
     if !_puerto_vivo(8765)
         run(pipeline(_suelto([Base.julia_cmd().exec[1], "--startup-file=no", EDITOR, "--no-browser"]); stdout=devnull, stderr=devnull); wait=false)
-        for _ in 1:40; _puerto_vivo(8765) && break; sleep(0.2); end
+        # up to 60 s: on a loaded machine (or after a recompile) the server takes longer than the 8 s waited before,
+        # and the browser then showed a refused connection
+        for _ in 1:300; _puerto_vivo(8765) && break; sleep(0.2); end
     end
     url = "http://127.0.0.1:8765/" * (isempty(cargar) ? "" : "?load=$cargar")
     _abrir(url); url
@@ -1427,6 +1429,8 @@ function editor_main(args)
     opt(k, d) = (i = findfirst(==(k), args); i === nothing || i == length(args) ? d : args[i+1])
     puerto = parse(Int, opt("--port", "8765")); idle = parse(Float64, opt("--idle", "30"))
     srv = listen(ip"127.0.0.1", puerto)
+    _ULTIMA[] = time()      # the Ref is set when the module is precompiled: without this the idle check sees days of
+                            # silence and stops the server before the browser connects
     url = "http://127.0.0.1:$puerto/"
     println("shape editor: $url   (Ctrl+C to close)\nsaves to: $FORMAS")
     "--no-browser" in args || _abrir(url)
