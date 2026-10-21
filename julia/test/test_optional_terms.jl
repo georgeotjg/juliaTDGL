@@ -23,23 +23,23 @@ function _pasos3(cfg, n, J)
 end
 
 @testset "terms: flag guards" begin
-    @test_throws ErrorException derive_params(Config(; KW3..., use_joule=true))
-    @test_throws ErrorException derive_params(Config(; KW3..., use_heat=true, use_joule=true,
+    @test_throws ErrorException derive_params(Config(:legacy; KW3..., use_joule=true))
+    @test_throws ErrorException derive_params(Config(:legacy; KW3..., use_heat=true, use_joule=true,
                                                use_phi=true, lambda_TF=2.0))
-    @test_throws ErrorException derive_params(Config(; KW3..., use_Qss=true))
-    @test_throws ErrorException derive_params(Config(; KW3..., use_Qss=true, use_phi=true,
+    @test_throws ErrorException derive_params(Config(:legacy; KW3..., use_Qss=true))
+    @test_throws ErrorException derive_params(Config(:legacy; KW3..., use_Qss=true, use_phi=true,
                                                lambda_TF=2.0, tau_Q=0.0))
 end
 
 @testset "terms: heat off does not touch θ" begin
-    s, p, _ = _pasos3(Config(; KW3...), 50, 0.9)
+    s, p, _ = _pasos3(Config(:legacy; KW3...), 50, 0.9)
     @test all(==(p.T_bath), p.Temp)
     @test all(iszero, p.heat_diag)
 end
 
 @testset "terms: η_J=0 leaves θ at the bath and Ψ as with heat off" begin
-    s0, p0, _ = _pasos3(Config(; KW3...), 200, 0.9)
-    s1, p1, _ = _pasos3(Config(; KW3..., use_heat=true, eta_J=0.0), 200, 0.9)
+    s0, p0, _ = _pasos3(Config(:legacy; KW3...), 200, 0.9)
+    s1, p1, _ = _pasos3(Config(:legacy; KW3..., use_heat=true, eta_J=0.0), 200, 0.9)
     @test all(==(p1.T_bath), p1.Temp)
     # (a2n−θ)/β2 with θ=0 vs alpha2_n: the same number up to the last bit.
     @test isapprox(sum(abs2, s1.G1), sum(abs2, s0.G1); rtol=1e-13)
@@ -47,9 +47,9 @@ end
 end
 
 @testset "terms: diffusive dt" begin
-    p0 = derive_params(Config(; KW3...))
+    p0 = derive_params(Config(:legacy; KW3...))
     D = 50.0
-    p1 = derive_params(Config(; KW3..., use_heat=true, D_T=D))
+    p1 = derive_params(Config(:legacy; KW3..., use_heat=true, D_T=D))
     @test p1.dt <= 0.15 * 0.5^2 / D * (1 + 1e-12)
     @test p1.dt < p0.dt
 end
@@ -58,7 +58,7 @@ end
 # J=3 ≫ depairing. σn=1: ⟨E²⟩ stays below J² because the vacuum
 # conducts in parallel. A misplaced dx in E would give ×4 or ×1/4.
     J = 3.0
-    s, p, _ = _pasos3(Config(; KW3..., use_heat=true, use_joule=true,
+    s, p, _ = _pasos3(Config(:legacy; KW3..., use_heat=true, use_joule=true,
                              gamma_bath=1e6), 4000, J)
     r = p.heat_diag[3] / J^2
     @test 0.2 < r < 1.2
@@ -69,8 +69,8 @@ end
 # J=0.3 in SIM: Meissner. Next to the faces E≠0 (normal→super conversion).
     kw = (; KW3..., GEOM_MODE="SIM", Nx_sc=24, use_heat=true, use_joule=true,
           gamma_bath=1e6)
-    _, p0, _ = _pasos3(Config(; kw..., heat_margin=0), 3000, 0.3)
-    _, p8, _ = _pasos3(Config(; kw..., heat_margin=6), 3000, 0.3)
+    _, p0, _ = _pasos3(Config(:legacy; kw..., heat_margin=0), 3000, 0.3)
+    _, p8, _ = _pasos3(Config(:legacy; kw..., heat_margin=6), 3000, 0.3)
     @test p0.heat_diag[3] > 0
     @test p8.heat_diag[3] < 0.1 * p0.heat_diag[3]
     @test p8.heat_diag[1] <= p0.heat_diag[1]
@@ -88,8 +88,8 @@ end
         end
         maximum(abs, sp.Qimb)
     end
-    q_loc = qmax(Config(; kw..., use_Qss=false))
-    q_dif = qmax(Config(; kw..., use_Qss=true, D_Q=1.0))
+    q_loc = qmax(Config(:legacy; kw..., use_Qss=false))
+    q_dif = qmax(Config(:legacy; kw..., use_Qss=true, D_Q=1.0))
     @test q_loc > 0
     @test q_dif != q_loc
 end
@@ -101,7 +101,7 @@ end
           mMax=60, use_Vconv=true)
     Js = [0.0, 3.0, 2.5, 2.0]
     for calor in (true, false)
-        cfg = Config(; kw..., use_heat=calor, eta_J=50.0, gamma_bath=1.0)
+        cfg = Config(:legacy; kw..., use_heat=calor, eta_J=50.0, gamma_bath=1.0)
         p = derive_params(cfg); g = build_geometry(cfg, p)
         r = sweep(Js, fill(cfg.H_const, length(Js)), "J+", g, p, Strict())
         if calor
@@ -116,22 +116,22 @@ end
 
 @testset "terms: T_physical (T_red as bath temperature)" begin
 # (1) at T = 0 it is the same step, to the bit (mask of 0 and 1)
-    s0, _, _ = _pasos3(Config(; KW3...), 300, 0.9)
-    s1, _, _ = _pasos3(Config(; KW3..., T_physical=true), 300, 0.9)
+    s0, _, _ = _pasos3(Config(:legacy; KW3...), 300, 0.9)
+    s1, _, _ = _pasos3(Config(:legacy; KW3..., T_physical=true), 300, 0.9)
     @test s1.G1 == s0.G1 && s1.G2 == s0.G2 && s1.thetax == s0.thetax
     # (2) uniform equilibrium at T = 0.3, clean box without field:
     #     |Ψσ|² → 1 − T, |Ψπ|² → a2n − T (γ12 = 0.001 shifts it very little)
     kw = (; KW3..., GEOM_MODE="SIM", H_const=0.0, T_red=0.3)
     media(G, p) = sum(abs2, @view G[p.x1+1:p.x2, p.y1+1:p.y2, p.z1+1:p.z2]) /
                   ((p.x2 - p.x1) * (p.y2 - p.y1) * (p.z2 - p.z1))
-    s, p, _ = _pasos3(Config(; kw..., T_physical=true), 4000, 0.0)
+    s, p, _ = _pasos3(Config(:legacy; kw..., T_physical=true), 4000, 0.0)
     @test isapprox(media(s.G1, p), 0.7; rtol=0.01)
     @test isapprox(media(s.G2, p), 0.59 - 0.3; rtol=0.02)
     # (3) without T_physical σ does not feel T_red: it stays at ~1
-    s, p, _ = _pasos3(Config(; kw..., T_physical=false), 4000, 0.0)
+    s, p, _ = _pasos3(Config(:legacy; kw..., T_physical=false), 4000, 0.0)
     @test isapprox(media(s.G1, p), 1.0; rtol=0.01)
     # the π mass does not change with T under T_physical (ξπ/ξσ fixed at T = 0)
-    @test derive_params(Config(; kw..., T_physical=true)).mr ≈ derive_params(Config(; KW3..., T_physical=true)).mr
+    @test derive_params(Config(:legacy; kw..., T_physical=true)).mr ≈ derive_params(Config(:legacy; KW3..., T_physical=true)).mr
 end
 
 @testset "convergence: eps_conv_rate and the :paper preset" begin
@@ -141,17 +141,17 @@ end
           eps_conv_seed=1.0, tie_seed_tolerance=true,
           selftest=false, snap_every=0, out_dir="", verbose=false)
     # (1) off: the per-cycle tolerance is eps_conv itself, to the bit
-    p0 = derive_params(Config(; kw..., eps_conv=1e-5))
+    p0 = derive_params(Config(:legacy; kw..., eps_conv=1e-5))
     @test p0.eps_conv === 1e-5 && p0.eps_seed === 1e-5
     # (2) on: tolerance per cycle = rate * cycle length; eps_conv is ignored
-    p1 = derive_params(Config(; kw..., eps_conv=1e-5, eps_conv_rate=1e-4))
+    p1 = derive_params(Config(:legacy; kw..., eps_conv=1e-5, eps_conv_rate=1e-4))
     @test p1.eps_conv ≈ 1e-4 * p1.lMax * p1.dt
-    @test_throws ErrorException derive_params(Config(; kw..., eps_conv_rate=-1.0))
+    @test_throws ErrorException derive_params(Config(:legacy; kw..., eps_conv_rate=-1.0))
     # (3) the point of it: the physical time at which the seed closes does not depend
     #     on the cycle length with a rate, and does with a per-cycle tolerance
     #     (measured: 8.51 vs 6.78 t_GL per cycle; 7.52 vs 7.42 t_GL with the rate)
     tcierre(; k...) = begin
-        cfg = Config(; kw..., k...); p = derive_params(cfg); g = build_geometry(cfg, p)
+        cfg = Config(:legacy; kw..., k...); p = derive_params(cfg); g = build_geometry(cfg, p)
         r = TDGL.sweep([0.0], [0.5], "J+", g, p, Strict())
         r.m_arr[1] * p.lMax * p.dt
     end
@@ -164,14 +164,14 @@ end
     @test cp.eps_conv == 1e-5 && cp.eps_conv_seed == 5e-4
     @test cp.t_min_GL == 1500.0 && cp.t_min_GL_res == 2000.0 && cp.use_Vconv
     @test Config(:paper; t_min_GL=400.0).t_min_GL == 400.0
-    @test Config().eps_conv == 1e-4 && Config().eps_conv_rate == 0.0 && !Config().eps_conv_legacy
+    @test Config(:legacy).eps_conv == 1e-4 && Config(:legacy).eps_conv_rate == 0.0 && !Config(:legacy).eps_conv_legacy
     # (5) eps_conv_legacy (set by :prod): eps_conv per cycle of the 1.0.0 step, whatever dt is
-    q0 = derive_params(Config(; kw..., eps_conv=1e-5))
+    q0 = derive_params(Config(:legacy; kw..., eps_conv=1e-5))
     q1 = derive_params(Config(:prod; kw..., eps_conv=1e-5))
     @test Config(:prod).eps_conv_legacy && q1.dt > 2 * q0.dt
     @test q1.eps_conv / (q1.lMax * q1.dt) ≈ q0.eps_conv / (q0.lMax * q0.dt)
     @test derive_params(Config(:prod; kw..., eps_conv_rate=1e-4)).eps_conv ≈ 1e-4 * q1.lMax * q1.dt
     @test_throws ErrorException Config(:fast)
-    cl, cd = Config(:legacy; kappa_s=25.0), Config(; kappa_s=25.0)
+    cl, cd = Config(:legacy; kappa_s=25.0), Config(:legacy; kappa_s=25.0)
     @test all(isequal(getfield(cl, f), getfield(cd, f)) for f in fieldnames(Config))
 end

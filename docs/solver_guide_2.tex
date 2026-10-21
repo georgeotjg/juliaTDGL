@@ -1,0 +1,526 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage{fontspec}
+\setmonofont{DejaVu Sans Mono}[Scale=0.82]
+\usepackage[margin=2.4cm]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+
+\newcommand{\tGL}{t_{\mathrm{GL}}}
+\newcommand{\code}[1]{\texttt{#1}}
+\newcommand{\gt}{\tilde\gamma}
+
+\title{juliaTDGL 2: a guide to the N-band generalised\\
+time-dependent Ginzburg--Landau solver}
+\author{J.~A.~Robles Calder\'on\\
+\small Departamento de F\'isica, Universidad Nacional de Colombia, Bogot\'a}
+\date{Release 2.0 (21 October 2026)}
+
+\begin{document}
+\sloppy
+\maketitle
+
+\begin{abstract}
+\noindent
+Release 2.0 (\code{tdgl2/}, package \code{TDGL} 2.0.0) generalises the two-band solver of release 1.2 to any number of
+bands, each with its own Kramer--Watts-Tobin (KWT) relaxation, and adds an open boundary for the self-field, an
+insulating buffer, Runge--Kutta--Legendre stages and a rotating frame for the bands that KWT makes stiff, and a
+measuring protocol that brackets an onset by the delay of the first phase slip. With the new terms off it reproduces
+release 1.2. This guide gives the model, its discretisation, the time step, the boundaries, the protocol, the optional
+terms, how to run the code and what each check establishes. What is inherited unchanged from 1.2 (the lattice, the
+link variables, the geometry and its editor) is described in the guide of release 1.2 (\code{docs/solver\_guide.pdf})
+and only summarised here.
+\end{abstract}
+
+\tableofcontents
+
+% ======================================================================
+\section{What the solver computes}
+
+The solver integrates the generalised time-dependent Ginzburg--Landau (gTDGL) equations of a superconductor with $N$
+order parameters $\Psi_\mu$, coupled by a Josephson matrix, together with the vector potential $\mathbf A$, on a
+three-dimensional box with a buffer of a few cells, under an applied field and a transport current. It was written
+for the geometric superconducting diode in two-gap materials, where a sample whose shape breaks the mirror symmetry
+along the direction of vortex motion carries different critical currents $I_c^\pm$ in the two directions, and the
+efficiency is
+\begin{equation}
+  \eta = \frac{I_c^{+}-|I_c^{-}|}{I_c^{+}+|I_c^{-}|}.
+\end{equation}
+
+A run is a current ladder for each polarity. Its output is, at every current, a verdict (silent, dissipating, normal)
+with the voltage, the number of vortex crossings, the band-resolved currents and the order-parameter amplitudes;
+the brackets of the onsets and of $\eta$; and a machine-readable summary with the units, the code version and the
+numbers that place the model in its regime (section~\ref{sec:regime}).
+
+What release 2.0 adds over 1.2, in one line each:
+\begin{itemize}
+\item $N$ bands and a symmetric Josephson matrix; passive bands (condensate induced by the coupling).
+\item KWT relaxation per band: the charge imbalance of Gurevich and Vinokur at the contacts, in the gauge $\Phi = 0$.
+\item First-order Runge--Kutta--Legendre (RKL) stages for the stiff bands and a rotating frame that makes the stationary
+  states with charge imbalance fixed points of the step.
+\item Self-field boundaries \code{:bar} (the default) and \code{:open} (free-space field by a lattice Green function).
+\item An insulating buffer outside the bar of the sample and its contacts, and a sculpted sample (vacuum inside the box: a cable, a hole), with leads of its own section.
+\item The onset by the delay of the first phase slip; a verdict for a sample gone normal.
+\item Runs from a TOML file, materials as files, a JSON summary.
+\end{itemize}
+
+What it does not have: the scalar potential of 1.2 (its Coulomb projection, Thomas--Fermi screening and diffused
+residual), the \code{Strict} numerical mode and the explicit default of 1.2. For those, and to reproduce the published
+results of release 1.x, release 1.2 stays in the repository (\code{julia/}).
+
+% ======================================================================
+\section{The model}
+
+\subsection{Free energy and units}
+
+Lengths are in $\xi_1$, the coherence length of band 1, time in $\tGL = \xi_1^2/D_1$, fields in $H_{c2}$ of band 1 and
+currents in $J_0$. Band 1 has unit stiffness and relaxation, $g_1 = \Gamma_1 = 1$. The functional is
+\begin{equation}
+  F = \sum_\mu \Big[ g_\mu |\mathbf D\Psi_\mu|^2 - f\,\varepsilon_\mu |\Psi_\mu|^2 + \frac{\beta_\mu}{2}|\Psi_\mu|^4 \Big]
+      - \sum_{\mu<\nu} \gamma_{\mu\nu} (\Psi_\mu^*\Psi_\nu + \mathrm{c.c.}) + \kappa^2 |\nabla\times\mathbf A|^2 ,
+\end{equation}
+with $\mathbf D = \nabla - i\mathbf A$, $f(\mathbf r)$ the condensation mask of the geometry (between 0 and 1, or above
+1 where the condensate is locally stronger), and $\varepsilon_\mu = a_\mu - T$ ($a_\mu$ the value at $T = 0$; with the
+heat model $T \to \theta(\mathbf r, t)$). The sign of $\gamma_{\mu\nu}$ chooses the interband phase ($s_{++}$ for
+$\gamma > 0$, $s_\pm$ for $\gamma < 0$); with three or more bands and repulsive couplings the phases can be frustrated.
+
+A band is a \code{Band(m, \(\Gamma\), a, \(\beta\), \(\gt\))} with $g = 1/m$; a model is a \code{Model} of bands, the
+matrix $\gamma$, $\kappa$, the normal conductivity $\sigma_n$ and the bath temperature $T$. \code{two\_band(...)} builds
+the two-band model of release 1.x: $g = (1, 1/m_r)$, $\Gamma = (1, \Gamma_r)$, $a = (1, a_{2n})$, $\beta = 1$,
+$\sigma_n = 1$, $\gt = 0$.
+
+\subsection{Equations of motion}
+
+For each band, in the gauge $\Phi = 0$,
+\begin{equation}
+  \frac{\Gamma_\mu}{\sqrt{1+\gt_\mu^2|\Psi_\mu|^2}}
+  \Big[ \partial_t\Psi_\mu + \gt_\mu^2\,\Psi_\mu\,\mathrm{Re}(\Psi_\mu^*\partial_t\Psi_\mu) \Big]
+  = g_\mu \mathbf D^2 \Psi_\mu + (f\varepsilon_\mu - \beta_\mu|\Psi_\mu|^2)\Psi_\mu + \sum_{\nu\neq\mu}\gamma_{\mu\nu}\Psi_\nu ,
+  \label{eq:band}
+\end{equation}
+and for the field
+\begin{equation}
+  \sigma_n(\mathbf r)\,\partial_t\mathbf A = \sum_\mu \mathbf J_\mu - \kappa^2 \nabla\times\nabla\times\mathbf A ,
+  \qquad \mathbf J_\mu = g_\mu\,\mathrm{Im}(\Psi_\mu^*\mathbf D\Psi_\mu), \qquad \mathbf E = -\partial_t\mathbf A .
+\end{equation}
+With $\gt_\mu = 0$ equation~\eqref{eq:band} is the TDGL of release 1.2. The KWT factor slows the amplitude of a band
+by $\sqrt{1+\gt^2|\Psi|^2}$ relative to its phase; it is the form of Kramer and Watts-Tobin for one band, applied band
+by band (the extension to several bands is a model choice). $\gt_\mu$ multiplies $|\Psi_\mu|$ in the units of the code:
+a literature value $\gamma_\mu = 2\tau_{E,\mu}\Delta_{\mu,0}/\hbar$ referred to the equilibrium gap becomes
+$\gt_\mu = \gamma_\mu/|\Psi_{\mu,\mathrm{eq}}|$. The material files say so with every number.
+
+\textbf{Charge imbalance.} In the gauge $\Phi = 0$ the electrochemical potential of the condensate is the rate at
+which its phase turns. Where the injected normal current converts into supercurrent (the conversion layers next to the
+contacts) the phase of a stationary state turns at that rate, and KWT lengthens the layers. This is the charge
+imbalance of Gurevich and Vinokur. A band-resolved branch imbalance (Schmid--Sch\"on) is not in the model.
+
+\textbf{Conservation.} The divergence of the field equation gives $\nabla\cdot(\mathbf J_s + \sigma_n\mathbf E) = 0$,
+in the continuum and on the lattice (the discrete divergence of a discrete curl vanishes), so no Poisson problem is
+solved.
+
+\subsection{Materials and the normal conductivity}
+
+$\sigma_n$ is given, or that of a dirty BCS material with these bands (\code{\(\sigma\)n = :dirty}, \code{sigma\_dirty}):
+with the coefficients of Gurevich's two-band theory, $g_\mu\Gamma_\mu/\beta_\mu \propto N_\mu D_\mu$ does not depend on the
+normalisation of $\Psi_\mu$, and $\sigma_n = \sum_\mu g_\mu\Gamma_\mu/\beta_\mu / 5.79$ (one band: $u = \Gamma/\sigma_n =
+5.79$, the value of Kramer and Watts-Tobin). The material files in \code{materials/} carry each parameter with its source
+and say which numbers are model choices:
+\code{mgb2\_dirty.toml} and \code{mgb2\_clean.toml} (MgB$_2$ estimates from the literature), and \code{mgb2\_model\_I.toml},
+\code{mgb2\_model\_II.toml} (the two-band models of the earlier studies, MgB$_2$-like labels, not quantitative MgB$_2$).
+
+\subsection{The regime numbers}
+\label{sec:regime}
+
+Every result is reported with the numbers that place the model (\code{regime(md; L)}, also in the summary of a run):
+the ratio of diffusivities $D_\mu = g_\mu/\Gamma_\mu$ of the last band to the first; the interband Josephson length over
+the sample length, $\ell_J/L$; the invariant $\gamma^2/(\alpha_1\alpha_2)$; $\sigma_n/\sum_\mu g_\mu$; $u_\mu =
+\Gamma_\mu/\sigma_n$; $\sigma_n$ over its dirty value; and the conversion length of the normal current at a contact,
+\begin{equation}
+  \lambda_c^2 = \frac{\sigma_n}{\sum_\mu \tilde\Gamma_\mu |\Psi_\mu|^2}, \qquad
+  \tilde\Gamma_\mu = \frac{\Gamma_\mu}{\sqrt{1+\gt_\mu^2|\Psi_\mu|^2}} ,
+\end{equation}
+with $L/\lambda_c$. KWT lengthens $\lambda_c$: in the two-band notched-box model at $\kappa = 2$, from $0.80\,\xi_1$ to
+$2.39\,\xi_1$ with $\gt = 10$. When $L$ is not many $\lambda_c$ the middle of the sample still carries unconverted normal
+current, which moves an onset by itself; keep $L/\lambda_c \gtrsim 10$. The pair numbers exist for two bands; for any
+$N$ the summary has $\lambda_c$, $u_\mu$ and the two conductivity ratios.
+
+% ======================================================================
+\section{Discretisation}
+
+\subsection{The lattice}
+
+As in release 1.2: a staggered Cartesian mesh with $\Psi_\mu$ on the nodes, $\mathbf A$ on the links as link variables
+$U = e^{-i\mathbf A\cdot d\mathbf l}$ (so lattice gauge invariance is exact) and the field on the plaquettes; the
+condensation mask $f$ on the nodes; covariant Neumann conditions on the six faces of the sample, written as ghost nodes
+$\Psi_{\mathrm{face}} = U\,\Psi_{\mathrm{interior}}$. Each band is a contiguous array, and every loop over nodes or links
+is free of reductions, so a run gives the same bits with any number of threads.
+
+\subsection{The band update}
+
+Without KWT a band is advanced by an explicit Euler step of the right-hand side $R_\mu$ of~\eqref{eq:band}, a Jacobi
+sweep over the interior nodes:
+\begin{equation}
+  \Psi_\mu^{n+1} = \Psi_\mu^n + \frac{dt}{\Gamma_\mu} R_\mu .
+\end{equation}
+With KWT the left-hand side is a symmetric positive operator on $\Psi$ seen as a vector of $\mathbb R^2$, inverted per
+node without dividing by $\Psi$:
+\begin{equation}
+  \partial_t\Psi = R' - \frac{\gt^2\,\Psi\,\mathrm{Re}(\Psi^* R')}{1+\gt^2|\Psi|^2}, \qquad
+  R' = \frac{\sqrt{1+\gt^2|\Psi|^2}}{\Gamma} R .
+\end{equation}
+The other bands enter the Josephson term at the start of the step.
+
+\subsection{The field update}
+
+The curl-curl term is implicit (one solve per step), the supercurrent explicit:
+\begin{equation}
+  \Big(I + \frac{dt}{\sigma_n}\kappa^2 K\Big)\mathbf A^{n+1} = \mathbf A^n + \frac{dt}{\sigma_n}\mathbf J_s^n
+  - \frac{dt}{\sigma_n}\kappa^2 \mathbf c ,
+\end{equation}
+with $K$ the Yee curl-curl and $\mathbf c$ the boundary fields. On tensor-product link ranges with $dx = dy = dz$, $K$
+is diagonalised by per-axis bases (the singular vectors of the one-dimensional difference), and per wavevector
+$(I + aK)^{-1} = P_L + P_T/(1 + a|k|^2)$: a direct, exact solve by dense products along each axis. Only the transverse
+part of $\mathbf A$ is implicit; the longitudinal part (the conversion layers) moves with $\mathbf J_s$ alone.
+
+\textbf{Insulating buffer.} With \code{\(\sigma\)vac} the buffer outside the bar of the sample and its contacts has
+conductivity $\sigma_{\mathrm{vac}} < \sigma_n$, so all of the current crosses the sample, as in a film in vacuum with
+leads at its ends. The conductivity per link makes the system non-separable; it is solved by preconditioned conjugate
+gradients with the separable solve as preconditioner (tolerance $10^{-11}$), started from the previous step's solution:
+consecutive steps differ by little, so it takes 12 iterations where the separable guess takes 27. A ladder starts cold,
+and what continues a copy of the state (the delay confirmation) gives the solver back, so that a ladder and its
+resumption keep their bits. The contrast still costs: about 8 times the cost of a step with a metal buffer.
+
+\textbf{A sculpted sample.} A shape element with \code{vacuum = true} removes the material: no superconductor and no
+normal metal ($f = 0$ is a normal metal). Its nodes leave the block: $\Psi_\mu = 0$ there, the links that touch one carry
+no supercurrent ($\tau = 0$), and the band update of a node next to the vacuum reads no neighbour across that link,
+\begin{equation}
+  \Psi_i \leftarrow \Psi_i + \sum_{\pm,\,a} k_a\,\tau_{i,\pm a}\bigl(U_{i,\pm a}\Psi_{i\pm a} - \Psi_i\bigr) + \dots,
+\end{equation}
+which is the zero-flux condition of a free surface, the same one the covariant Neumann ghost gives at a face of the box.
+The insulating buffer follows the sample: a link conducts ($\sigma_n$) when both its nodes are in the sample or in a lead,
+and the leads take the section of the face they touch, so the current enters and leaves through the section of the sample
+(a cable with leads of its own section). The self-field on the outer faces is the Biot--Savart field of that section. $J$
+stays the current density: the sample carries $J$ times its meshed section. A uniform state stays uniform up to the surface
+to $10^{-13}$, and the static current through a cable is $J$ times its section to $2\times10^{-3}$, none of it through the
+vacuum. It needs \code{sigma\_vac}; it is not with heat or drag (their stencils do not see the surface); with
+\code{qp\_exchange} the links to the vacuum are cut (below).
+Shape files draw figures on any face (\code{axis = "x"} or \code{"y"}) and keep the figure with \code{outside = true}; the
+shape editor draws on its three views. Example: \code{examples/cable\_k2.toml}.
+
+% ======================================================================
+\section{The time step}
+
+\subsection{Bounds}
+
+The step is the smallest of the stability bounds, times 0.99 and \code{dt\_scale} (0.5 by default: no mode of the
+stiffest band changes sign from one step to the next). For band $\mu$,
+\begin{equation}
+  dt_\mu = \frac{2\Gamma_\mu}{4 g_\mu \sum_i dx_i^{-2} + h_\mu}\cdot\frac{1}{\sqrt{1+\gt_\mu^2P_\mu^2}}, \qquad
+  h_\mu = 3\beta_\mu P_\mu^2 - \varepsilon_\mu ,
+\end{equation}
+where $P_\mu$ is the amplitude of the coupled homogeneous equilibrium (interband coupling raises it above
+$\sqrt{a_\mu/\beta_\mu}$, and a passive band, $a_\mu \le 0$, has one only through the coupling). The KWT factor is the
+faster phase mode. The explicit supercurrent in Amp\`ere's law gives one more bound, $2\sigma_n/\sum_\mu g_\mu a_\mu/\beta_\mu$,
+which binds only when $u = \Gamma/\sigma_n$ is large ($u \gtrsim 15$); the explicit curl-curl bound
+$\sigma_n\,dl/(4\kappa^2)$ disappears with the implicit solve. With the heat model, its explicit diffusion adds
+$0.15\,dx^2/D_T$. The summary of a run names the bound that set the step.
+
+\subsection{Runge--Kutta--Legendre stages}
+
+With KWT the band bound falls as $1/\sqrt{1+\gt^2P^2}$ (by 10 with $\gt = 10$). Instead of shortening the step, the
+bands are advanced by first-order RKL stages (Meyer, Balsara and Aslam, J.\ Comput.\ Phys.\ 257, 594 (2014)): the step
+is that of the same model without KWT, and each band takes $s$ stages,
+\begin{equation}
+  Y_0 = \Psi^n,\quad Y_1 = E(Y_0),\quad Y_j = \mu_j E(Y_{j-1}) + \nu_j Y_{j-2},\quad
+  \mu_j = \frac{2j-1}{j},\ \nu_j = \frac{1-j}{j},\quad \Psi^{n+1} = Y_s ,
+\end{equation}
+with $E$ the Euler step of $dt/q$, $q = s(s+1)/2$, so $s$ stages bridge a ratio of bounds up to $q$. The linearised band
+operator is (the KWT factor, symmetric positive per node) times (the Hessian of $F$): its spectrum is real, which is what
+the method needs. Stage $j$ sits at the fraction $c_j = j(j+1)/(s(s+1))$ of the step, and its links and ghosts are taken
+there. \code{rkl\_margin} makes the stages cover the bound times a factor (1.1 by default with KWT): the stages are
+counted at the equilibrium amplitude $P$, and an amplitude above it (in the conversion layers) can push the fastest
+phase mode over the edge. \code{rkl = false} gives the Euler substeps of release 1.2.
+
+\subsection{The rotating frame}
+
+In the gauge $\Phi = 0$ a stationary state with charge imbalance is not a fixed point of an explicit step: where its
+phase turns at rate $\omega$, the step of that rotation, $|1 + i\omega h| > 1$, leaves a radial error $\propto
+\omega^2 dt$, and KWT, which slows the radial mode and leaves the rotation alone, multiplies it by
+$\sqrt{1+\gt^2|\Psi|^2}$. The amplitude in the conversion layers then depends on $dt$ at first order.
+
+With \code{rotframe} each band is stepped in the gauge that turns with it: $\Psi = e^{i\hat\omega\tau}\tilde\Psi$, with
+$\tau$ the time from the start of the step and $\hat\omega$ the tangential rate of the first stage at each node. The
+band equation gains $-i\hat\omega\tilde\Psi$ (tangential, so the KWT factor leaves it alone), the links gain
+$e^{i(\hat\omega_{i+1}-\hat\omega_i)\tau}$, and $\Psi^{n+1} = e^{i\hat\omega\,dt}\tilde\Psi$ turns the state back
+exactly. A stationary state is then a fixed point of every stage for any $dt$. Any bounded $\hat\omega$ is an exact change
+of gauge, so the two thresholds only decide where the frame helps: $\hat\omega = 0$ where $|\Psi|^2 < 10^{-3}$ (vortex
+cores, the normal metal), and $|\hat\omega|\,dt \le 0.5$. Measured: with the frame the KWT state is the same to six
+digits at $dt$, $dt/2$, $dt/4$ and with explicit substeps, for $\gt = 0$, 10 and 30; $\gt = 30$ diverged without it.
+
+\textbf{Defaults.} \code{rotframe} and \code{rkl\_margin} = 1.1 are on when any band has KWT and off otherwise, so every
+run without KWT keeps its bits.
+
+\subsection{Cost}
+
+Measured on one core, the two-band notched box ($40\times24\times6$ cells, $dx = 0.5$, $\kappa = 2$): without KWT
+0.078~s per $\tGL$; with $\gt = 10$ and the defaults $\times2.2$. The two rotations of a link at each stage (its own and
+the frame's) are linear in the fraction of the step, so their sum is computed once per band and every stage is one pass
+with one $e^{ia}$; the rotating frame then costs nothing over the stages. The explicit step at the KWT bound would be ten
+times shorter.
+\code{dt\_scale = 1} halves the cost. On that box the delay of the first slip changed by $0.2\,\%$ without KWT (583
+against 584 $\tGL$), and with KWT ($\gt = 10$) the silent state agreed to six digits and the delays at 0.74 and 0.75 were
+the same: with the rotating frame an onset does not feel it. Flowing voltages were not checked; quote them at the default
+step.
+
+% ======================================================================
+\section{Boundaries of the self-field}
+\label{sec:bc}
+
+The transport current enters as normal current through the two contact faces and its own Amp\`ere field is imposed on
+the outer faces. Three choices (\code{selffield\_bc}):
+\begin{description}
+\item[\code{:slab}] the boundary of release 1.x: $h_y = \mp H_J$ on the whole $z$ faces. Amp\`ere then encloses the
+  current of the sample and of the buffer, $J\,d\,(W + 2\,b\,dx - dx)$ for a buffer of $b$ cells: 4\,\% more than the
+  nominal current on the $40\times24\times6$ box with one cell. It is the choice to reproduce release 1.x.
+\item[\code{:bar}] (default) the field of the nominal current spread over the section of the sample, on every outer
+  face, so the sample carries $J\,W\,d$.
+\item[\code{:open}] the bar field plus the free-space field of every other current of the box, on all six faces. With
+  $\delta\mathbf J = \kappa^2\nabla_h\times\mathbf h - \mathbf J_{\mathrm{bar}}$ (a closed current inside the box),
+  $\mathbf A_\delta = G * \delta\mathbf J/\kappa^2$ and $\mathbf h_\delta = \nabla_h\times\mathbf A_\delta$ on the face
+  plaquettes, where $G$ is the Green function of the seven-point lattice Laplacian ($-\Delta_h G = \delta$, $G(0) =
+  0.252731\ldots$), so that the face sees the free continuation of the same discrete scheme. The convolution is
+  Hockney's (zero padding to twice the box, FFT). $\mathbf h_\delta$ is recomputed every \code{open\_every} $\tGL$ (1 by
+  default) and ramped in between; the iteration contracts (spectral radius at most 0.67, measured in 2D at $\kappa =
+  2$). It is the field of the screening currents that a mirror face suppresses at small $\kappa$. It costs 15--20\,\% more
+  per $\tGL$ than \code{:bar} on the box above ($3\,\%$ with KWT), keeps the $J\to-J$ symmetry at $H = 0$ and resumes
+  exactly from a checkpoint.
+\end{description}
+
+% ======================================================================
+\section{Measuring}
+
+\subsection{The voltage and the verdict}
+
+As in release 1.2: the voltage is the time derivative of the gauge-invariant phase difference
+$\arg(\Psi_i^*U\Psi_j)$ summed along each measuring line between two planes \code{delta\_v} cells inside the contacts
+(8 by default), unwrapped line by line, so that each $2\pi$ slip of a line is a vortex crossing. A rung integrated for
+$\Delta t$ at voltage $V$ carries $|V|\Delta t/2\pi$ crossings per line: it is silent below one, dissipating at ten or
+more, and undecided in between. The verdict reads band 1, so band 1 must be a band with a condensate of its own, not a
+passive one.
+
+\subsection{A current ladder}
+
+Each current starts from the state the previous one left (the order of the ladder is part of the measurement: it gives
+the hysteresis). A point is integrated in cycles of \code{lMax} steps until it closes:
+\begin{description}
+\item[\code{'F'}] a fixed point: $|\Psi_\mu|$ and $h$ change by less than the tolerance per cycle after the floor
+  \code{t\_min\_GL} (400~$\tGL$ by default), and the second half carries fewer than \code{f\_margin} = 0.5 crossings
+  per line (a slow flow near an onset can look fixed for a short cycle).
+\item[\code{'V'}] dissipating: after the floor \code{t\_min\_GL\_res} (1584~$\tGL$), ten or more crossings per line, closed
+  at \code{v\_margin} = 1.1 times that by the end-point estimate so that the slope the verdict uses lands above ten.
+\item[\code{'N'}] a sample gone normal: a point that would close \code{'F'} with $\langle|\Psi_1|^2\rangle$ below \code{n\_frac} =
+  0.02 of the largest of the \code{'F'} points before it. The normal state is a fixed point with no phase to cross; with large
+  $u$ or $\gt$ an onset can be a collapse. \code{'N'} counts as dissipating.
+\item[\code{'T'}] the heat model went above its cut.
+\item[\code{'D'}] a point that closed \code{'F'} and crossed when continued (below).
+\end{description}
+\code{bracket\_Ic} gives the onset bracket of each polarity from the verdicts, and \code{run\_ladders} the pair and
+$\eta$ with its range.
+
+\subsection{The onset by the delay}
+
+Near a saddle-node onset the delay before the first phase slip, after a jump from a silent state, diverges as
+\begin{equation}
+  D(J) = \frac{a}{\sqrt{J - J_c}} + b .
+\end{equation}
+A window of fixed length therefore biases the onset up: the rung just above $J_c$ closes \code{'F'} on any finite window (in
+the two-band diode at $\kappa = 2$, delays of 1600--2600~$\tGL$ against windows of 400). With
+\code{Protocol(t\_confirm\_GL = ...)}, at the first \code{'V'} after an \code{'F'} the \code{'F'} rungs below it are continued at their
+current, from copies of their closed states, up to that time in all (at most \code{confirm\_max} = 4): one that crosses
+becomes \code{'D'} and the next one down is continued, until one stays silent. \code{delay\_bracket} gives the onset that way;
+it is the one to quote. \code{crossing\_times(st, s, J; H, T)} measures delays directly from one silent state, and
+\code{tools/delay\_fit.py} fits the law to two or more of them (with two, $b = 0$; it warns when the fit sits at the edge
+of its search range).
+
+% ======================================================================
+\section{Optional terms}
+
+Off by default and meant one at a time (the first three as in release 1.2):
+\begin{description}
+\item[Heat] a temperature field above the bath, $\varepsilon_\mu = a_\mu - \theta$ on every node,
+  $\partial_t\theta = D_T\nabla^2\theta + \eta\,[\sum_\mu\Gamma_\mu|\partial_t\Psi_\mu|^2 + \sigma_n|\mathbf E|^2]
+  - \gamma(\theta - T)$; the source is the dissipation of the functional, so a Meissner state does not heat. The Joule
+  term is optional (\code{joule}), and \code{margin} cells next to the injection faces are left out of the source
+  (contact heat, which leads would carry away). A point above the cut closes \code{'T'}.
+\item[Drag] the mixed-gradient term $\nu_{\mu\nu}\mathrm{Re}[(\mathbf D\Psi_\mu)^*\cdot\mathbf D\Psi_\nu]$ of the
+  functional: band $\mu$ feels $\nu_{\mu\nu}\mathbf D^2\Psi_\nu$ and the supercurrent carries the cross terms.
+\item[Bath temperature] a uniform $T$ in $\varepsilon_\mu = a_\mu - T$ for every band.
+\item[Two normal fluids] (\code{qp\_exchange} $=\nu$, two bands). With one normal current $\sigma_n\mathbf E$ the
+  quasiparticles of every band share one potential: their interband exchange is infinitely fast. With a finite rate $\nu$
+  each band has its own normal current $s_\mu\sigma_n(-\nabla\mu_\mu - \partial_t\mathbf A)$ ($s_\mu$ its share of
+  $\sigma_n$, \code{qp\_split}, by default the dirty one $\propto g_\mu\Gamma_\mu/\beta_\mu$), and the bands exchange with
+  a conductance $G = \chi_\sigma\nu$. In the gauge $\sum_\mu s_\mu\mu_\mu = 0$ Amp\`ere's law is unchanged and one field is
+  new, $\delta = \mu_\pi - \mu_\sigma$:
+  \begin{equation}
+    \sigma_n\nabla^2\delta - G\Big(\frac{1}{s_\sigma} + \frac{1}{s_\pi}\Big)\delta = \frac{C_\pi}{s_\pi} - \frac{C_\sigma}{s_\sigma},
+    \qquad C_\mu = \mathrm{Im}(\Psi_\mu^* R_\mu),
+  \end{equation}
+  $C_\mu$ the conversion of band $\mu$ (the divergence of its supercurrent plus the Josephson exchange), with $\delta = 0$ at
+  the contacts and Neumann elsewhere, solved exactly in the eigenbases of the three one-dimensional operators. Each band
+  then turns by $e^{-i\mu_\mu dt}$, tangential, so KWT does not act on it. It is the slaved branch imbalance with a finite
+  exchange (its memory does not move a saddle-node onset); $\nu\to\infty$ is the step of one fluid to $O(1/\nu)$, and in a
+  strip the $\sigma$ share of the converted current follows the one-dimensional two-fluid law. With $N$ bands
+  \code{qp\_exchange} is the matrix of rates $\nu_{\mu\nu}$ (detailed balance $\chi_\mu\nu_{\mu\nu} = \chi_\nu\nu_{\nu\mu}$): with
+  $L$ the Laplacian of the exchange graph and $S = \mathrm{diag}(s)$, $\sigma_n\nabla^2\mu - S^{-1}L\mu = S^{-1}C - \mathbb 1\sum C$,
+  which the eigenvectors of $S^{-1/2}LS^{-1/2}$ split into $N$ Helmholtz problems of the same kind (with two bands, the $\delta$
+  equation above). With the insulating buffer the quasiparticles live in the conductor: $\delta$ is solved on the bar of the
+  sample and its contacts, with zero flux to the insulator (separable, exact; the strip then follows the one-dimensional law with
+  the code's contact to 0.004, where the metal buffer, which conducts and exchanges around it, is 0.025 off). In a sculpted sample
+  the links to the vacuum are cut and the equation is no longer separable: conjugate gradients in the inner product with weight
+  $1/2$ on each Neumann face (where the mirror-ghost operator is symmetric), preconditioned by the separable solve of the bar and
+  projected on the conductor, started cold every step (20--60 iterations). With the Joule heat the fluids add
+  $\sigma_n\sum_\mu s_\mu|\nabla\mu_\mu|^2 + \sum_{\mu<\nu}G_{\mu\nu}(\mu_\mu-\mu_\nu)^2$ to $\sigma_n|\mathbf E|^2$ (the cross
+  term vanishes in the gauge $\sum_\mu s_\mu\mu_\mu = 0$).
+\item[Anisotropic bands] (\code{m\_axes}, or \code{m\_x}, \code{m\_y}, \code{m\_z} in a material file): a mass per
+  axis in the band update, the supercurrent and the step bound ($4\sum_i g_i/dx_i^2$). An isotropic band keeps its bits;
+  a band with $m_x = 4$ at $dx = 0.5$ is the isotropic one at $dx = 1$ to $10^{-9}$.
+\item[Thermal noise] (\code{noise} $=\tilde T$, \code{noise\_seed}): a Langevin term
+  $\langle\eta_\mu\eta_\mu^*\rangle = 2\Gamma_\mu\tilde T\delta(\mathbf r-\mathbf r')\delta(t-t')$ on every band, so that the
+  discrete system is distributed as $e^{-F/\tilde T}$ (checked: mean, variance and correlation of decoupled nodes, and the
+  spatial covariance against the linear theory of the lattice to 0.1--1\,\%). Seeded, saved in the checkpoints (resuming
+  keeps the bits). With KWT the mobility of a node depends on $\Psi$, $M = (s/\Gamma)I - (\gt^2/\Gamma s)\psi\psi^{\mathsf T}$ with
+  $s = \sqrt{1+\gt^2|\Psi|^2}$: the kick is scaled apart along $\Psi$ ($1/\Gamma s$) and across it ($s/\Gamma$), and the It\^o
+  drift $\tilde T\nabla\cdot M/(2dV) = -\tilde T\gt^2(1+s^2)\psi/(2\Gamma s^3 dV)$ keeps $e^{-F/\tilde T}$ (checked: the same mean
+  and variance as without KWT, the amplitude $s$ times slower and the phase $s$ times faster; without the drift the mean of
+  $|\Psi|^2$ comes out 1.39 instead of 1). With \code{noise\_field} the same bath acts on the field: Amp\`ere is
+  $\sigma_l\partial_t\mathbf A = -\tfrac12\delta F/\delta\mathbf A$ per unit volume, so a link takes
+  $\Delta A_l = \sqrt{\tilde T dt/(\sigma_l dV)}\,n$, added to the explicit part of the field step before the implicit solve. In a
+  normal box the field energy of the free (transverse) modes is $\sum_m(\tilde T/2)/(1+\lambda_m dt/2)$ to 0.03\,\%, with
+  $\sigma_n$ and with the insulating buffer: the implicit Euler of the field leaves the stiff mesh modes colder and the slow ones
+  right to $O(\lambda dt)$.
+\end{description}
+None of them sets the step in practice (the heat diffusion bound, $0.15\,dx^2/D_T$, is 0.15 at $dx = 0.5$ and $D_T =
+0.25$, against $dt \approx 0.02$), so an implicit treatment would gain nothing.
+
+% ======================================================================
+\section{Running}
+
+\subsection{From a file}
+
+A run is one TOML file:
+\begin{verbatim}
+[material]   file = "mgb2_model_II.toml"      (or kappa, sigma_n, T, gamma12 | gamma,
+                                                and [[material.band]] tables inline)
+[mesh]       nx, ny, nz, dx, buf
+[geometry]   GEOM_MODE, geom_file, ...         (the shape keys of release 1.2)
+[scheme]     the Stepper keywords: dt_scale, rkl, rotframe, rkl_margin,
+             selffield_bc ("bar" | "open" | "slab"), open_every, sigma_vac, ...
+[protocol]   t_min_GL, t_min_GL_res, t_confirm_GL, ...
+[heat]       D_T, gamma_bath, eta, joule, margin       (optional; drag goes in [scheme])
+[run]        J = [...], H, out_dir
+\end{verbatim}
+and one command:
+\begin{verbatim}
+OPENBLAS_NUM_THREADS=1 julia --project=tdgl2 \
+    tdgl2/scripts/run.jl RUN.toml [--dir OUT]
+\end{verbatim}
+It writes into the run folder the file it was given, \code{output/rungs\_J+.csv} and \code{rungs\_J-.csv} (one line per
+rung: verdict, voltage, crossings, band currents and amplitudes, delays), \code{restart/} (JLD2 checkpoints, from which
+a ladder resumes), and \code{output/summary.json}: the units, the code version and commit, the scheme as resolved (step,
+the bound that set it, stages, \code{dt\_scale}, \code{rotframe}, \code{rkl\_margin}, the boundary), the protocol, the
+regime numbers, and the brackets of the window and of the delay with $\eta$. \textbf{Stopping and resuming.} The checkpoint of every closed point holds, in one file written at once, the state, the
+open boundary and the temperature field, the solution of the insulating solve, and all the ladder carries from one point
+to the next (the convergence references, the reference of the 'N' verdict, the closed rungs waiting for the delay
+confirmation). \code{STOP.txt} in the run folder stops a run after the current point; \code{--resume} continues it, and
+the result is the one of the run without a stop, to the bit (the suite checks it, with the delay confirmation half done
+and with the open boundary). A killed run loses only the point it was on. \code{--polarity +} and \code{--polarity -} run
+the two polarities as two processes into the same folder; the second to end writes the summary, the same as one process
+running both. A folder that already holds a ladder is not run over without \code{--resume}.
+
+Two examples are in \code{examples/}:
+\code{wedge\_k25.toml} (minutes) and \code{kwt\_k2.toml} (about an hour; the onset with KWT, $\gt = 10$, rises to
+$(0.73, 0.74]$ and $(0.75, 0.76]$ with $\eta = -1.34\,\%$); and one per option: \code{open\_k2},
+\code{insulating\_k2}, \code{heat\_k25} (heat with Joule, a contact margin and drag) and \code{three\_bands}.
+
+\subsection{From Julia}
+
+\begin{verbatim}
+using TDGL
+md = two_band(xi_ratio=4.0, κ=2.0, gamma_kwt=10.0)
+gr = Grid(40, 24, 6; dx=0.5)
+mk = build_masks(GeomSpec(GEOM_MODE="WEDGE"), gr)
+st = Stepper(md, gr, mk)                 # production scheme; rotframe on (KWT)
+L  = ladder(st, initial_state(md, gr, mk, 0.03), [0.0, 0.5, 0.7, 0.74]; H=0.03,
+            pr=Protocol(t_confirm_GL=3000.0, stop_after_V=1))
+delay_bracket(L)
+\end{verbatim}
+
+\subsection{The terminal menu, campaigns and tools}
+
+The terminal menu of release 1.2 (\code{julia/scripts/tdgl-tui.sh}) lists the runs of 2.0 that have an
+\code{out\_dir}, with their points, and launches one from a run file (key \code{n}; with two CPUs, one process per
+polarity), stops it after the current point (\code{s}) and resumes it (\code{u}). Its launch wizard (\code{l}) ends with
+the choice of release: \code{2} writes the run file of release 2 (the two-band model of 1.2, KWT off) and launches it. For campaigns, one single-threaded
+process per physical core (\code{OPENBLAS\_NUM\_THREADS=1}); on a laptop with hybrid cores the total gain saturates near
+$2.5\times$ one process (memory bandwidth). The Slurm scripts of release 1.2 (\code{examples/}) serve with their command
+replaced by \code{tdgl2/scripts/run.jl RUN.toml --dir OUT}. \code{tools/ladder\_sheet.py} draws the standard sheet of one or more ladders
+(crossings per line, $|V|$, time per rung and the current through the sample against $|J|$).
+
+% ======================================================================
+\section{Checks}
+
+The suite (\code{tdgl2/test/run.jl}, a few minutes) checks:
+\begin{itemize}
+\item \textbf{Release 1.2.} The step, the masks of every catalogue shape, the checkpoints and a two-polarity ladder point
+  by point, with the new terms off and \code{selffield\_bc = :slab}, against states written by release 1.2. To the bit
+  with OpenBLAS's Haswell kernels and Julia code for that CPU (\code{TDGL\_TEST\_BITS=1 OPENBLAS\_CORETYPE=Haswell julia
+  -C haswell}, any x86 machine with AVX2); to $10^{-10}$ elsewhere, where the dense products of the separable solve and
+  the SIMD sums round differently (measured: $10^{-15}$ on the states, $10^{-12}$ on ladder voltages, which are time
+  averages). Verdicts and counts are exact either way.
+\item \textbf{Energy.} The discrete balance $dF/dt = -D + W$ on a two-band box relaxing from a random state, where $W$
+  is the work of the supercurrent on the links between two face nodes (about 0.5\,\% of $D$ there; with it the residual
+  is $O(dt)$). With those links off, $W = 0$ and $F$ decreases at every step: an exact gradient flow.
+\item \textbf{The rotating frame.} The KWT state at $dt$ and $dt/2$ and with substeps, to $10^{-5}$.
+\item \textbf{Three bands.} Equal repulsive couplings frustrate the phases: the ground state breaks time reversal with
+  phases $0$, $\pm2\pi/3$ and $|\Psi|^2 = 1 + |\gamma|$, the analytic values, to $10^{-6}$.
+\item \textbf{Symmetry.} A sample with the mirror $y\to-y$ at $H\neq0$: the state at $+J$ is the mirror of the state at
+  $-J$ to rounding ($10^{-15}$), with each boundary, so $\eta = 0$.
+\item \textbf{The open boundary.} The lattice Green function, $\mathbf h_\delta = 0$ without currents, a closed source,
+  the nominal current through the sample to $2\times10^{-3}$, exact resumption, the $J\to-J$ symmetry at $H = 0$.
+\item \textbf{The protocol.} The verdicts \code{'N'} and \code{'D'}, \code{crossing\_times}, \code{delay\_bracket}, the regime numbers
+  (one band against the conversion law).
+\end{itemize}
+
+\textbf{Against pyTDGL} (version 0.9; one band in 2D, the one-band equation of this code with $\Gamma = u$, $\sigma_n =
+1$, $\kappa$ large; pyTDGL's current unit is four times the GL unit at its interface, and it solves in the GL unit inside):
+the depairing current of a narrow strip, $0.385$; the conversion length with KWT for $\gt = 0$--30, $0.2\,\%$ between the
+codes and $0.1\,\%$ from $\lambda_c^2 = \sqrt{1+\gt^2|\Psi|^2}/(u|\Psi|^2)$; the onset of a notched strip, independent of
+$\gt$ in both codes, which with the mesh approaches pyTDGL's value ($8\,\%$ below it at $dx = 0.5\,\xi$, $4\,\%$ at
+$0.25\,\xi$: the $O(dx)$ error at the notch tip). The flowing voltage has not been compared.
+
+% ======================================================================
+\section{Limitations}
+
+\begin{itemize}
+\item \textbf{Absolute onsets carry an $O(dx)$ error} of 5--12\,\% at $dx = 0.5\,\xi$, at any $\kappa$: the tip of a
+  notch is resolved at the scale of a cell, and at small $\kappa$ the face rows of the sample, Neumann copies without an
+  equation of their own, carry a large share of the screening supercurrent (51\,\% at $\kappa = 2$, $dx = 0.5$; 30\,\%
+  at 0.25). Ratios between polarities ($\eta$) and trends do not feel it; quote absolute onsets with their mesh.
+\item \textbf{With KWT the conversion at the contacts is long}: keep $L/\lambda_c \gtrsim 10$.
+\item \textbf{The silent state is driven.} The conversion layers carry a steady field even when the order parameter is
+  static, so an onset depends on the relaxation rates and on the contact, not only on the free energy. Quote onsets for
+  the rates, the KWT parameters and the boundary used.
+\item \textbf{The charge imbalance is slaved}: KWT per band is the branch (Schmid--Sch\"on) imbalance in its slaved form,
+  and \code{qp\_exchange} adds a finite interband exchange; its memory and the scalar potential of 1.2 are not in. The normal
+  fluids depend on the share of $\sigma_n$ between the bands, a model choice.
+\item \textbf{The insulating buffer costs about 8 times per $\tGL$} what a metal buffer costs: its preconditioner does
+  not see the contrast between the bar and the buffer. A sculpted sample needs it, so it costs the same.
+\item \textbf{Anisotropy} is a mass per axis and band; $\sigma_n$ and drag stay isotropic.
+\item \textbf{The implicit solve needs $dx = dy = dz$.}
+\item \textbf{No GPU}: the loops are per node and per link with no reductions, so a port is mechanical; it has not been done.
+\item \textbf{One single-threaded process per physical core} for campaigns. Within one run, threads give the same bits
+  but no speed on a laptop (measured: $\times0.8$--$1.06$ with 2--8 threads).
+\end{itemize}
+
+\end{document}

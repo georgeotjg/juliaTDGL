@@ -94,6 +94,20 @@ SECTION 3 + SECTION 4 of the .m.  Mutates `cfg.m_ratio` if `cfg.xi_ratio > 0`,
 as the original does (it reassigns and prints it).
 """
 function derive_params(cfg::Config)
+    # The scalar potential (and Q) runs only in the explicit scheme of 1.0.0; with the production scheme of the
+    # defaults it switches to it by itself (the same as Config(:legacy) with the run's keywords), so that use_phi = true
+    # works out of the box.  A field still at the production default takes the 1.0.0 value; one the run set to
+    # something else (dt_scale = 0.25 for a convergence study) is kept, as Config(:legacy; dt_scale=0.25) keeps it.
+    if cfg.use_phi && cfg.maxwell_implicit
+        prod = Config(); set = String[]
+        for (k, v) in pairs(_LEGACY)
+            (k === :maxwell_implicit || getfield(cfg, k) == getfield(prod, k)) || continue
+            getfield(cfg, k) == v || push!(set, "$k = $v")
+            setfield!(cfg, k, v)
+        end
+        cfg.verbose && println("NOTE: the scalar potential runs in the explicit scheme of release 1.0.0 (Config(:legacy)); ",
+                               "this run uses it: ", join(set, ", "))
+    end
     if cfg.use_Qss && !cfg.use_phi
         error("use_Qss needs use_phi=true: Q lives in the Phi step")
     end
@@ -163,7 +177,7 @@ function derive_params(cfg::Config)
         dt3  = Inf
     end
     if cfg.maxwell_implicit
-        cfg.use_phi && error("maxwell_implicit with use_phi is not implemented")
+        cfg.use_phi && error("maxwell_implicit with use_phi is not implemented (Config(:legacy) runs Φ)")
         dt2s = Inf; dt2p = Inf             # the implicit curl-curl has no step bound
     end
     cfg.blas_threads >= 0 || error("blas_threads must be >= 0, not $(cfg.blas_threads)")

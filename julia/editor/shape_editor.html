@@ -7,14 +7,14 @@
 <style>
 :root {
   --bg: #f4f5f7; --panel: #ffffff; --ink: #1d232b; --muted: #66707c; --line: #d5d9df;
-  --sc: #4f7fb3; --hole: #f4f5f7; --anti: #3f9b6e; --hatch: #c3c9d1;
+  --sc: #4f7fb3; --hole: #f4f5f7; --anti: #3f9b6e; --hatch: #c3c9d1; --nm: #a9b0ba; --vac: #e2e5ea;
   --accent: #b5551d; --warn: #b5551d; --ok: #2e7d4f;
   --margin: rgba(200, 60, 40, 0.18);
   --cutA: #c2185b; --cutB: #00897b; --cutK: #f9a825;
 }
 @media (prefers-color-scheme: dark) {
   :root { --bg: #15181c; --panel: #1e2228; --ink: #e6e9ed; --muted: #9aa4af; --line: #343a42;
-          --sc: #5b8fc7; --hole: #15181c; --anti: #4fb584; --hatch: #3b424b;
+          --sc: #5b8fc7; --hole: #15181c; --anti: #4fb584; --hatch: #3b424b; --nm: #59616b; --vac: #0d0f12;
           --accent: #f0a35e; --warn: #e08a52; --ok: #6cc28f;
           --margin: rgba(230, 90, 60, 0.22);
           --cutA: #f06292; --cutB: #4db6ac; --cutK: #ffd54f; }
@@ -22,13 +22,13 @@
 /* the theme button forces one of the two, over the system setting */
 :root[data-theme="light"] {
   --bg: #f4f5f7; --panel: #ffffff; --ink: #1d232b; --muted: #66707c; --line: #d5d9df;
-  --sc: #4f7fb3; --hole: #f4f5f7; --anti: #3f9b6e; --hatch: #c3c9d1;
+  --sc: #4f7fb3; --hole: #f4f5f7; --anti: #3f9b6e; --hatch: #c3c9d1; --nm: #a9b0ba; --vac: #e2e5ea;
   --accent: #b5551d; --warn: #b5551d; --ok: #2e7d4f;
   --margin: rgba(200, 60, 40, 0.18);
   --cutA: #c2185b; --cutB: #00897b; --cutK: #f9a825;
 }
 :root[data-theme="dark"] { --bg: #15181c; --panel: #1e2228; --ink: #e6e9ed; --muted: #9aa4af; --line: #343a42;
-          --sc: #5b8fc7; --hole: #15181c; --anti: #4fb584; --hatch: #3b424b;
+          --sc: #5b8fc7; --hole: #15181c; --anti: #4fb584; --hatch: #3b424b; --nm: #59616b; --vac: #0d0f12;
           --accent: #f0a35e; --warn: #e08a52; --ok: #6cc28f;
           --margin: rgba(230, 90, 60, 0.22);
           --cutA: #f06292; --cutB: #4db6ac; --cutK: #ffd54f; }
@@ -96,7 +96,7 @@ kbd { font: 11px ui-monospace, monospace; border: 1px solid var(--line); border-
 <body>
 <header>
   <h1>Shape editor</h1>
-  <span class="muted">the box starts full of superconductor; what you draw is removed (f=0) or gets its own f · each node is a voxel</span>
+  <span class="muted">the box starts full of superconductor; what you draw gets its own f (0 = normal metal) or becomes vacuum (no material: release 2) · each node is a voxel</span>
   <span style="flex:1"></span>
   <button id="bUndo" title="Ctrl+Z">↶ undo</button>
   <button id="bRedo" title="Ctrl+Y or Ctrl+Shift+Z">↷ redo</button>
@@ -107,14 +107,14 @@ kbd { font: 11px ui-monospace, monospace; border: 1px solid var(--line); border-
   <span id="msg" class="muted"></span>
   <button id="bTema" title="theme: follows the system / light / dark">◐ auto</button>
   <label title="colour of the superconducting cells">cells <input type="color" id="colSC" value="#4f7fb3" style="width:34px;padding:0"></label>
-  <button id="bQuit" title="stops the local server (python3 julia/editor/server.py); the page stays open but can no longer save">close server</button>
+  <button id="bQuit" title="stops the local server (julia/editor/server.jl); the page stays open but can no longer save">close server</button>
 </header>
 <main>
 <div class="izq">
   <div class="pestanas"><button data-t="dibujo" class="on">Draw</button><button data-t="paleta">Palette</button><button data-t="caja">Box</button></div>
   <section class="tab" data-t="dibujo">
     <h2>Work face <button class="ayuda" data-a="aCara">?</button></h2>
-    <div class="textoayuda" id="aCara" hidden>Pick the face you work from, here or by clicking it on the 3D model: its view is outlined and the page scrolls to it. Each click of the pencil or the eraser goes <b>depth</b> cells into the sample from that face, starting <b>from</b> cells inside. from 0 + through = the whole thickness; from &gt; 0 = a cut inside the sample. Figures (circle, rectangle…) use the same from/depth when their z is "from the work face" (top or bottom): a circle 3 cells deep from the top, or a buried disc from 2 to 3. The list of figures says which z planes each one covers, and its z0/z1 can be edited there.</div>
+    <div class="textoayuda" id="aCara" hidden>Pick the face you work from, here or by clicking it on the 3D model: its view is outlined and the page scrolls to it. Each click of the pencil or the eraser goes <b>depth</b> cells into the sample from that face, starting <b>from</b> cells inside; picking a face sets depth to the whole sample along its normal (through). from &gt; 0 = a cut inside the sample. Figures (circle, rectangle…) are drawn on the view of the work face: top/bottom on the Top view (extruded along z), front/back on the Front view (along y), left/right on the Side view (along x). Their extent along that axis is the same from/depth ("from the work face") or any range; the list of figures shows it and edits it.</div>
     <div class="cara" id="caras">
       <span></span><button data-c="top" title="z = top">top<small>+z</small></button><span></span><span></span>
       <button data-c="left" title="x1: the current enters here">left<small>−x · x1</small></button><button data-c="front" title="y1: the face of the production notch">front<small>−y · y1</small></button><button data-c="right" title="x2: the current leaves here">right<small>+x · x2</small></button><button data-c="back" title="y2">back<small>+y · y2</small></button>
@@ -125,7 +125,7 @@ kbd { font: 11px ui-monospace, monospace; border: 1px solid var(--line); border-
     <button id="cTodo" title="from 0, depth = the whole sample">through</button>
     <div class="muted" id="cAyuda"></div>
     <h2 style="margin-top:10px">Tool <button class="ayuda" data-a="aTool">?</button></h2>
-    <div class="textoayuda" id="aTool" hidden>pencil / eraser: paint cells on any view (width in cells). Figures (circle, rectangle…): drag on the top view, f and z below. gradient: drag a rectangle; f or depth changes along it in n steps. select/move: drag a figure or the pencil layer. move cuts: click a view to move the other cuts there.</div>
+    <div class="textoayuda" id="aTool" hidden>pencil / eraser: paint cells on any view (width in cells). Figures (circle, rectangle…): drag on any view; the figure goes through the sample along the axis of that view. "keep the figure" writes f (or vacuum) outside it instead of inside: the figure is what stays (a cable). "vacuum" removes the material instead of giving it an f: no superconductor, no normal metal (release 2, with an insulating padding). gradient: drag a rectangle on the top view; f or depth changes along it in n steps. select/move: drag a figure or the pencil layer. move cuts: click a view to move the other cuts there.</div>
     <div class="tools" id="tools"></div>
     <div class="ctx" data-ctx="lapiz">
       <span id="pActual"></span>
@@ -133,13 +133,17 @@ kbd { font: 11px ui-monospace, monospace; border: 1px solid var(--line); border-
       <label>stroke <select id="trazo"><option value="libre">free</option><option value="recta">straight</option></select></label>
     </div>
     <div class="ctx" data-ctx="figura">
-      <label>f <input type="number" id="dF" value="0" step="0.1" min="0"></label>
+      <label title="what the figure writes: f = 0 a normal metal (grey, hatched: it conducts and Ψ leaks into it), 0 < f < 1 weakens, f > 1 strengthens. For a hole (no material) check vacuum">f <input type="number" id="dF" value="0" step="0.1" min="0"></label>
       <label>rot° <input type="number" id="dRot" value="0" step="5"></label>
       <label class="ctx2" data-t="ngono">n <input type="number" id="dN" value="3" min="3" max="24"></label>
       <label class="ctx2" data-t="triangulo" title="apex of the triangle shifted along the base; ±w/2 = right triangle">skew <input type="number" id="dSesgo" value="0" step="0.5"></label>
-      <label><input type="checkbox" id="snap" checked> snap</label>
-      <div><label title="work face: the figure takes the 'from' and 'depth' cells of the work face (top or bottom), like the pencil">z <select id="dZ"><option value="cara" selected>from the work face (from/depth)</option><option value="todo">all (through)</option><option value="abajo">bottom half</option><option value="arriba">top half</option><option value="enterrado">buried (middle half)</option><option value="rango">range in ξσ…</option></select></label>
-      <label>z0 <input type="number" id="dZ0" value="0" step="0.5"></label><label>z1 <input type="number" id="dZ1" value="1" step="0.5"></label></div>
+      <label title="rounds the points of a figure (centre, corners, vertices) to the grid: the nodes and half-way between them. The same drag then always gives the same nodes; unchecked, the cursor as it is. It moves where a figure sits by less than half a cell, never what it writes"><input type="checkbox" id="snap" checked> snap to ½ cell</label>
+      <div><label title="what the figure writes: an f, or vacuum (no material)"><input type="checkbox" id="dVac"> vacuum</label>
+      <label title="write outside the figure instead of inside: the figure is what is kept"><input type="checkbox" id="dFuera"> keep the figure (remove the rest)</label></div>
+      <div><label title="extent along the axis of the view: the 'from' and 'depth' cells of the work face, like the pencil, or a range">along the axis <select id="dZ"><option value="cara" selected>from the work face (from/depth)</option><option value="todo">all (through)</option><option value="abajo">first half</option><option value="arriba">second half</option><option value="enterrado">middle half</option><option value="rango">range in ξσ…</option></select></label>
+      <label>a0 <input type="number" id="dZ0" value="0" step="0.5"></label><label>a1 <input type="number" id="dZ1" value="1" step="0.5"></label></div>
+      <div><button id="bCable" title="a disc on the y–z plane through the whole length, kept, with vacuum around it: a cable along the current">cable along x</button></div>
+      <div title="n slabs of the same material stacked along z, with gaps that the figure writes: vacuum if checked (only the field couples them), else its f (f = 0: a normal metal between them; a small f: a weak link, a Josephson-like junction)">slabs along z: n <input type="number" id="sN" value="2" min="2" max="12"> gap <input type="number" id="sGap" value="2" min="1" max="20"> planes <button id="bLosas">stack</button></div>
       <div class="muted" id="dZinfo"></div>
     </div>
     <div class="ctx" data-ctx="gradiente">
@@ -152,7 +156,8 @@ kbd { font: 11px ui-monospace, monospace; border: 1px solid var(--line); border-
     <details class="muted" style="margin-top:6px"><summary>keys</summary>
       <kbd>Ctrl+Z</kbd> undo · <kbd>Ctrl+Y</kbd> redo · <kbd>[</kbd> <kbd>]</kbd> lower/raise the z plane ·
       right click on any view = move the cuts there · <kbd>Del</kbd> deletes the selected figure ·
-      <kbd>r</kbd>/<kbd>R</kbd> rotates ±5° · arrows move · <kbd>Enter</kbd> closes the polygon · <kbd>Esc</kbd> cancels
+      <kbd>r</kbd>/<kbd>R</kbd> rotates ±5° · arrows move · <kbd>Shift</kbd> while dragging a rectangle: a square ·
+      polygon: a click adds a vertex, <kbd>Backspace</kbd> or <kbd>Ctrl+Z</kbd> removes the last, <kbd>Enter</kbd> or a double click closes it, <kbd>Esc</kbd> cancels
     </details>
   </section>
   <section class="tab" data-t="paleta" hidden>
@@ -163,6 +168,7 @@ kbd { font: 11px ui-monospace, monospace; border: 1px solid var(--line); border-
     <div style="margin-top:6px">
       <label>char <input type="text" id="pCh" maxlength="1" style="width:28px" value="c"></label>
       <label>f <input type="number" id="pF" value="0" step="0.1" min="0"></label>
+      <label title="this character removes the material (release 2)"><input type="checkbox" id="pVac"> vacuum</label>
       <button id="pAdd">add</button>
     </div>
     <details style="margin-top:8px"><summary>legacy mode (z extent per character)</summary>
@@ -194,7 +200,8 @@ kbd { font: 11px ui-monospace, monospace; border: 1px solid var(--line); border-
     <canvas id="top" width="900" height="560"></canvas>
     <div class="leyenda">
       <span><span class="sw" style="background:var(--sc)"></span>superconductor (f = 1)</span>
-      <span><span class="sw" style="background:repeating-linear-gradient(45deg,var(--hole) 0 3px,var(--hatch) 3px 4px)"></span>removed (f = 0)</span>
+      <span><span class="sw" style="background:repeating-linear-gradient(45deg,var(--nm) 0 3px,var(--hatch) 3px 4px)"></span>normal metal (f = 0)</span>
+      <span><span class="sw" style="background:var(--vac)"></span>vacuum (no material; release 2)</span>
       <span><span class="sw" style="background:linear-gradient(90deg,var(--hole),var(--sc))"></span>0 &lt; f &lt; 1</span>
       <span><span class="sw" style="background:var(--anti)"></span>f &gt; 1: stronger condensation</span>
       <span><span class="sw" style="background:var(--margin)"></span>injection strip: the current enters through x1 and x2; do not remove material there</span>
@@ -218,7 +225,7 @@ kbd { font: 11px ui-monospace, monospace; border: 1px solid var(--line); border-
 <div>
   <section>
     <h2>3D</h2>
-    <label><input type="checkbox" id="soloHuecos"> removed only</label>
+    <label title="only what is not f = 1 (normal metal and weakened); vacuum is never drawn"><input type="checkbox" id="soloHuecos"> modified only</label>
     <label><input type="checkbox" id="planos3d" checked> cut planes</label>
     <label title="current J along x (x1 → x2), field H along z, and the face where vortices enter for each sign of J"><input type="checkbox" id="fisica3d" checked> J, H, entry</label>
     <span class="muted">drag = rotate · wheel = zoom · double click = initial view</span>
@@ -260,6 +267,7 @@ function interno(e) {
   for (const [k, v] of Object.entries(e)) o[DE_CLAVE[k] || k] = v;
   if (o.tipo) o.tipo = DE_TIPO[o.tipo] || o.tipo;
   if (typeof o.z === "string") o.z = DE_Z[o.z] || o.z;
+  if (typeof o.along === "string") o.along = DE_Z[o.along] || o.along;
   if (o.paleta) for (const q of Object.values(o.paleta)) if (typeof q.z === "string") q.z = DE_Z[q.z] || q.z;
   return o;
 }
@@ -293,8 +301,17 @@ function rangoZ(spec, Lz) {
   if (spec === "enterrado") return [Lz / 4, 3 * Lz / 4];
   return [Number(spec[0]), Number(spec[1])];
 }
+// a figure lives on the plane of its axis: z (x, y; the default), x (u = y, v = z) or y (u = x, v = z)
+const ejeDe = e => e.axis || "z";
+const centro = e => ejeDe(e) === "z" ? [e.x || 0, e.y || 0] : [e.u || 0, e.v || 0];
+function ponerCentro(e, a, b) { if (ejeDe(e) === "z") { e.x = a; e.y = b; } else { e.u = a; e.v = b; } }
+const extension = e => ejeDe(e) === "z" ? e.z : e.along;          // extent along the axis (a z spec)
+function ponerExtension(e, z) { if (ejeDe(e) === "z") e.z = z; else e.along = z; }
+// (u, v, along) of a point for a figure of axis ax, and the length of the sample along it
+const plano = (ax, X, Y, Z) => ax === "x" ? [Y, Z, X] : ax === "y" ? [X, Z, Y] : [X, Y, Z];
+function largo(ax) { const c = S.caja; return ax === "x" ? (c.Nx - 1) * c.dx : ax === "y" ? (c.Ny - 1) * c.dx : (c.Nz - 1) * c.dz; }
 function local(e, X, Y) {
-  const dx = X - (e.x || 0), dy = Y - (e.y || 0);
+  const [cx, cy] = centro(e), dx = X - cx, dy = Y - cy;
   const th = (e.rot || 0) * Math.PI / 180;
   if (th === 0) return [dx, dy];
   const c = Math.cos(th), s = Math.sin(th);
@@ -328,40 +345,49 @@ function verticesLocales(e) {
   return null;
 }
 function dentro2D(e, X, Y) {
-  if (e.tipo === "circulo" || e.tipo === "esfera") return (X - e.x) ** 2 + (Y - e.y) ** 2 <= e.r * e.r + TOL;
+  if (e.tipo === "esfera") return (X - e.x) ** 2 + (Y - e.y) ** 2 <= e.r * e.r + TOL;
+  if (e.tipo === "circulo") { const [cx, cy] = centro(e); return (X - cx) ** 2 + (Y - cy) ** 2 <= e.r * e.r + TOL; }
   const [u, v] = local(e, X, Y);
   if (e.tipo === "rect") return Math.abs(u) <= e.w / 2 + TOL && Math.abs(v) <= e.h / 2 + TOL;
   const [vx, vy] = verticesLocales(e);
   return enPoligono(u, v, vx, vy);
 }
-function dentro(e, X, Y, Z, Lz) {
+function dentro(e, X, Y, Z) {
   if (e.tipo === "esfera") return (X - e.x) ** 2 + (Y - e.y) ** 2 + (Z - e.zc) ** 2 <= e.r * e.r + TOL;
-  const [z0, z1] = rangoZ(e.z, Lz);
-  if (!(z0 - TOL <= Z && Z <= z1 + TOL)) return false;
-  return dentro2D(e, X, Y);
+  const ax = ejeDe(e), [u, v, a] = plano(ax, X, Y, Z);
+  const [a0, a1] = rangoZ(extension(e), largo(ax));
+  if (!(a0 - TOL <= a && a <= a1 + TOL)) return false;
+  return dentro2D(e, u, v);
 }
+// f of every node, and which nodes are vacuum (vacuum = true: f = 0 there, and no material)
 function rasterizar() {
   const { Nx, Ny, Nz, dx, dz } = S.caja;
-  const f = new Float64Array(Nx * Ny * Nz).fill(1);
-  const Lz = (Nz - 1) * dz;
+  const f = new Float64Array(Nx * Ny * Nz).fill(1), vac = new Uint8Array(Nx * Ny * Nz);
+  const poner = (n, q) => { if (q.vacuum) { vac[n] = 1; f[n] = 0; } else { vac[n] = 0; f[n] = q.f; } };
   for (let k = 0; k < Nz; k++) for (let j = 0; j < Ny; j++) for (let i = 0; i < Nx; i++) {
     const X = i * dx, Y = j * dx, Z = k * dz, n = vi(i, j, k);
     for (const e of S.elems) {
       if (e.tipo === "voxeles") {
         const ch = S.vox[n];
-        if (ch !== "." && ch !== " " && S.paleta[ch]) f[n] = S.paleta[ch].f;
-      } else if (dentro(e, X, Y, Z, Lz)) f[n] = e.f;
+        if (ch !== "." && ch !== " " && S.paleta[ch]) poner(n, S.paleta[ch]);
+      } else if (dentro(e, X, Y, Z) !== !!e.outside) poner(n, e);
     }
   }
-  S.f = f;
+  S.f = f; S.vac = vac;
 }
 const F = (i, j, k) => S.f[vi(i, j, k)];
+const VAC = (i, j, k) => S.vac[vi(i, j, k)] === 1;
 // Counts with the same indices as Julia's check_my_symmetry / check_rz_symmetry
 function contar() {
   const { Nx, Ny, Nz, margen, H, xir } = S.caja;
-  let my = 0, rz = 0, mg = 0, quitados = 0, fsig = 0, fpi = 0;
+  let my = 0, rz = 0, mg = 0, quitados = 0, fsig = 0, fpi = 0, nvac = 0, secDif = 0, secVac = 0;
+  for (let k = 0; k < Nz; k++) for (let j = 0; j < Ny; j++) {
+    if (VAC(0, j, k)) secVac++;
+    if (VAC(0, j, k) !== VAC(Nx - 1, j, k)) secDif++;
+  }
   for (let k = 0; k < Nz; k++) for (let j = 0; j < Ny; j++) for (let i = 0; i < Nx; i++) {
     const v = F(i, j, k);
+    if (VAC(i, j, k)) nvac++;
     if (v !== 1) quitados++;
     if (v > 0 && v < H) fsig++;
     if (v > 0 && v < Math.min(1, H * xir * xir)) fpi++;
@@ -374,10 +400,10 @@ function contar() {
   }
   let shunt = false;
   for (let k = 0; k < Nz && !shunt; k++) for (let j = 0; j < Ny && !shunt; j++) {
-    let todo = true; for (let i = 0; i < Nx; i++) if (F(i, j, k) >= 0.5) { todo = false; break; }
+    let todo = true; for (let i = 0; i < Nx; i++) if (F(i, j, k) >= 0.5 || VAC(i, j, k)) { todo = false; break; }
     if (todo) shunt = true;
   }
-  return { my, rz, mg, quitados, fsig, fpi, shunt };
+  return { my, rz, mg, quitados, fsig, fpi, shunt, nvac, secDif, secVac };
 }
 // pencil: view 'top' (u=i, v=j, plane k), 'xz' (u=i, v=k, row jc), 'yz' (u=j, v=k, column ic)
 function aIJK(vista, u, v) {
@@ -405,10 +431,12 @@ function caraCercana(vw) {
          : (S.ic <= (b.Nx - 1) / 2 ? "left" : "right");
   msg(`work face: ${S.cara}, painting from the plane you are on, ${$("cProf").value} cell(s) deep`);
 }
-function zDeCara() {             // z range [ξσ] of the face layers, for figures drawn on the top view
-  if (VISTA_CARA[S.cara] !== "top") caraCercana("top");
-  const L = capasCara(), dz = S.caja.dz;
-  return [+(Math.min(...L) * dz).toFixed(6), +(Math.max(...L) * dz).toFixed(6)];
+// the axis a view extrudes its figures along, and the view of an axis
+const EJE_VISTA = { top: "z", xz: "y", yz: "x" }, VISTA_EJE = { z: "top", y: "xz", x: "yz" };
+function zDeCara(vw = "top") {   // range [ξσ] along the axis of view vw of the face layers (from/depth)
+  if (VISTA_CARA[S.cara] !== vw) caraCercana(vw);
+  const L = capasCara(), d = vw === "top" ? S.caja.dz : S.caja.dx;
+  return [+(Math.min(...L) * d).toFixed(6), +(Math.max(...L) * d).toFixed(6)];
 }
 // cells with f ≠ 1 on each outer face of the sample
 function tocadas() {
@@ -428,6 +456,7 @@ function ponerCara(c) {
   const idx = planoDe(c, 0);
   if (VISTA_CARA[c] === "top") S.k = idx; else if (VISTA_CARA[c] === "xz") S.jc = idx; else S.ic = idx;
   $("cDesde").value = 0;
+  $("cProf").value = nEje(c);          // a new face starts through the whole sample along its normal
   const giro = { top: [-0.6, 1.3], bottom: [-0.6, -1.3], front: [-0.35, 0.35], back: [Math.PI - 0.35, 0.35],
                  left: [Math.PI / 2 - 0.35, 0.35], right: [-Math.PI / 2 - 0.35, 0.35] }[c];
   C3.yaw = giro[0]; C3.pitch = giro[1];
@@ -521,6 +550,7 @@ function aToml() {
   const usados = [...new Set(S.vox.filter(ch => ch !== "."))];
   const out = [`# Shape for juliaTDGL: GEOM_MODE = "CUSTOM", geom_file = this file. Units: ξσ.`,
                `# Drawn on a box of ${c.Nx}x${c.Ny}x${c.Nz} nodes, dx = ${c.dx}, dz = ${c.dz}.`,
+               ...(S.vac && S.vac.some(v => v) ? [`# Has vacuum (a sculpted sample): release 2 only, with sigma_vac in [scheme] and selffield_bc = "bar" or "open".`] : []),
                `# editor-json: ${JSON.stringify({ caja: c, elems: S.elems, paleta: S.paleta, capas: capas.map(f => f.join("|")) })}`, ""];
   for (const e of S.elems) {
     if (e.tipo === "voxeles") {
@@ -528,14 +558,18 @@ function aToml() {
       out.push("[[shape]]", `type = "voxels"`, `dx = ${num(c.dx)}`, `dz = ${num(c.dz)}`, "layers = [");
       capas.forEach((filas, k) => out.push(`"""\n${filas.join("\n")}"""${k < capas.length - 1 ? "," : ""}`));
       out.push("]", "", "[shape.palette]");
-      for (const ch of usados) out.push(`"${ch}" = { f = ${numF(S.paleta[ch] ? S.paleta[ch].f : 0)} }`);
+      for (const ch of usados) out.push(S.paleta[ch] && S.paleta[ch].vacuum ? `"${ch}" = { vacuum = true }` :
+                                         `"${ch}" = { f = ${numF(S.paleta[ch] ? S.paleta[ch].f : 0)} }`);
     } else {
       out.push("[[shape]]", `type = "${EN_TIPO[e.tipo] || e.tipo}"`);
-      for (const k of ["x", "y", "zc", "r", "w", "h", "sesgo", "rot"]) if (e[k] !== undefined) out.push(`${k === "sesgo" ? "skew" : k} = ${num(e[k])}`);
+      const ax = e.tipo === "esfera" ? "z" : ejeDe(e);
+      if (ax !== "z") out.push(`axis = "${ax}"`);
+      for (const k of ["x", "y", "u", "v", "zc", "r", "w", "h", "sesgo", "rot"]) if (e[k] !== undefined && !(ax !== "z" && (k === "x" || k === "y"))) out.push(`${k === "sesgo" ? "skew" : k} = ${num(e[k])}`);
       if (e.n !== undefined) out.push(`n = ${Math.round(e.n)}`);
       if (e.puntos) out.push(`points = [${e.puntos.map(p => `[${num(p[0])}, ${num(p[1])}]`).join(", ")}]`);
-      if (e.tipo !== "esfera") out.push(`z = ${zToml(e.z)}`);
-      out.push(`f = ${numF(e.f)}`);
+      if (e.tipo !== "esfera") out.push(ax === "z" ? `z = ${zToml(e.z)}` : `along = ${zToml(e.along)}`);
+      if (e.outside) out.push(`outside = true`);
+      out.push(e.vacuum ? `vacuum = true` : `f = ${numF(e.f)}`);
     }
     out.push("");
   }
@@ -604,8 +638,9 @@ function colorF(v) {
   const t = 1 - Math.max(0, v);
   return `rgb(${Math.round(a[0] + (b[0] - a[0]) * t)},${Math.round(a[1] + (b[1] - a[1]) * t)},${Math.round(a[2] + (b[2] - a[2]) * t)})`;
 }
-function celda(g, x, y, w, v) {
-  g.fillStyle = colorF(v); g.fillRect(x, y, w, w);
+function celda(g, x, y, w, v, vac) {
+  if (vac) { g.fillStyle = css("--vac"); g.fillRect(x, y, w, w); return; }
+  g.fillStyle = v <= 0 ? css("--nm") : colorF(v); g.fillRect(x, y, w, w);
   if (v <= 0 && w >= 6) { g.strokeStyle = css("--hatch"); g.lineWidth = 1; g.beginPath(); g.moveTo(x, y + w); g.lineTo(x + w, y); g.stroke(); }
 }
 // geometry of each view: nu × nv cells, origin (ox, oy), size cs
@@ -632,7 +667,7 @@ function dibujarVista(vw) {
   const gap = q.cs > 6 ? 1 : 0;
   for (let v = 0; v < q.nv; v++) for (let u = 0; u < q.nu; u++) {
     const [i, j, k] = aIJK(vw, u, v);
-    celda(g, q.ox + u * q.cs, q.oy + (q.nv - 1 - v) * q.cs, q.cs - gap, F(i, j, k));
+    celda(g, q.ox + u * q.cs, q.oy + (q.nv - 1 - v) * q.cs, q.cs - gap, F(i, j, k), VAC(i, j, k));
     const ch = S.vox[vi(i, j, k)];
     if (ch !== "." && S.paleta[ch]) { g.fillStyle = S.paleta[ch].color; const r = Math.max(2, q.cs * 0.22);
       g.fillRect(q.ox + u * q.cs + q.cs / 2 - r / 2, q.oy + (q.nv - 1 - v) * q.cs + q.cs / 2 - r / 2, r, r); }
@@ -644,10 +679,11 @@ function dibujarVista(vw) {
   if (vw === "top") { linea(g, cA, q.ox, yv(S.jc), q.ox + W, yv(S.jc), true); linea(g, cB, xu(S.ic), q.oy, xu(S.ic), q.oy + Hh, true); }
   if (vw === "xz") { linea(g, cK, q.ox, yv(S.k), q.ox + W, yv(S.k), true); linea(g, cB, xu(S.ic), q.oy, xu(S.ic), q.oy + Hh, true); }
   if (vw === "yz") { linea(g, cK, q.ox, yv(S.k), q.ox + W, yv(S.k), true); linea(g, cA, xu(S.jc), q.oy, xu(S.jc), q.oy + Hh, true); }
-  if (vw === "top") { S.elems.forEach((e, n) => { if (e.tipo !== "voxeles") contorno(g, e, n === S.sel); });
-    if (S.poli && S.poli.length) { g.strokeStyle = css("--accent"); g.lineWidth = 2; g.beginPath();
-      S.poli.forEach((p, n) => { const [px, py] = aPx(p[0], p[1]); n ? g.lineTo(px, py) : g.moveTo(px, py); }); g.stroke(); }
-    if (S.arr && S.arr.prev) contorno(g, S.arr.prev, true); }
+  // the outlines of the figures of this view's axis (the others show in the cells)
+  S.elems.forEach((e, n) => { if (e.tipo !== "voxeles" && enVista(e, vw)) contorno(g, e, n === S.sel, vw); });
+  if (S.poli && S.poli.length && S.poliVista === vw) { g.strokeStyle = css("--accent"); g.lineWidth = 2; g.beginPath();
+    S.poli.forEach((p, n) => { const [px, py] = aPx(p[0], p[1], vw); n ? g.lineTo(px, py) : g.moveTo(px, py); }); g.stroke(); }
+  if (S.arr && S.arr.prev && S.arr.vistaFig === vw) contorno(g, S.arr.prev, true, vw);
   if (S.arr && S.arr.vista === vw && S.arr.recta && S.arr.ruta) {   // preview of the straight stroke
     g.fillStyle = css("--accent");
     for (const [u, v] of S.arr.ruta) g.fillRect(q.ox + u * q.cs + q.cs * 0.3, q.oy + (q.nv - 1 - v) * q.cs + q.cs * 0.3, q.cs * 0.4, q.cs * 0.4);
@@ -655,8 +691,8 @@ function dibujarVista(vw) {
   if (vw === "top" && $("espejo").checked) {        // the shape reflected in y (what _REF runs)
     g.strokeStyle = css("--accent"); g.lineWidth = 1.2;
     for (let v = 0; v < q.nv; v++) for (let u = 0; u < q.nu; u++) {
-      const m = F(u, q.nv - 1 - v, S.k);
-      if (m !== F(u, v, S.k) && m !== 1) g.strokeRect(q.ox + u * q.cs + 2, q.oy + (q.nv - 1 - v) * q.cs + 2, q.cs - 5, q.cs - 5);
+      const m = F(u, q.nv - 1 - v, S.k), mv = VAC(u, q.nv - 1 - v, S.k);
+      if ((m !== F(u, v, S.k) || mv !== VAC(u, v, S.k)) && (m !== 1 || mv)) g.strokeRect(q.ox + u * q.cs + 2, q.oy + (q.nv - 1 - v) * q.cs + 2, q.cs - 5, q.cs - 5);
     }
   }
   if (vw === "top" && $("fisica3d").checked) {
@@ -669,25 +705,42 @@ function dibujarVista(vw) {
   g.fillText(et[0], 2, q.oy + Hh - 2); g.fillText(et[1], 2, q.oy + 10);
   g.fillText(et[2], q.ox, q.oy + Hh + 15); g.fillText(et[3], q.ox + W - 16, q.oy + Hh + 15);
 }
-function aPx(X, Y) { const q = V.top, dx = S.caja.dx; return [q.ox + (X / dx) * q.cs + q.cs / 2, q.oy + (q.nv - 1 - Y / dx) * q.cs + q.cs / 2]; }
-function contorno(g, e, sel) {
+// the view a figure is drawn and edited on (a sphere: every view)
+const vistaDe = e => e.tipo === "esfera" ? "top" : VISTA_EJE[ejeDe(e)];
+const enVista = (e, vw) => e.tipo === "esfera" || vistaDe(e) === vw;
+// a sphere on view vw: its centre (u, v) there and how far the view's cut is from it
+function esferaEn(e, vw) {
+  const c = S.caja;
+  if (vw === "top") return [e.x, e.y, S.k * c.dz - e.zc];
+  if (vw === "xz") return [e.x, e.zc, S.jc * c.dx - e.y];
+  return [e.y, e.zc, S.ic * c.dx - e.x];
+}
+function moverEsfera(e, vw, a, b) {
+  if (vw === "top") { e.x += a; e.y += b; } else if (vw === "xz") { e.x += a; e.zc += b; } else { e.y += a; e.zc += b; }
+}
+// cell size along u and v of a view [ξσ]
+const pasos = vw => vw === "top" ? [S.caja.dx, S.caja.dx] : [S.caja.dx, S.caja.dz];
+function aPx(U, W, vw = "top") { const q = V[vw], [du, dv] = pasos(vw); return [q.ox + (U / du) * q.cs + q.cs / 2, q.oy + (q.nv - 1 - W / dv) * q.cs + q.cs / 2]; }
+function contorno(g, e, sel, vw = "top") {
   g.strokeStyle = sel ? css("--accent") : css("--muted"); g.lineWidth = sel ? 2.5 : 1.2;
-  g.setLineDash(e.f > 0 ? [5, 3] : []);
+  g.setLineDash(e.f > 0 && !e.vacuum ? [5, 3] : []);
   g.beginPath();
-  const cs = V.top.cs, dx = S.caja.dx;
-  if (e.tipo === "esfera") {
-    const dzz = S.k * S.caja.dz - e.zc, rc2 = e.r * e.r - dzz * dzz; const [px, py] = aPx(e.x, e.y);
-    if (rc2 > 0) g.arc(px, py, Math.sqrt(rc2) / dx * cs, 0, 2 * Math.PI);
-    else { g.setLineDash([2, 4]); g.arc(px, py, e.r / dx * cs, 0, 2 * Math.PI); }
-  } else if (e.tipo === "circulo") { const [px, py] = aPx(e.x, e.y); g.arc(px, py, e.r / dx * cs, 0, 2 * Math.PI); }
+  const cs = V[vw].cs, [du, dv] = pasos(vw);
+  if (e.tipo === "esfera") {      // its outline (dotted) and, solid, its section on the cut of this view
+    const [cu, cv, d] = esferaEn(e, vw), rc2 = e.r * e.r - d * d, [px, py] = aPx(cu, cv, vw), dash = g.getLineDash();
+    g.setLineDash([2, 4]); g.ellipse(px, py, e.r / du * cs, e.r / dv * cs, 0, 0, 2 * Math.PI); g.stroke();
+    g.setLineDash(dash); g.beginPath();
+    if (rc2 > 0) g.ellipse(px, py, Math.sqrt(rc2) / du * cs, Math.sqrt(rc2) / dv * cs, 0, 0, 2 * Math.PI);
+  } else if (e.tipo === "circulo") { const [cx, cy] = centro(e), [px, py] = aPx(cx, cy, vw); g.ellipse(px, py, e.r / du * cs, e.r / dv * cs, 0, 0, 2 * Math.PI); }
   else {
-    const [vx, vy] = verticesLocales(e);
+    const [vx, vy] = verticesLocales(e), [cx, cy] = centro(e);
     const th = (e.rot || 0) * Math.PI / 180, c = Math.cos(th), s = Math.sin(th);
-    vx.forEach((u, n) => { const v = vy[n], X = (e.x || 0) + c * u - s * v, Y = (e.y || 0) + s * u + c * v;
-      const [px, py] = aPx(X, Y); n ? g.lineTo(px, py) : g.moveTo(px, py); });
+    vx.forEach((u, n) => { const v = vy[n], X = cx + c * u - s * v, Y = cy + s * u + c * v;
+      const [px, py] = aPx(X, Y, vw); n ? g.lineTo(px, py) : g.moveTo(px, py); });
     g.closePath();
   }
   g.stroke(); g.setLineDash([]);
+  if (e.outside) { g.fillStyle = css("--accent"); g.font = "10px system-ui"; const [cx, cy] = e.tipo === "esfera" ? esferaEn(e, vw) : centro(e), [px, py] = aPx(cx, cy, vw); g.fillText("kept", px - 10, py + 3); }
 }
 
 // ------------------------------------------------------------- 3D
@@ -698,7 +751,8 @@ function dibujar3D() {
   const W = cv.clientWidth || 320; cv.width = W; cv.height = 300;
   g.clearRect(0, 0, cv.width, cv.height);
   const solo = $("soloHuecos").checked;
-  const lleno = (i, j, k) => { if (!dentroCaja(i, j, k)) return false; const v = F(i, j, k); return solo ? v !== 1 : v > 0; };
+  // the material (superconductor and normal metal); vacuum is never drawn. "removed only": what is not f = 1
+  const lleno = (i, j, k) => { if (!dentroCaja(i, j, k)) return false; return solo ? F(i, j, k) !== 1 && !VAC(i, j, k) : !VAC(i, j, k); };
   const ez = dz / dx;
   const cy = Math.cos(C3.yaw), sy = Math.sin(C3.yaw), cp = Math.cos(C3.pitch), sp = Math.sin(C3.pitch);
   const esc = C3.zoom * 0.85 * Math.min(W, 300) / Math.hypot(Nx, Ny, Nz * ez);
@@ -729,10 +783,10 @@ function dibujar3D() {
     }
   }
   caras.sort((p, q) => q[0] - p[0]);
-  const sc = hexRgb(css("--sc")), an = hexRgb(css("--anti")), wr = hexRgb(css("--warn"));
+  const sc = hexRgb(css("--sc")), an = hexRgb(css("--anti")), wr = hexRgb(css("--warn")), nm = hexRgb(css("--nm"));
   for (const [, pts, v, sh] of caras) {
-    const base = solo ? wr : v > 1 ? an : sc;
-    const alfa = solo ? 0.35 + 0.65 * Math.min(1, 1 - v) : 0.3 + 0.7 * Math.min(1, v);
+    const base = solo ? wr : v > 1 ? an : v <= 0 ? nm : sc;
+    const alfa = solo ? 0.35 + 0.65 * Math.min(1, 1 - v) : v <= 0 ? 0.35 : 0.3 + 0.7 * Math.min(1, v);
     g.fillStyle = `rgba(${base.map(x => Math.round(x * sh)).join(",")},${alfa})`;
     g.beginPath(); pts.forEach(([x, y], n) => n ? g.lineTo(x, y) : g.moveTo(x, y)); g.closePath(); g.fill();
   }
@@ -794,19 +848,35 @@ function marcasCaras() {
     b.title = (b.title.split(" · ")[0]) + (c ? ` · ${c} cell(s) with f ≠ 1 on this face` : "");
   });
 }
+// the same f and vacuum on every plane x: a cut along the whole length (a cable, slabs), which the contacts follow
+function uniformeEnX() {
+  const { Nx, Ny, Nz } = S.caja;
+  for (let k = 0; k < Nz; k++) for (let j = 0; j < Ny; j++) { const f0 = F(0, j, k), v0 = VAC(0, j, k);
+    for (let i = 1; i < Nx; i++) if (F(i, j, k) !== f0 || VAC(i, j, k) !== v0) return false; }
+  return true;
+}
 function chequeos() {
   const { Nx, Ny, Nz, margen, H, xir, dx } = S.caja;
-  const { my, rz, mg, quitados, fsig, fpi, shunt } = contar();
+  const { my, rz, mg, quitados, fsig, fpi, shunt, nvac, secDif, secVac } = contar();
+  const uniX = quitados > 0 && uniformeEnX();
   const L = [];
-  L.push([null, `nodes with f≠1: ${quitados} (${(100 * quitados / (Nx * Ny * Nz)).toFixed(1)} %)`]);
+  L.push([null, `nodes with f≠1: ${quitados} (${(100 * quitados / (Nx * Ny * Nz)).toFixed(1)} %)` + (nvac ? `, of them vacuum: ${nvac}` : "")]);
+  if (nvac) {
+    L.push([null, `vacuum = a sculpted sample: release 2 only, with an insulating padding (sigma_vac in [scheme], e.g. 0.01) and selffield_bc = "bar" or "open". The surface toward the vacuum is free (zero flux), not a normal metal.`]);
+    L.push([secDif === 0, secDif === 0 ? `the contacts x1 and x2 have the same section (${Ny * Nz - secVac} of ${Ny * Nz} nodes conduct): the current enters and leaves through it` :
+            `the sections of x1 and x2 differ in ${secDif} node(s): the self-field takes the one at x1; keep the same section at both ends`]);
+  }
   L.push([null, `J ∥ x and H ∥ z: the Lorentz force moves vortices along y. +J pushes them toward +y, so they enter through the front face y1; −J through the back face y2.`]);
   { const t = tocadas();
-    L.push([null, `entry faces: y1 (for +J) has ${t.front} modified cell(s), y2 (for −J) ${t.back}. A notch on the entry face lowers that polarity's threshold.`]);
-    if (t.left || t.right) L.push([false, `the injection faces x1/x2 are touched (${t.left}/${t.right} cells): a defect on a contact injects through it (mode M2)`]); }
+    if (!nvac) L.push([null, `entry faces: y1 (for +J) has ${t.front} modified cell(s), y2 (for −J) ${t.back}. A notch on the entry face lowers that polarity's threshold.`]);
+    else L.push([null, `sculpted sample: vortices enter through its own surface toward −y (+J) and +y (−J), not through the box faces y1/y2.`]);
+    if ((t.left || t.right) && !nvac && !uniX) L.push([false, `the injection faces x1/x2 are touched (${t.left}/${t.right} cells): a defect on a contact injects through it (mode M2)`]); }
   L.push([my > 0, my > 0 ? `breaks the mirror in y (My, ${my} nodes): a diode is allowed` :
           `symmetric in y (My): +J and −J are the same run mirrored (C∘My) → η = 0 exactly. It can still be run, but it does not rectify.`]);
   L.push([rz > 0, rz > 0 ? `breaks the rotation Rz(π) (${rz} nodes)` : `invariant under Rz(π): η = 0 exactly. An asymmetry along x alone is not enough.`]);
-  L.push([mg === 0, mg === 0 ? `does not touch the injection strips` : `touches ${mg} node(s) closer than ${margen} cells to x1/x2 (spurious η)`]);
+  if (uniX) L.push([true, `the same section at every x (a cut along the whole length): the contacts carry that section, nothing injects through a defect at x1/x2`]);
+  else if (!nvac) L.push([mg === 0, mg === 0 ? `does not touch the injection strips` : `touches ${mg} node(s) closer than ${margen} cells to x1/x2 (spurious η)`]);
+  else if (secDif === 0 && mg > 0) L.push([null, `the strips next to x1/x2 are modified only by the section of the sample, which the contacts follow`]);
   L.push([!shunt, shunt ? `a whole row with f &lt; 0.5 along x: normal path` : `no normal path from side to side`]);
   if (fsig > 0) L.push([false, `${fsig} node(s) with 0 &lt; f &lt; H: σ is normal there`]);
   if (fpi > 0) L.push([null, `${fpi} node(s) with 0 &lt; f &lt; H·(ξπ/ξσ)² = ${(H * xir * xir).toFixed(2)}: π is normal there, σ is not`]);
@@ -834,7 +904,7 @@ function pintarPaleta() {
   $("paleta").innerHTML = "";
   for (const [ch, q] of Object.entries(S.paleta)) {
     const d = document.createElement("div"); d.className = "pal" + (ch === S.pincel ? " on" : "");
-    d.innerHTML = `<span class="sw" style="background:${q.color}"></span><code>${ch}</code> f=${q.f} · z ${zTexto(q.z)}` +
+    d.innerHTML = `<span class="sw" style="background:${q.color}"></span><code>${ch}</code> ${q.vacuum ? "vacuum" : "f=" + q.f} · z ${zTexto(q.z)}` +
       `<span style="flex:1"></span><button title="delete this character and what it painted">✕</button>`;
     d.onclick = () => { S.pincel = ch; S.herramienta = "lapiz"; pintarTools(); pintarPaleta(); pestana("dibujo"); };
     d.querySelector("button").onclick = ev => {
@@ -855,7 +925,7 @@ function contexto() {
   document.querySelectorAll(".ctx2").forEach(d => d.hidden = d.dataset.t !== t);
   const q = S.paleta[S.pincel];
   $("pActual").innerHTML = t === "borrador" ? "eraser: back to f = 1 · " :
-    q ? `<span class="sw" style="background:${q.color}"></span> <code>${S.pincel}</code> f=${q.f} <a href="#" id="aPal">palette…</a> · ` : "";
+    q ? `<span class="sw" style="background:${q.color}"></span> <code>${S.pincel}</code> ${q.vacuum ? "vacuum" : "f=" + q.f} <a href="#" id="aPal">palette…</a> · ` : "";
   const a = $("aPal"); if (a) a.onclick = ev => { ev.preventDefault(); pestana("paleta"); };
 }
 function pestana(t) {
@@ -875,11 +945,14 @@ function pintarLista() {
   if (!S.elems.length) { L.innerHTML = `<div class="muted">empty: the whole box is superconducting</div>`; return; }
   S.elems.forEach((e, n) => {
     const d = document.createElement("div"); d.className = "el" + (n === S.sel ? " on" : "");
-    const campos = e.tipo === "voxeles" ? [] : ["x", "y", "zc", "r", "w", "h", "sesgo", "n", "rot", "f"].filter(k => e[k] !== undefined);
-    const extra = e.tipo === "voxeles" ? `pencil layer (${S.vox.filter(c => c !== ".").length} voxels)` : e.tipo === "esfera" ? "" : "z=" + zTexto(e.z) + " · " + planosTexto(e.z);
-    const conZ = e.tipo !== "voxeles" && e.tipo !== "esfera";
-    const zr = conZ ? rangoZ(e.z, (S.caja.Nz - 1) * S.caja.dz) : null;
-    const zCampos = conZ ? `<label>z0<input type="number" step="${S.caja.dz}" data-z="0" value="${Number.isFinite(zr[0]) ? +zr[0].toFixed(4) : 0}"></label><label>z1<input type="number" step="${S.caja.dz}" data-z="1" value="${Number.isFinite(zr[1]) ? +zr[1].toFixed(4) : +((S.caja.Nz - 1) * S.caja.dz).toFixed(4)}"></label><button data-a="zcara" title="give this figure the from/depth of the work face (top or bottom)">z ← work face</button>` : "";
+    const campos = e.tipo === "voxeles" ? [] : ["x", "y", "u", "v", "zc", "r", "w", "h", "sesgo", "n", "rot", "f"].filter(k => e[k] !== undefined && !(k === "f" && e.vacuum));
+    const conZ = e.tipo !== "voxeles" && e.tipo !== "esfera", ax = conZ ? ejeDe(e) : "z";
+    const que = (e.vacuum ? "vacuum" : `f=${e.f}`) + (e.outside ? " outside (figure kept)" : "");
+    const extra = e.tipo === "voxeles" ? `pencil layer (${S.vox.filter(c => c !== ".").length} voxels)` :
+      e.tipo === "esfera" ? que : `along ${ax} · ${que} · ` + planosTexto(extension(e), ax);
+    const La = largo(ax), dA = ax === "z" ? S.caja.dz : S.caja.dx;
+    const zr = conZ ? rangoZ(extension(e), La) : null;
+    const zCampos = conZ ? `<label>${ax}0<input type="number" step="${dA}" data-z="0" value="${Number.isFinite(zr[0]) ? +zr[0].toFixed(4) : 0}"></label><label>${ax}1<input type="number" step="${dA}" data-z="1" value="${Number.isFinite(zr[1]) ? +zr[1].toFixed(4) : +La.toFixed(4)}"></label><button data-a="zcara" title="give this figure the from/depth of the work face of its view">← work face</button><button data-a="todo" title="through the whole sample along its axis">through</button><label><input type="checkbox" data-b="outside"${e.outside ? " checked" : ""}> keep</label><label><input type="checkbox" data-b="vacuum"${e.vacuum ? " checked" : ""}> vacuum</label>` : "";
     d.innerHTML = `<div class="row"><b>${n + 1}. ${EN_TIPO[e.tipo] || e.tipo}</b>&nbsp;<span class="muted">${extra}</span>
       <span style="flex:1"></span><button data-a="sube">↑</button><button data-a="baja">↓</button>${e.tipo === "voxeles" ? "" : '<button data-a="dup">⧉</button>'}<button data-a="del">✕</button></div>
       <div class="row">${campos.map(k => `<label>${k}<input type="number" step="${k === "rot" ? 5 : k === "f" ? 0.1 : k === "n" ? 1 : 0.5}" data-k="${k}" value="${+(+e[k]).toFixed(4)}"></label>`).join("")}</div>
@@ -887,10 +960,11 @@ function pintarLista() {
     d.onclick = ev => { if (ev.target.tagName !== "INPUT" && ev.target.tagName !== "BUTTON") { S.sel = n; todo(); } };
     d.querySelectorAll("input").forEach(inp => inp.onchange = () => {
       guardarUndo();
-      if (inp.dataset.z !== undefined) {
-        const L = (S.caja.Nz - 1) * S.caja.dz, r = rangoZ(e.z, L);
+      if (inp.dataset.b !== undefined) { if (inp.checked) e[inp.dataset.b] = true; else delete e[inp.dataset.b]; }
+      else if (inp.dataset.z !== undefined) {
+        const L = largo(ejeDe(e)), r = rangoZ(extension(e), L);
         const z = [Number.isFinite(r[0]) ? r[0] : 0, Number.isFinite(r[1]) ? r[1] : L];
-        z[+inp.dataset.z] = +inp.value; e.z = [Math.min(z[0], z[1]), Math.max(z[0], z[1])];
+        z[+inp.dataset.z] = +inp.value; ponerExtension(e, [Math.min(z[0], z[1]), Math.max(z[0], z[1])]);
       } else e[inp.dataset.k] = +inp.value;
       todo();
     });
@@ -903,33 +977,38 @@ function accion(n, a) {
   if (a === "del") { if (E[n].tipo === "voxeles") S.vox = nuevaVox(S.caja.Nx, S.caja.Ny, S.caja.Nz); E.splice(n, 1); S.sel = -1; }
   if (a === "sube" && n > 0) [E[n - 1], E[n]] = [E[n], E[n - 1]];
   if (a === "baja" && n < E.length - 1) [E[n + 1], E[n]] = [E[n], E[n + 1]];
-  if (a === "dup") { const c = JSON.parse(JSON.stringify(E[n])); if (c.x !== undefined) c.x += 1; E.splice(n + 1, 0, c); S.sel = n + 1; }
-  if (a === "zcara") { E[n].z = zDeCara(); msg(`figure ${n + 1}: ${planosTexto(E[n].z)}`); }
+  if (a === "dup") { const c = JSON.parse(JSON.stringify(E[n])); if (c.puntos) c.puntos = c.puntos.map(p => [p[0] + 1, p[1]]); else if (c.tipo === "esfera") c.x += 1; else { const [u, v] = centro(c); ponerCentro(c, u + 1, v); } E.splice(n + 1, 0, c); S.sel = n + 1; }
+  if (a === "zcara") { ponerExtension(E[n], zDeCara(vistaDe(E[n]))); msg(`figure ${n + 1}: ${planosTexto(extension(E[n]), ejeDe(E[n]))}`); }
+  if (a === "todo") { ponerExtension(E[n], "todo"); }
   todo();
 }
-function zNueva(prefijo) {
+function zNueva(prefijo, vw = "top") {
   const v = $(prefijo + "Z").value;
-  if (v === "cara") return zDeCara();
+  if (v === "cara") return zDeCara(vw);
   return v === "rango" ? [+$(prefijo + "Z0").value, +$(prefijo + "Z1").value] : v;
 }
 // node planes k (0 = bottom) that a z specification covers: plane k sits at z = k dz
-function planosZ(z) {
-  const { Nz, dz } = S.caja, Lz = (Nz - 1) * dz, [z0, z1] = rangoZ(z, Lz), ks = [];
-  for (let k = 0; k < Nz; k++) if (z0 - TOL <= k * dz && k * dz <= z1 + TOL) ks.push(k);
+// node planes along axis ax (0 = the first face) that an extent covers: plane n sits at n·d
+function planosZ(z, ax = "z") {
+  const c = S.caja, n = ax === "x" ? c.Nx : ax === "y" ? c.Ny : c.Nz, d = ax === "z" ? c.dz : c.dx;
+  const [z0, z1] = rangoZ(z, largo(ax)), ks = [];
+  for (let k = 0; k < n; k++) if (z0 - TOL <= k * d && k * d <= z1 + TOL) ks.push(k);
   return ks;
 }
-function planosTexto(z) {
-  const ks = planosZ(z), Nz = S.caja.Nz;
+function planosTexto(z, ax = "z") {
+  const ks = planosZ(z, ax), c = S.caja, n = ax === "x" ? c.Nx : ax === "y" ? c.Ny : c.Nz;
+  const caras = { z: ["bottom", "top"], y: ["front (y1)", "back (y2)"], x: ["left (x1)", "right (x2)"] }[ax];
   if (!ks.length) return "covers no plane";
-  if (ks.length === Nz) return `all ${Nz} planes (through)`;
-  return `planes k = ${ks[0]}–${ks[ks.length - 1]} of 0–${Nz - 1}` + (ks[ks.length - 1] === Nz - 1 ? " (reaches the top face)" : ks[0] === 0 ? " (reaches the bottom face)" : " (inside)");
+  if (ks.length === n) return `all ${n} planes along ${ax} (through)`;
+  return `planes ${ks[0]}–${ks[ks.length - 1]} of 0–${n - 1} along ${ax}` + (ks[ks.length - 1] === n - 1 ? ` (reaches the ${caras[1]} face)` : ks[0] === 0 ? ` (reaches the ${caras[0]} face)` : " (inside)");
 }
 function infoZFigura() {
   const el = $("dZinfo"); if (!el) return;
-  const { Nz, dz } = S.caja, Lz = (Nz - 1) * dz, v = $("dZ").value;
-  const z = v === "cara" ? (VISTA_CARA[S.cara] === "top" ? zDeCara() : null) : zNueva("d");
-  el.textContent = `figures are drawn on the top view. z is in ξσ: plane k sits at z = k·${dz}, the top plane at z = ${+Lz.toFixed(4)}. ` +
-    (z === null ? "Pick the top or bottom work face for 'from the work face'." : `A new figure: ${planosTexto(z)}${Array.isArray(z) ? `, z = [${z}]` : ""}.`);
+  const vw = VISTA_CARA[S.cara] || "top", ax = EJE_VISTA[vw], v = $("dZ").value;
+  const z = v === "cara" ? zDeCara(vw) : zNueva("d", vw);
+  const nom = { top: "Top", xz: "Front", yz: "Side" }[vw];
+  el.textContent = `A figure drawn now on the ${nom} view goes along ${ax} (the work face is ${S.cara}): ${planosTexto(z, ax)}` +
+    `${Array.isArray(z) ? `, ${ax} = [${z}] ξσ` : ""}. Draw on another view for another axis.`;
 }
 function todo() {
   infoZFigura();
@@ -960,10 +1039,11 @@ function celdaDe(vw, ev) {
   const px = (ev.clientX - r.left) * cv.width / r.width, py = (ev.clientY - r.top) * cv.height / r.height;
   return { px, py, u: Math.floor((px - q.ox) / q.cs), v: q.nv - 1 - Math.floor((py - q.oy) / q.cs) };
 }
-function aFis(px, py) {
-  const q = V.top, dx = S.caja.dx;
-  let X = ((px - q.ox - q.cs / 2) / q.cs) * dx, Y = (q.nv - 1 - (py - q.oy - q.cs / 2) / q.cs) * dx;
-  if ($("snap").checked) { X = Math.round(X / (dx / 2)) * (dx / 2); Y = Math.round(Y / (dx / 2)) * (dx / 2); }
+// a point of view vw in ξσ: (x, y) on the top view, (x, z) on the front, (y, z) on the side
+function aFis(px, py, vw = "top") {
+  const q = V[vw], [du, dv] = pasos(vw);
+  let X = ((px - q.ox - q.cs / 2) / q.cs) * du, Y = (q.nv - 1 - (py - q.oy - q.cs / 2) / q.cs) * dv;
+  if ($("snap").checked) { X = Math.round(X / (du / 2)) * (du / 2); Y = Math.round(Y / (dv / 2)) * (dv / 2); }
   return [X, Y];
 }
 function moverCortes(vw, u, v) {
@@ -973,14 +1053,37 @@ function moverCortes(vw, u, v) {
   if (vw === "yz") { S.jc = lim(u, c.Ny); S.k = lim(v, c.Nz); }
   sincronizarCaja(); todo();
 }
-function figura(t, X0, Y0, X1, Y1) {
-  const base = { rot: +$("dRot").value, f: +$("dF").value, z: zNueva("d") };
+// what a new figure writes (an f or vacuum; inside or outside it) and its axis, from the panel and the view
+function baseFigura(vw) {
+  const ax = EJE_VISTA[vw], b = { rot: +$("dRot").value, f: +$("dF").value };
+  if (ax !== "z") b.axis = ax;
+  ponerExtension(b, zNueva("d", vw));
+  if ($("dVac").checked) b.vacuum = true;
+  if ($("dFuera").checked) b.outside = true;
+  return b;
+}
+function figura(t, X0, Y0, X1, Y1, vw = "top") {
+  const base = baseFigura(vw), conC = (e, a, b) => { ponerCentro(e, a, b); return e; };
   const r = Math.hypot(X1 - X0, Y1 - Y0);
-  if (t === "circulo") return Object.assign({ tipo: t, x: X0, y: Y0, r }, base);
-  if (t === "esfera") return { tipo: t, x: X0, y: Y0, zc: S.k * S.caja.dz, r, f: base.f };
-  if (t === "ngono") return Object.assign({ tipo: t, x: X0, y: Y0, r, n: +$("dN").value }, base);
-  if (t === "rect") return Object.assign({ tipo: t, x: (X0 + X1) / 2, y: (Y0 + Y1) / 2, w: Math.abs(X1 - X0), h: Math.abs(Y1 - Y0) }, base);
-  if (t === "triangulo") return Object.assign({ tipo: t, x: X0, y: Y0, w: 2 * Math.abs(X1 - X0), h: Y1 - Y0, sesgo: +$("dSesgo").value }, base);
+  if (t === "esfera") {           // a ball centred where the drag starts; along the view's axis, at the middle of the extent
+    const ax = EJE_VISTA[vw], L = largo(ax), d = ax === "z" ? S.caja.dz : S.caja.dx;   // (from/depth of the work face, or the range)
+    const [a0, a1] = rangoZ(zNueva("d", vw), L);
+    let m = (Math.max(a0, 0) + Math.min(a1, L)) / 2;
+    if ($("snap").checked) m = Math.round(m / (d / 2)) * (d / 2);
+    const e = { tipo: t, r, f: base.f };
+    if (vw === "top") Object.assign(e, { x: X0, y: Y0, zc: m });
+    else if (vw === "xz") Object.assign(e, { x: X0, y: m, zc: Y0 });
+    else Object.assign(e, { x: m, y: X0, zc: Y0 });
+    if (base.vacuum) e.vacuum = true; if (base.outside) e.outside = true;
+    return e;
+  }
+  if (t === "circulo") return conC(Object.assign({ tipo: t, r }, base), X0, Y0);
+  if (t === "ngono") return conC(Object.assign({ tipo: t, r, n: +$("dN").value }, base), X0, Y0);
+  if (t === "rect" && S.shift) {     // Shift: a square
+    const q = Math.max(Math.abs(X1 - X0), Math.abs(Y1 - Y0)); X1 = X0 + (X1 < X0 ? -q : q); Y1 = Y0 + (Y1 < Y0 ? -q : q);
+  }
+  if (t === "rect") return conC(Object.assign({ tipo: t, w: Math.abs(X1 - X0), h: Math.abs(Y1 - Y0) }, base), (X0 + X1) / 2, (Y0 + Y1) / 2);
+  if (t === "triangulo") return conC(Object.assign({ tipo: t, w: 2 * Math.abs(X1 - X0), h: Y1 - Y0, sesgo: +$("dSesgo").value }, base), X0, Y0);
 }
 const LAPIZ = t => t === "lapiz" || t === "borrador";
 for (const vw of ["top", "xz", "yz"]) {
@@ -997,21 +1100,27 @@ for (const vw of ["top", "xz", "yz"]) {
       todo(); return;
     }
     if (t === "gradiente") {
-      if (vw !== "top") { msg("the gradient is dragged on the top view", true); return; }
+      if (vw !== "top") { msg("the gradient is dragged on the top view (f or depth bands across x–y)", true); return; }
       S.arr = { grad: true, u0: q.u, v0: q.v, u1: q.u, v1: q.v }; return;
     }
-    if (vw !== "top") { msg("figures are drawn on the top view; on the cuts use the pencil or the eraser", true); return; }
-    const [X, Y] = aFis(q.px, q.py);
-    if (t === "poligono") { guardarUndo(); (S.poli = S.poli || []).push([X, Y]); todo(); return; }
+    // figures: on the view of the work face (picking the nearest face of this view if the work face is elsewhere)
+    if (FIGURAS.includes(t) && $("dZ").value === "cara" && VISTA_CARA[S.cara] !== vw) caraCercana(vw);
+    const [X, Y] = aFis(q.px, q.py, vw);
+    if (t === "poligono") {
+      if (S.poli && S.poliVista !== vw) S.poli = null;
+      (S.poli = S.poli || []).push([X, Y]); S.poliVista = vw; todo(); msgPoli(); return;
+    }
     if (t === "seleccionar") {
       S.sel = -1;
-      for (let n = S.elems.length - 1; n >= 0; n--) { const e = S.elems[n]; if (e.tipo !== "voxeles" && dentro2D(e, X, Y)) { S.sel = n; break; } }
-      if (S.sel >= 0) { guardarUndo(); S.arr = { mover: S.sel, X, Y }; }
+      for (let n = S.elems.length - 1; n >= 0; n--) { const e = S.elems[n]; if (e.tipo !== "voxeles" && e.tipo !== "esfera" && vistaDe(e) === vw && dentro2D(e, X, Y)) { S.sel = n; break; } }
+      if (S.sel < 0) for (let n = S.elems.length - 1; n >= 0; n--) { const e = S.elems[n]; if (e.tipo !== "esfera") continue;
+        const [cu, cv] = esferaEn(e, vw); if ((X - cu) ** 2 + (Y - cv) ** 2 <= e.r * e.r + TOL) { S.sel = n; break; } }
+      if (S.sel >= 0) { guardarUndo(); S.arr = { mover: S.sel, X, Y, vistaFig: vw }; }
       else {
         // a pencil voxel under the cursor (any plane): drag the whole pencil layer by whole cells
         let hay = false;
         for (let k = 0; k < S.caja.Nz && !hay; k++) if (dentroCaja(q.u, q.v, k) && S.vox[vi(q.u, q.v, k)] !== ".") hay = true;
-        if (hay) {
+        if (hay && vw === "top") {
           guardarUndo(); S.sel = S.elems.findIndex(e => e.tipo === "voxeles");
           S.arr = { moverVox: true, u0: q.u, v0: q.v, base: [...S.vox] };
           msg("moving the pencil layer (all its strokes together)");
@@ -1019,11 +1128,12 @@ for (const vw of ["top", "xz", "yz"]) {
       }
       todo(); return;
     }
-    S.arr = { t, X0: X, Y0: Y };
+    S.arr = { t, X0: X, Y0: Y, vistaFig: vw };
   });
 }
 window.addEventListener("mousemove", ev => {
   const A = S.arr; if (!A) return;
+  S.shift = ev.shiftKey;
   if (A.grad) {
     const q = celdaDe("top", ev); A.u1 = q.u; A.v1 = q.v;
     msg(`gradient ${Math.abs(A.u1 - A.u0) + 1} × ${Math.abs(A.v1 - A.v0) + 1} cells (release to apply)`);
@@ -1040,7 +1150,7 @@ window.addEventListener("mousemove", ev => {
     }
     return;
   }
-  const q = celdaDe("top", ev), [X, Y] = aFis(q.px, q.py);
+  const vf = A.vistaFig || "top", q = celdaDe(vf, ev), [X, Y] = aFis(q.px, q.py, vf);
   if (A.moverVox) {
     const du = q.u - A.u0, dv = q.v - A.v0, { Nx, Ny, Nz } = S.caja;
     if (du === A.du && dv === A.dv) return;
@@ -1053,30 +1163,39 @@ window.addEventListener("mousemove", ev => {
   }
   if (A.mover !== undefined) {
     const e = S.elems[A.mover], dX = X - A.X, dY = Y - A.Y;
-    if (e.puntos) e.puntos = e.puntos.map(p => [p[0] + dX, p[1] + dY]); else { e.x += dX; e.y += dY; }
+    if (e.puntos) e.puntos = e.puntos.map(p => [p[0] + dX, p[1] + dY]);
+    else if (e.tipo === "esfera") moverEsfera(e, vf, dX, dY);
+    else { const [a, b] = centro(e); ponerCentro(e, a + dX, b + dY); }
     A.X = X; A.Y = Y; todo(); return;
   }
-  A.prev = figura(A.t, A.X0, A.Y0, X, Y); dibujarVista("top");
+  A.prev = figura(A.t, A.X0, A.Y0, X, Y, vf); dibujarVista(vf);
   { const e = A.prev, d = S.caja.dx, c = x => `${(+x).toFixed(2)} ξσ (${Math.round(Math.abs(x) / d)} cells)`;
     msg(e.r !== undefined ? `radius ${c(e.r)}` : `width ${c(e.w)} × height ${c(e.h)}`); }
 });
 window.addEventListener("mouseup", ev => {
   const A = S.arr; S.arr = null; if (!A) return;
+  S.shift = ev.shiftKey;
   if (A.grad) { gradiente(A.u0, A.v0, A.u1, A.v1); todo(); return; }
   if (A.vista && A.recta) for (const [u, v] of A.ruta) pintarEn(A.vista, u, v, A.ch, +$("brush").value, $("borrZ").value);
   if (A.t) {
-    const q = celdaDe("top", ev), [X, Y] = aFis(q.px, q.py), e = figura(A.t, A.X0, A.Y0, X, Y);
+    const vf = A.vistaFig || "top", q = celdaDe(vf, ev), [X, Y] = aFis(q.px, q.py, vf), e = figura(A.t, A.X0, A.Y0, X, Y, vf);
     const tam = e.r ?? Math.max(Math.abs(e.w || 0), Math.abs(e.h || 0));
-    if (tam > 0) { guardarUndo(); S.elems.push(e); S.sel = S.elems.length - 1; }
+    if (tam > 0) { guardarUndo(); S.elems.push(e); S.sel = S.elems.length - 1;
+      // a sphere: where its centre went along the view's axis (the cut of this view is the work face's "from": it stays)
+      if (e.tipo === "esfera") { const ax = EJE_VISTA[vf], m = { x: e.x, y: e.y, z: e.zc }[ax];
+        setTimeout(() => msg(`sphere of radius ${e.r} ξσ centred at ${ax} = ${m} ξσ, the middle of its extent along ${ax}; its section shows on the cut through ${ax} = ${m} (and in 3D)`), 0); } }
   }
   todo();
 });
-$("top").addEventListener("dblclick", () => cerrarPoli());
+for (const vw of ["top", "xz", "yz"]) $(vw).addEventListener("dblclick", () => cerrarPoli());
+function msgPoli() { msg(`polygon: ${S.poli.length} vertices · click adds one · Backspace or Ctrl+Z removes the last · Enter or double click closes · Esc cancels`); }
 function cerrarPoli() {
   if (S.poli && S.poli.length >= 3) {
-    S.elems.push({ tipo: "poligono", x: 0, y: 0, rot: 0, z: zNueva("d"), f: +$("dF").value,
-                   puntos: S.poli.filter((p, n, L) => n === 0 || p[0] !== L[n - 1][0] || p[1] !== L[n - 1][1]) });
-    S.sel = S.elems.length - 1;
+    guardarUndo();
+    const vw = S.poliVista || "top", e = Object.assign({ tipo: "poligono", rot: 0 }, baseFigura(vw));
+    ponerCentro(e, 0, 0);
+    e.puntos = S.poli.filter((p, n, L) => n === 0 || p[0] !== L[n - 1][0] || p[1] !== L[n - 1][1]);
+    S.elems.push(e); S.sel = S.elems.length - 1;
   }
   S.poli = null; todo();
 }
@@ -1106,12 +1225,16 @@ $("iso").addEventListener("dblclick", () => { C3.yaw = -0.6; C3.pitch = 0.9; C3.
 window.addEventListener("keydown", ev => {
   const enCampo = ["INPUT", "SELECT", "TEXTAREA"].includes(document.activeElement.tagName);
   const ctrl = ev.ctrlKey || ev.metaKey;
+  // while a polygon is being drawn, undo takes off its last vertex
+  if (S.poli && !enCampo && ((ctrl && ev.key.toLowerCase() === "z" && !ev.shiftKey) || ev.key === "Backspace")) {
+    ev.preventDefault(); S.poli.pop(); if (!S.poli.length) { S.poli = null; msg("polygon cancelled"); } else msgPoli(); todo(); return;
+  }
   if (ctrl && !enCampo && ev.key.toLowerCase() === "z") { ev.preventDefault(); ev.shiftKey ? rehacer() : deshacer(); return; }
   if (ctrl && !enCampo && ev.key.toLowerCase() === "y") { ev.preventDefault(); rehacer(); return; }
   if (enCampo) return;
   if (ev.key === "[" || ev.key === "]") { S.k = Math.max(0, Math.min(S.caja.Nz - 1, S.k + (ev.key === "]" ? 1 : -1))); sincronizarCaja(); todo(); return; }
   const e = S.elems[S.sel];
-  if (ev.key === "Enter") { if (S.poli) guardarUndo(); cerrarPoli(); }
+  if (ev.key === "Enter") cerrarPoli();
   else if (ev.key === "Escape") { S.poli = null; S.arr = null; todo(); }
   else if (e && e.tipo !== "voxeles") {
     const d = S.caja.dx;
@@ -1120,7 +1243,9 @@ window.addEventListener("keydown", ev => {
     else if (ev.key.startsWith("Arrow")) {
       ev.preventDefault(); guardarUndo();
       const [mx, my] = { ArrowLeft: [-d, 0], ArrowRight: [d, 0], ArrowUp: [0, d], ArrowDown: [0, -d] }[ev.key];
-      if (e.puntos) e.puntos = e.puntos.map(p => [p[0] + mx, p[1] + my]); else { e.x += mx; e.y += my; }
+      if (e.puntos) e.puntos = e.puntos.map(p => [p[0] + mx, p[1] + my]);
+      else if (e.tipo === "esfera") moverEsfera(e, "top", mx, my);
+      else { const [a, b] = centro(e); ponerCentro(e, a + mx, b + my); }
       todo();
     }
   }
@@ -1147,7 +1272,35 @@ $("pAdd").onclick = () => {
   if (!ch || ch === "." || ch === " " || ch === '"' || ch === "\\" || ch === "|") { msg("character not valid for the palette", true); return; }
   guardarUndo();
   S.paleta[ch] = { z: zNueva("p"), f: Math.max(0, +$("pF").value), color: S.paleta[ch]?.color || colorNuevo() };
+  if ($("pVac").checked) S.paleta[ch].vacuum = true;
   S.pincel = ch; pintarPaleta(); todo();
+};
+// slabs along z: n of the same thickness, with gaps of g planes written as rectangles on the front view (axis y, through):
+// vacuum or the figure's f; the planes left over go to the outer slabs
+$("bLosas").onclick = () => {
+  const c = S.caja, n = Math.max(2, Math.round(+$("sN").value)), g = Math.max(1, Math.round(+$("sGap").value));
+  const t = Math.floor((c.Nz - (n - 1) * g) / n), resto = c.Nz - n * t - (n - 1) * g, abajo = Math.floor(resto / 2);
+  if (t < 1) { msg(`${n} slabs with gaps of ${g} planes do not fit in the ${c.Nz} planes along z`, true); return; }
+  guardarUndo();
+  const vac = $("dVac").checked, f = +$("dF").value, Lx = largo("x");
+  for (let s = 0, k = t + abajo; s < n - 1; s++, k += g + t) {     // k: the first plane of each gap
+    const e = { tipo: "rect", axis: "y", w: +(Lx + c.dx).toFixed(4), h: +((g - 1) * c.dz + c.dz / 2).toFixed(4), along: "todo", rot: 0, f };
+    ponerCentro(e, +(Lx / 2).toFixed(4), +((k + (g - 1) / 2) * c.dz).toFixed(4));
+    if (vac) e.vacuum = true;
+    S.elems.push(e);
+  }
+  S.sel = S.elems.length - 1; ponerCara("front");
+  msg(`${n} slabs along z of ${t} planes (the bottom one ${t + abajo}, the top one ${t + resto - abajo}), gaps of ${g} planes of ${vac ? "vacuum" : "f = " + f}`);
+};
+// a cable along the current: a disc on the y–z plane, through the whole length, kept, vacuum around it
+$("bCable").onclick = () => {
+  // centred on the mirror of the sample (y → Ny·dx − y, the one check_my_symmetry and _REF use), half a cell inside its faces
+  const c = S.caja, Wy = c.Ny * c.dx, Wz = c.Nz * c.dz;
+  guardarUndo();
+  S.elems.push({ tipo: "circulo", axis: "x", u: +(Wy / 2).toFixed(4), v: +(Wz / 2).toFixed(4), r: +(0.5 * Math.min(Wy, Wz) - c.dx / 2).toFixed(4),
+                 along: "todo", rot: 0, f: 0, outside: true, vacuum: true });
+  S.sel = S.elems.length - 1; ponerCara("left");
+  msg(`cable: a disc of radius ${S.elems[S.sel].r} ξσ on the y–z plane, through x, vacuum around it (edit it in the list)`);
 };
 function msg(t, mal) { $("msg").textContent = t; $("msg").className = mal ? "bad" : "good"; }
 function desdeDatos(d) { guardarUndo(); aplicarDatos(d); sincronizarCaja(); pintarPaleta(); todo(); }
@@ -1174,7 +1327,7 @@ $("selCargar").onchange = () => { const n = $("selCargar").value; if (n) cargar(
 $("fImport").onchange = async () => {
   const f = $("fImport").files[0]; if (!f) return;
   const t = await f.text(); const m = t.match(/^# editor-json: (.*)$/m);
-  if (!m) { msg("that .toml was not written by the editor: open it through the server (python3 julia/editor/server.py)", true); return; }
+  if (!m) { msg("that .toml was not written by the editor: open it through the server (julia julia/editor/server.jl, or the e key of the terminal menu)", true); return; }
   desdeDatos(JSON.parse(m[1])); $("nombre").value = f.name.replace(/\.toml$/, ""); msg(`imported ${f.name}`);
 };
 $("bGuardar").onclick = async () => {
@@ -1219,7 +1372,7 @@ $("cTodo").onclick = () => { $("cDesde").value = 0; $("cProf").value = nEje(S.ca
 $("bQuit").onclick = async () => {
   if (!servidor) { msg("no server: this page was opened as a file", true); return; }
   try { await fetch("/quit"); } catch (e) {}
-  msg("server closed: saving no longer works and F5 will not reload; reopen it with the e key of the terminal menu or python3 julia/editor/server.py, then F5");
+  msg("server closed: saving no longer works and F5 will not reload; reopen it with the e key of the terminal menu or julia julia/editor/server.jl, then F5");
   $("bGuardar").disabled = true; $("bQuit").disabled = true;
 };
 function ayudaGradiente() {

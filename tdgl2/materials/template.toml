@@ -1,0 +1,32 @@
+# A template for a new material: copy it, fill in the numbers of your material, and give every number its source in
+# [sources].  Any number of bands: one [[band]] table per band, and the Josephson matrix `gamma` (symmetric, zero
+# diagonal; its signs choose s++ or s+-, and with three or more bands they can frustrate the phases).
+# Units: lengths in xi of band 1, time in t_GL of band 1, fields in Hc2 of band 1 (band 1 has g = Gamma = 1).
+# As it stands it is a valid two-band model (the numbers below are placeholders, not a material).
+#   in a run file:  [material]  file = "my_material.toml"   (and override kappa, T, ... there if needed)
+name = "template: a two-band model to replace"
+regime = "say where GL applies for these numbers (near Tc, dirty or clean, |gamma| against |a|)"
+kappa = 2.0           # lambda / xi of band 1
+sigma_n = 1.0         # normal conductivity in the code's units; "dirty" = that of a dirty BCS material with these bands
+T = 0.0               # bath temperature offset (eps_mu = a_mu - T)
+gamma = [[0.0, 1e-3], [1e-3, 0.0]]
+
+[[band]]
+name = "1"
+g = 1.0               # stiffness (or m = 1/g, or xi_ratio = xi_mu / xi_1)
+Gamma = 1.0           # relaxation
+a = 1.0               # condensation coefficient at T = 0 (a <= 0: a passive band, condensed by the coupling)
+beta = 1.0
+gamma_kwt = 0.0       # Kramer-Watts-Tobin: 2 tau_E Delta / hbar referred to |Psi| of this band (0 = standard TDGL)
+
+[[band]]
+name = "2"
+xi_ratio = 2.0
+Gamma = 1.0
+a = 0.6
+beta = 1.0
+gamma_kwt = 0.0
+
+[sources]
+kappa = "where this number comes from (a DOI or arXiv number)"
+gamma = "..."

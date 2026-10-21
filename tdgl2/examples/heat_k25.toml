@@ -1,0 +1,34 @@
+# The two-band notched box at kappa = 25 with the optional terms of release 1.2: a temperature field (diffusion, a bath,
+# the Joule term, and the contact layers left out of the source) and interband drag.  A rung whose temperature passes the
+# cut closes 'T' and ends the ladder.  Short windows: a demonstration of the options.
+#   OPENBLAS_NUM_THREADS=1 julia --project=tdgl2 tdgl2/scripts/run.jl tdgl2/examples/heat_k25.toml
+[material]
+file = "mgb2_model_II.toml"
+
+[mesh]
+nx = 40
+ny = 24
+nz = 6
+dx = 0.5
+
+[geometry]
+GEOM_MODE = "WEDGE"
+
+[scheme]
+drag = 0.05               # nu of the mixed-gradient term (two bands: a number; N bands: the matrix)
+
+[heat]
+D_T = 0.25
+gamma_bath = 0.2
+eta = 0.05
+joule = true
+margin = 2
+
+[protocol]
+t_min_GL = 200.0
+t_min_GL_res = 400.0
+
+[run]
+J = [0.30, 0.40, 0.50, 0.60, 0.70]
+H = 0.03
+out_dir = "tdgl2/runs/heat_k25"

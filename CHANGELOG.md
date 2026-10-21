@@ -1,5 +1,46 @@
 # Changelog
 
+## 2.0.0 (2026-10-20; updated 2026-10-23)
+
+Release 2.0 is complete in its scope (the sculpted sample was the last item); apart from it, a GPU port is planned. The tag
+`v2.0.0` follows it.
+
+**23-oct.** Release 2.0 (`tdgl2/`): two normal fluids with a finite interband quasiparticle exchange (`qp_exchange`; the
+slaved branch imbalance of each band, with KWT, and its exchange), anisotropic bands (a mass per axis), thermal (Langevin)
+noise; all off by default, and off they keep the bits. Fixed: the two polarities launched together could race for the run
+file; resuming left duplicate rows in the menu history; in `julia/`, a run with the scalar potential reset a `dt_scale` the
+run had set. Later the same day: normal fluids per band with any number of bands (`qp_exchange` as a matrix of rates with
+detailed balance; with two bands it gives the two-band result to rounding), and thermal noise with KWT (the kick scaled by the
+Ψ-dependent mobility, with its Itô drift). The launch wizard of the terminal menu recommends release 2.0. In the evening: a
+sculpted sample (a shape with `vacuum = true`: a free surface, the insulating padding and the leads follow the sample's
+section; `tdgl2/examples/cable_k2.toml`), shape figures on any face (`axis`) and kept figures (`outside`), and the shape editor
+draws figures on its three views (before, only on the top one), with the work face starting through the sample. Details in
+[`tdgl2/CHANGELOG.md`](tdgl2/CHANGELOG.md).
+
+**21-oct.** The two-band package (`julia/`, metadata 1.3.0) runs the production scheme and the Fast mode by default: `Config(...)`
+is what `Config(:prod; ...)` was, and `run_case` takes `mode=Fast()`. `Config(:legacy; ...)` with `mode=Strict()` is the
+explicit scheme of 1.0.0 to the digit (the tests and the scripts of the published runs ask for it). A run with the scalar
+potential switches to the explicit scheme by itself, with a note, instead of an error. Suite 56 387/56 387.
+
+Release 2.0 (`tdgl2/`): the onset by the delay works with the heat model; `sigma_vac` for the insulating buffer in a run
+file; run files for every option in `tdgl2/examples/`; its README says what each release has and what each option costs.
+The launch wizard of the terminal menu launches the same run with release 2.0 (key `l`, then `2`); `dt_scale = 1` is
+validated with KWT for onsets. Details in [`tdgl2/CHANGELOG.md`](tdgl2/CHANGELOG.md).
+
+**20-oct.** A new release of the package, in `tdgl2/`, next to release 1.2.0 (`julia/`), which stays to reproduce the
+published work. Its changes are in [`tdgl2/CHANGELOG.md`](tdgl2/CHANGELOG.md) and its guide is
+`docs/solver_guide_2.pdf`. In short: N bands with a Josephson matrix; Kramer–Watts-Tobin relaxation per
+band; Runge–Kutta–Legendre stages and a rotating frame for the stiff bands; self-field boundaries `:bar`
+(default) and `:open`; an insulating buffer; the onset by the delay of the first phase slip and a verdict
+for a sample gone normal; runs from TOML files with a JSON summary, stopped and resumed to the bit, with the two
+polarities in one process or in two. With the new terms off and the boundary
+of 1.x it reproduces 1.2.0 (to the bit on OpenBLAS's Haswell kernels, to 1e-10 elsewhere). Julia 1.13 or
+later.
+
+Around it: the terminal menu launches, lists, stops and resumes runs of 2.0 (keys `n`, `s`, `u`), no longer fails on a letter with an
+accent erased by Backspace, and reads dragged `file://` paths with accents; the guide of 1.2 carries the
+release, not a date; GitHub Actions runs the suite of 2.0 on every push.
+
 ## 1.2.0 (2026-10-13)
 
 Same solver and the same results as 1.1.0: the test suite reproduces its reference states to the

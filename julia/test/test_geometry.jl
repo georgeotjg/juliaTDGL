@@ -40,7 +40,7 @@
     @test any(gr.fmask[:, y2, :] .== 0) || any(gr.fmask[:, min(y2+1, size(gr.fmask,2)), :] .== 0)
     cs = cfg_fixture(GEOM_MODE="SIM"); ps = derive_params(cs)
     @test check_my_symmetry(build_geometry(cs, ps), ps) == 0   # ...SIM is
-    cfun = Config(GEOM_MODE="FUNNEL", Nx_sc=60, Ny_sc=24, Nz_sc=6, dx=0.5,
+    cfun = Config(:legacy; GEOM_MODE="FUNNEL", Nx_sc=60, Ny_sc=24, Nz_sc=6, dx=0.5,
                   prism_phi=0.0, verbose=false, selftest=false, out_dir="")
     @test build_geometry(cfun, derive_params(cfun)) isa Geometry
 
@@ -54,14 +54,14 @@
     for modo in ("SIM","ESFERA","ARRAY","WEDGE","WEDGE_BOTH","ESF_CUNA","FGRAD",
                  "SAWROW","SPHROW","SAWSPH","STAGGER","FUNNEL","FUNNEL_IN",
                  "TRI_Y1","TRI_Y1_INV","RECT_Y1","HEX","HEX_STAG")
-        c = Config(GEOM_MODE=modo, Nx_sc=60, Ny_sc=24, Nz_sc=6,
+        c = Config(:legacy; GEOM_MODE=modo, Nx_sc=60, Ny_sc=24, Nz_sc=6,
                    dx=0.5, dy=0.5, dz=0.5, wedge_depth2=0.20,
                    verbose=false, out_dir="")
         pp = derive_params(c)
         @test build_geometry(c, pp) isa Geometry
     end
-    @test_throws ErrorException build_geometry(Config(GEOM_MODE="NOEXISTE",
-        Nx_sc=20, Ny_sc=10, Nz_sc=4, verbose=false), derive_params(Config(
+    @test_throws ErrorException build_geometry(Config(:legacy; GEOM_MODE="NOEXISTE",
+        Nx_sc=20, Ny_sc=10, Nz_sc=4, verbose=false), derive_params(Config(:legacy;
         GEOM_MODE="SIM", Nx_sc=20, Ny_sc=10, Nz_sc=4, verbose=false)))
 
     # --- the n-gon: inside the apothem yes, outside the circumradius no -------
@@ -74,7 +74,7 @@
     @test nbase >= 11
 
     # Symmetry theorems: SIM has My=Mx=Rz=0; a diode must break My and Rz.
-    csim = Config(GEOM_MODE="SIM", Nx_sc=40, Ny_sc=24, Nz_sc=6,
+    csim = Config(:legacy; GEOM_MODE="SIM", Nx_sc=40, Ny_sc=24, Nz_sc=6,
                   dx=0.5, dy=0.5, dz=0.5, verbose=false, selftest=false, out_dir="")
     psim = derive_params(csim); gsim = build_geometry(csim, psim)
     @test check_my_symmetry(gsim, psim) == 0
@@ -82,7 +82,7 @@
     @test check_rz_symmetry(gsim, psim) == 0
     @test check_my_symmetry(g, p) > 0          # WEDGE of the fixture
     @test check_rz_symmetry(g, p) > 0
-    cfun = Config(GEOM_MODE="FUNNEL", Nx_sc=40, Ny_sc=24, Nz_sc=6,
+    cfun = Config(:legacy; GEOM_MODE="FUNNEL", Nx_sc=40, Ny_sc=24, Nz_sc=6,
                   dx=0.5, dy=0.5, dz=0.5, verbose=false, selftest=false, out_dir="")
     pfun = derive_params(cfun); gfun = build_geometry(cfun, pfun)
     @test check_my_symmetry(gfun, pfun) > 0
