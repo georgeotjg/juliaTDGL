@@ -1,0 +1,50 @@
+# A two-band superconductor with a one-band normal-metal lead at its far end (material per region): the metal has one band
+# (its band 2 absent: Ψπ = 0 there, no current of the π band into it, no stability bound), half the normal conductivity of the
+# sample (σn per region: the field solve takes the PCG of the insulating padding), and one normal fluid (absent band: δ = 0 in
+# it, qp_exchange of the two fluids in the superconductor).  The σ condensate enters it by proximity over ξ_N = 1/√(m|a|) = 1.4 ξ.
+#   OPENBLAS_NUM_THREADS=1 julia --project=tdgl2 tdgl2/scripts/run.jl tdgl2/examples/metal_una_banda.toml
+[material]
+file = "mgb2_model_II.toml"
+kappa = 2.0
+
+[materials.metal]
+name = "one-band normal metal, sigma_n = 0.5"
+sigma_n = 0.5
+gamma12 = 0.0
+absent = [2]
+
+[[materials.metal.band]]
+name = "sigma"
+m = 1.0
+Gamma = 1.0
+a = -0.5
+
+[[materials.metal.band]]
+name = "pi (absent)"
+m = 0.1059
+Gamma = 1.0
+a = -1.0
+
+[mesh]
+nx = 40
+ny = 16
+nz = 6
+dx = 0.5
+buf = 1
+
+[geometry]
+GEOM_MODE = "CUSTOM"
+geom_file = "forma_metal_una_banda.toml"
+
+[scheme]
+qp_exchange = 1.0
+
+[protocol]
+t_min_GL = 200.0
+t_min_GL_res = 400.0
+stop_after_V = 1
+
+[run]
+J = [0.20, 0.40]
+H = 0.03
+out_dir = "tdgl2/runs/metal_una_banda"

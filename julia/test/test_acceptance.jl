@@ -40,7 +40,7 @@ end
     # voltmeter planes CROSS (vi=10 > vo=5), so the phase path is EMPTY.  A
     # code could pass it with no voltmeter at all.  This bank covers that.
     salida = mktempdir()
-    cfg = Config(GEOM_MODE="WEDGE", Nx_sc=20, Ny_sc=14, Nz_sc=4,
+    cfg = Config(:legacy; GEOM_MODE="WEDGE", Nx_sc=20, Ny_sc=14, Nz_sc=4,
                  dx=0.5, dy=0.5, dz=0.5, kappa_s=2.0, kappa_p=2.0,
                  xi_ratio=1.30, gamma12=0.001, gamma_ratio=1.3, H_const=0.50,
                  J_list=[0.10], delta_v=6, t_min_GL=0.0, t_min_GL_res=0.0,

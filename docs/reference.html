@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reference · juliaTDGL</title>
+<meta name="description" content="juliaTDGL: three-dimensional multiband time-dependent Ginzburg-Landau solvers in Julia for the geometric superconducting diode effect.">
+<link rel="icon" href="img/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="style.css">
+<script>try { const t = localStorage.getItem('theme'); if (t) document.documentElement.dataset.theme = t; } catch (e) {}</script>
+<script>window.MathJax = { tex: { inlineMath: [['\\(', '\\)']], displayMath: [['\\[', '\\]']] }, chtml: { displayAlign: 'left' } };</script>
+<script defer src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="top">
+<a class="name" href="index.html"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 566 140" role="img" class="wm" aria-labelledby="wm-t"><title id="wm-t">juliaTDGL: the four dots of the Julia logo as vortices over the j and the i</title><path class="k" d="M28.0625 47.5H44.84375V99.0625Q44.84375 109.609375 39.78125 115.1640625Q34.71875 120.71875 25.109375 120.71875H16.8125V109.703125H19.71875Q24.5 109.703125 26.28125 107.546875Q28.0625 105.390625 28.0625 99.0625Z"/><path class="k" d="M61.40625 79.5625V47.5H78.28125V52.75Q78.28125 57.015625 78.234375 63.4609375Q78.1875 69.90625 78.1875 72.0625Q78.1875 78.390625 78.515625 81.1796875Q78.84375 83.96875 79.640625 85.234375Q80.671875 86.875 82.3359375 87.765625Q84.0 88.65625 86.15625 88.65625Q91.40625 88.65625 94.40625 84.625Q97.40625 80.59375 97.40625 73.421875V47.5H114.1875V100.0H97.40625V92.40625Q93.609375 97.0 89.3671875 99.1796875Q85.125 101.359375 80.015625 101.359375Q70.921875 101.359375 66.1640625 95.78125Q61.40625 90.203125 61.40625 79.5625Z"/><path class="k" d="M131.3125 27.0625H148.09375V100.0H131.3125Z"/><path class="k" d="M165.21875 47.5H182.0V100.0H165.21875Z"/><path class="k" d="M222.65625 76.375Q217.40625 76.375 214.7578125 78.15625Q212.109375 79.9375 212.109375 83.40625Q212.109375 86.59375 214.2421875 88.3984375Q216.375 90.203125 220.171875 90.203125Q224.90625 90.203125 228.140625 86.8046875Q231.375 83.40625 231.375 78.296875V76.375ZM248.296875 70.046875V100.0H231.375V92.21875Q228.0 97.0 223.78125 99.1796875Q219.5625 101.359375 213.515625 101.359375Q205.359375 101.359375 200.2734375 96.6015625Q195.1875 91.84375 195.1875 84.25Q195.1875 75.015625 201.5390625 70.703125Q207.890625 66.390625 221.484375 66.390625H231.375V65.078125Q231.375 61.09375 228.234375 59.2421875Q225.09375 57.390625 218.4375 57.390625Q213.046875 57.390625 208.40625 58.46875Q203.765625 59.546875 199.78125 61.703125V48.90625Q205.171875 47.59375 210.609375 46.9140625Q216.046875 46.234375 221.484375 46.234375Q235.6875 46.234375 241.9921875 51.8359375Q248.296875 57.4375 248.296875 70.046875Z"/><path class="b" d="M257.3125 30.015625H321.8125V43.65625H298.609375V100.0H280.5625V43.65625H257.3125Z"/><path class="b" d="M350.1875 43.65625V86.359375H356.65625Q367.71875 86.359375 373.5546875 80.875Q379.390625 75.390625 379.390625 64.9375Q379.390625 54.53125 373.578125 49.09375Q367.765625 43.65625 356.65625 43.65625ZM332.140625 30.015625H351.171875Q367.109375 30.015625 374.9140625 32.2890625Q382.71875 34.5625 388.296875 40.0Q393.21875 44.734375 395.609375 50.921875Q398.0 57.109375 398.0 64.9375Q398.0 72.859375 395.609375 79.0703125Q393.21875 85.28125 388.296875 90.015625Q382.671875 95.453125 374.796875 97.7265625Q366.921875 100.0 351.171875 100.0H332.140625Z"/><path class="b" d="M475.734375 94.796875Q468.984375 98.078125 461.71875 99.71875Q454.453125 101.359375 446.71875 101.359375Q429.234375 101.359375 419.015625 91.5859375Q408.796875 81.8125 408.796875 65.078125Q408.796875 48.15625 419.203125 38.453125Q429.609375 28.75 447.703125 28.75Q454.6875 28.75 461.0859375 30.0625Q467.484375 31.375 473.15625 33.953125V48.4375Q467.296875 45.109375 461.5078125 43.46875Q455.71875 41.828125 449.90625 41.828125Q439.125 41.828125 433.2890625 47.8515625Q427.453125 53.875 427.453125 65.078125Q427.453125 76.1875 433.078125 82.234375Q438.703125 88.28125 449.0625 88.28125Q451.875 88.28125 454.2890625 87.9296875Q456.703125 87.578125 458.625 86.828125V73.234375H447.609375V61.140625H475.734375Z"/><path class="b" d="M492.625 30.015625H510.671875V86.359375H542.359375V100.0H492.625Z"/><g fill="none" stroke="#4063D8" stroke-linecap="round"><path d="M36.5 21.0 a9.0 9.0 0 1 1 -8.50 6.20" stroke-width="3.0"/><path d="M36.5 15.0 a15.0 15.0 0 1 1 -14.29 10.39" stroke-width="2.6" opacity="0.5"/></g><circle cx="36.5" cy="30" r="5.2" fill="#4063D8"/><g fill="none" stroke="#389826" stroke-linecap="round"><path d="M173.6 6.4 a5.6 5.6 0 1 1 -5.27 3.84" stroke-width="2.1"/><path d="M173.6 2.7 a9.3 9.3 0 1 1 -8.86 6.44" stroke-width="1.8" opacity="0.5"/></g><circle cx="173.6" cy="12" r="3.2" fill="#389826"/><g fill="none" stroke="#CB3C33" stroke-linecap="round"><path d="M163.6 23.4 a5.6 5.6 0 1 1 -5.27 3.84" stroke-width="2.1"/><path d="M163.6 19.7 a9.3 9.3 0 1 1 -8.86 6.44" stroke-width="1.8" opacity="0.5"/></g><circle cx="163.6" cy="29" r="3.2" fill="#CB3C33"/><g fill="none" stroke="#9558B2" stroke-linecap="round"><path d="M183.6 23.4 a5.6 5.6 0 1 1 -5.27 3.84" stroke-width="2.1"/><path d="M183.6 19.7 a9.3 9.3 0 1 1 -8.86 6.44" stroke-width="1.8" opacity="0.5"/></g><circle cx="183.6" cy="29" r="3.2" fill="#9558B2"/></svg></a><span class="ver">v2.0.0</span>
+<button class="theme" id="theme" type="button" title="Theme: system, light or dark">◐</button>
+<a class="gh" href="https://github.com/georgeotjg/juliaTDGL">GitHub</a>
+</header>
+<details class="menu"><summary>Contents</summary>
+<ul>
+<li><a href="index.html">Home</a>
+</li>
+<li><a href="getting-started.html">Start</a>
+</li>
+<li><a href="theory.html">Model</a>
+</li>
+<li><a href="numerics.html">Numerics</a>
+</li>
+<li><a href="protocol.html">Protocol</a>
+</li>
+<li><a href="examples.html">Examples</a>
+</li>
+<li><a href="tools.html">Tools</a>
+</li>
+<li><a href="validation.html">Validation</a>
+</li>
+<li><a href="performance.html">Performance</a>
+</li>
+<li class="here"><a href="reference.html">Reference</a>
+<ul class="sub"><li><a href="#material">[material]</a></li><li><a href="#materials">[materials.NAME]</a></li><li><a href="#mesh">[mesh]</a></li><li><a href="#geometry">[geometry]</a></li><li><a href="#scheme">[scheme]</a></li><li><a href="#heat">[heat]</a></li><li><a href="#protocol">[protocol]</a></li><li><a href="#run">[run]</a></li><li><a href="#julia">From Julia</a></li></ul>
+</li>
+<li><a href="publications.html">Publications</a>
+</li>
+</ul>
+</details>
+<div class="wrap">
+<nav class="side" aria-label="Contents">
+<ul>
+<li><a href="index.html">Home</a>
+</li>
+<li><a href="getting-started.html">Start</a>
+</li>
+<li><a href="theory.html">Model</a>
+</li>
+<li><a href="numerics.html">Numerics</a>
+</li>
+<li><a href="protocol.html">Protocol</a>
+</li>
+<li><a href="examples.html">Examples</a>
+</li>
+<li><a href="tools.html">Tools</a>
+</li>
+<li><a href="validation.html">Validation</a>
+</li>
+<li><a href="performance.html">Performance</a>
+</li>
+<li class="here"><a href="reference.html">Reference</a>
+</li>
+<li><a href="publications.html">Publications</a>
+</li>
+</ul>
+</nav>
+<main><article>
+<h1>Reference</h1>
+<p class="lead">The keys of a run file of release 2.0, with their defaults. A run file is TOML; a key left out takes its default.
+The guide (<a href="solver_guide_2.pdf">PDF</a>) has the derivations.</p>
+
+<h2 id="material">[material]</h2>
+<table>
+<tr><th>key</th><th>default</th><th>meaning</th></tr>
+<tr><td><code>file</code></td><td>—</td><td>a material file of <code>materials/</code> (MgB<sub>2</sub> dirty and clean estimates, the two models of the diode studies, one-band Nb, NbN and a-MoGe, a three-band model that breaks time reversal, an iron-based s± model, a template); the keys below override it</td></tr>
+<tr><td><code>kappa</code></td><td>required</td><td>κ = λ/ξ of band 1</td></tr>
+<tr><td><code>sigma_n</code></td><td>1.0</td><td>normal conductivity in the code's units; <code>"dirty"</code> = that of a dirty BCS material with these bands</td></tr>
+<tr><td><code>T</code></td><td>0.0</td><td>bath temperature offset, ε<sub>μ</sub> = a<sub>μ</sub> − T</td></tr>
+<tr><td><code>gamma12</code> or <code>gamma</code></td><td>0</td><td>the Josephson coupling of two bands, or the symmetric matrix for N</td></tr>
+<tr><td><code>[[material.band]]</code></td><td></td><td>one table per band: <code>m</code> (or <code>g</code> = 1/m, or <code>xi_ratio</code>), <code>Gamma</code> (1), <code>a</code> (1), <code>beta</code> (1), <code>gamma_kwt</code> (0); <code>m_x</code>, <code>m_y</code>, <code>m_z</code> for an anisotropic band</td></tr>
+</table>
+
+<h2 id="materials">[materials.NAME]</h2>
+<p>The materials that regions of the shape name with <code>material = "NAME"</code>. A table takes the keys of <code>[material]</code>; it
+must give every key that <code>[material]</code> gives (Γ, β, γ̃, the coupling), and one left out is an error, not the package
+default. κ and T are the sample's.</p>
+<table>
+<tr><th>key</th><th>default</th><th>meaning</th></tr>
+<tr><td><code>file</code></td><td>—</td><td>take the bands and coupling of a material file; σ<sub>n</sub> stays the sample's unless the table gives it</td></tr>
+<tr><td><code>transparency</code></td><td>1</td><td><code>{ other = t }</code>: the barrier between this material and another (<code>"material"</code> names the first), t in (0, 1]</td></tr>
+<tr><td><code>sigma_n</code></td><td>the sample's</td><td>σ<sub>n</sub> per region (the conductivity of a link is the harmonic mean; the field solve becomes iterative)</td></tr>
+<tr><td><code>qp_exchange</code></td><td>the one of <code>[scheme]</code></td><td>the interband exchange rate of this material (the split of σ<sub>n</sub> between bands must be the same in all)</td></tr>
+<tr><td><code>absent</code></td><td>none</td><td><code>[2]</code>: band 2 is absent here (a one-band metal)</td></tr>
+<tr><td><code>heat_D_T</code></td><td>the one of <code>[heat]</code></td><td>the heat diffusivity of this material</td></tr>
+</table>
+
+<h2 id="mesh">[mesh]</h2>
+<table>
+<tr><th>key</th><th>default</th><th>meaning</th></tr>
+<tr><td><code>nx</code>, <code>ny</code>, <code>nz</code></td><td>required</td><td>cells of the sample along each axis</td></tr>
+<tr><td><code>dx</code></td><td>required</td><td>the cell, in ξ<sub>1</sub>; the implicit solve needs dx = dy = dz</td></tr>
+<tr><td><code>buf</code></td><td>1</td><td>cells of buffer around the sample (<code>bufx</code>, <code>bufy</code>, <code>bufz</code> per axis)</td></tr>
+<tr><td><code>ghost_links</code></td><td>true</td><td><code>false</code>: no supercurrent on the links between two face ghosts (the exact gradient flow; needed where a current crosses a material interface that reaches the faces)</td></tr>
+</table>
+
+<h2 id="geometry">[geometry]</h2>
+<table>
+<tr><th>key</th><th>default</th><th>meaning</th></tr>
+<tr><td><code>GEOM_MODE</code></td><td><code>"SIM"</code></td><td>a catalogue shape: <code>SIM</code> (plain box), <code>WEDGE</code>, <code>WEDGE_BOTH</code>, <code>TRI_Y1</code>, <code>TRI_Y1_INV</code>, <code>RECT_Y1</code>, <code>FUNNEL</code>, <code>FUNNEL_IN</code>, <code>HEX</code>, <code>HEX_STAG</code>, <code>ARRAY</code>, <code>STAGGER</code>, <code>ESFERA</code>, <code>ESF_CUNA</code>, <code>SPHROW</code>, <code>SAWROW</code>, <code>SAWSPH</code>, <code>FGRAD</code>; or <code>CUSTOM</code> with a shape file (<code>CUSTOM_REF</code>: its mirror)</td></tr>
+<tr><td><code>geom_file</code></td><td>—</td><td>the shape file of <code>CUSTOM</code> (from the editor, or by hand)</td></tr>
+<tr><td><code>wedge_depth</code>, <code>wedge_half</code></td><td>0.35, 0.2</td><td>depth of the wedge as a fraction of ny, half-width as a fraction of nx</td></tr>
+<tr><td><code>inj_margin</code></td><td>6</td><td>cells next to each contact kept free of defects</td></tr>
+<tr><td><code>z_mode</code></td><td><code>"through"</code></td><td>how a catalogue defect extends along z: <code>"through"</code>, <code>"half"</code>, <code>"buried"</code></td></tr>
+</table>
+
+<h2 id="scheme">[scheme]</h2>
+<p>The keywords of the <code>Stepper</code>. The defaults are the production scheme. A run folder keeps the defaults it started with, so
+an old run resumes with its own.</p>
+<table>
+<tr><th>key</th><th>default</th><th>meaning</th></tr>
+<tr><td><code>dt_scale</code></td><td>0.5</td><td>the step as a fraction of the stability bound</td></tr>
+<tr><td><code>implicit</code></td><td>true</td><td>the curl-curl term implicit</td></tr>
+<tr><td><code>rkl</code></td><td><code>"rkc"</code></td><td>the stages of the stiff bands: <code>"rkc"</code> (Chebyshev), <code>true</code> (Legendre), <code>false</code> (Euler substeps)</td></tr>
+<tr><td><code>rkc_damping</code></td><td>0.5</td><td>the damping ε of the Chebyshev stages</td></tr>
+<tr><td><code>rotframe</code></td><td>on with KWT</td><td>step each band in the gauge that turns with it</td></tr>
+<tr><td><code>rkl_margin</code></td><td>1.1 with KWT, 1 without</td><td>the stages cover the bound times this factor</td></tr>
+<tr><td><code>substeps</code></td><td>automatic</td><td>Euler substeps per band, when <code>rkl = false</code></td></tr>
+<tr><td><code>selffield_bc</code></td><td><code>"bar"</code></td><td>the boundary of the self-field: <code>"bar"</code>, <code>"open"</code>, <code>"slab"</code></td></tr>
+<tr><td><code>open_every</code></td><td>1.0</td><td>t<sub>GL</sub> between two updates of the open boundary</td></tr>
+<tr><td><code>sigma_vac</code></td><td>none</td><td>the conductivity of an insulating buffer (0.01 typical); needed by a sample carved in vacuum</td></tr>
+<tr><td><code>pcg_tol</code>, <code>pcg_fast</code>, <code>pcg_f32</code></td><td>1e-8, true, true</td><td>the iterative field solve: its tolerance, the extrapolated first guess, the single-precision preconditioner</td></tr>
+<tr><td><code>qp_exchange</code>, <code>qp_split</code></td><td>none, dirty</td><td>normal fluids per band: the exchange rate (a matrix for N bands) and the share of σ<sub>n</sub> of each band</td></tr>
+<tr><td><code>noise</code>, <code>noise_seed</code>, <code>noise_field</code></td><td>none, 1, false</td><td>thermal noise at T̃, its seed, and the same bath on the field</td></tr>
+<tr><td><code>drag</code></td><td>none</td><td>the mixed-gradient coefficient (a matrix for N bands)</td></tr>
+<tr><td><code>threads</code></td><td>with Julia threads</td><td>threaded loops (the same bits)</td></tr>
+</table>
+
+<h2 id="heat">[heat]</h2>
+<table>
+<tr><th>key</th><th>default</th><th>meaning</th></tr>
+<tr><td><code>D_T</code></td><td>0.25</td><td>heat diffusivity</td></tr>
+<tr><td><code>gamma_bath</code></td><td>0.2</td><td>coupling to the bath</td></tr>
+<tr><td><code>eta</code></td><td>0.05</td><td>the fraction of the dissipation that heats</td></tr>
+<tr><td><code>joule</code></td><td>false</td><td>include the Joule heat σ<sub>n</sub>|E|²</td></tr>
+<tr><td><code>margin</code></td><td>0</td><td>cells next to the contacts left out of the source</td></tr>
+<tr><td><code>cap</code>, <code>cut</code></td><td>1.5, 0.45</td><td>the ceiling of θ, and the θ above which a point closes <code>T</code></td></tr>
+</table>
+
+<h2 id="protocol">[protocol]</h2>
+<table>
+<tr><th>key</th><th>default</th><th>meaning</th></tr>
+<tr><td><code>t_min_GL</code></td><td>400</td><td>the floor of a silent point, t<sub>GL</sub></td></tr>
+<tr><td><code>t_min_GL_res</code></td><td>1584</td><td>the floor of a dissipating point; with noise, the time a silent point must hold without a slip</td></tr>
+<tr><td><code>t_confirm_GL</code></td><td>0</td><td>the onset by the delay: continue the silent rungs below the first flowing one up to this time</td></tr>
+<tr><td><code>confirm_max</code></td><td>4</td><td>at most this many rungs continued</td></tr>
+<tr><td><code>stop_after_V</code></td><td>0</td><td>stop a ladder after this many flowing points (0: run them all)</td></tr>
+<tr><td><code>keep_rung_states</code></td><td>false</td><td>save the state of every rung (needed by the figures and films of a rung)</td></tr>
+<tr><td><code>delta_v</code></td><td>8</td><td>cells between each contact and its voltmeter plane</td></tr>
+<tr><td><code>eps_conv</code></td><td>1e-4</td><td>the fixed-point tolerance per cycle</td></tr>
+<tr><td><code>f_strict</code>, <code>f_margin</code>, <code>v_margin</code></td><td>true, 0.5, 1.1</td><td>the margins of the verdicts</td></tr>
+<tr><td><code>n_frac</code></td><td>0.02</td><td>the fraction of ⟨|Ψ<sub>1</sub>|²⟩ below which a point closes <code>N</code></td></tr>
+<tr><td><code>lMax</code>, <code>mMax</code></td><td>40, 500 000</td><td>steps per cycle, and the ceiling in cycles</td></tr>
+</table>
+
+<h2 id="run">[run]</h2>
+<table>
+<tr><th>key</th><th>default</th><th>meaning</th></tr>
+<tr><td><code>J</code></td><td>required</td><td>the currents of the ladder (the same list for both polarities)</td></tr>
+<tr><td><code>H</code></td><td>0.0</td><td>the applied field along z, in H<sub>c2</sub></td></tr>
+<tr><td><code>out_dir</code></td><td>""</td><td>the run folder</td></tr>
+<tr><td><code>start</code></td><td><code>"meissner"</code></td><td>the first state: <code>"meissner"</code>, <code>"field_cooled"</code> (with <code>start_T_hot</code> = 1.5, <code>start_t_hot</code> = 150, <code>start_seed</code> = 1), or a state file</td></tr>
+</table>
+
+<h2 id="julia">From Julia</h2>
+<table>
+<tr><th>function</th><th>what it does</th></tr>
+<tr><td><code>Model</code>, <code>Band</code>, <code>two_band</code></td><td>a material: its bands and Josephson matrix</td></tr>
+<tr><td><code>Grid</code>, <code>GeomSpec</code>, <code>build_masks</code></td><td>the mesh and the shape</td></tr>
+<tr><td><code>Stepper</code>, <code>step!</code>, <code>initial_state</code></td><td>the scheme, one step, a Meissner seed</td></tr>
+<tr><td><code>ladder</code>, <code>run_ladders</code>, <code>resume_ladder</code>, <code>Protocol</code></td><td>a current ladder, both polarities, a resumed one, the protocol</td></tr>
+<tr><td><code>delay_bracket</code>, <code>bracket_Ic</code>, <code>crossing_times</code></td><td>onsets by the delay and by the verdicts; delays</td></tr>
+<tr><td><code>load_config</code>, <code>run_config</code></td><td>a run from a TOML file</td></tr>
+<tr><td><code>count_vortices</code>, <code>band_currents</code>, <code>free_energy</code>, <code>dissipation</code></td><td>observables</td></tr>
+<tr><td><code>regime</code></td><td>the numbers that place a model in its regime</td></tr>
+<tr><td><code>save_state</code>, <code>load_state</code></td><td>checkpoints (JLD2)</td></tr>
+</table>
+<div class="pn"><a href="performance.html">← Performance</a><a href="publications.html">Publications →</a></div>
+</article></main>
+<aside class="toc" aria-label="On this page"><p>On this page</p><ul><li><a href="#material">[material]</a></li><li><a href="#materials">[materials.NAME]</a></li><li><a href="#mesh">[mesh]</a></li><li><a href="#geometry">[geometry]</a></li><li><a href="#scheme">[scheme]</a></li><li><a href="#heat">[heat]</a></li><li><a href="#protocol">[protocol]</a></li><li><a href="#run">[run]</a></li><li><a href="#julia">From Julia</a></li></ul></aside>
+</div>
+<footer>© 2026 Jorge Alfredo Robles Calderón · Universidad Nacional de Colombia · MIT License · <a href="https://github.com/georgeotjg/juliaTDGL">github.com/georgeotjg/juliaTDGL</a></footer>
+<script>
+(() => {
+  const b = document.getElementById('theme'), root = document.documentElement, order = ['', 'light', 'dark'];
+  const show = () => { const t = root.dataset.theme || ''; b.textContent = t === 'light' ? '☀' : t === 'dark' ? '☾' : '◐';
+                       b.title = 'Theme: ' + (t || 'system') + ' (click to change)'; };
+  b.addEventListener('click', () => {
+    const t = order[(order.indexOf(root.dataset.theme || '') + 1) % order.length];
+    if (t) root.dataset.theme = t; else delete root.dataset.theme;
+    try { t ? localStorage.setItem('theme', t) : localStorage.removeItem('theme'); } catch (e) {}
+    show();
+  });
+  show();
+})();
+</script>
+<script>
+(() => {
+  const links = [...document.querySelectorAll('aside.toc a')]; if (!links.length) return;
+  const heads = links.map(a => document.getElementById(a.hash.slice(1))).filter(Boolean);
+  const lit = () => {
+    let cur = heads[0];
+    for (const h of heads) if (h.getBoundingClientRect().top < 120) cur = h;
+    if (innerHeight + scrollY >= document.body.scrollHeight - 4) cur = heads[heads.length - 1];
+    links.forEach(a => a.classList.toggle('on', a.hash === '#' + cur.id));
+  };
+  addEventListener('scroll', lit, { passive: true }); addEventListener('resize', lit); lit();
+})();
+</script>
+</body>
+</html>

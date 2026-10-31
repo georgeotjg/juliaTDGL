@@ -7,7 +7,7 @@ const FIXT = joinpath(RAIZ, "data", "reference_12x8x4")
 """Configuration of the reference bank.  Gamma_r = 1.3 is deliberate: at
 Gamma_r = 1 the F21 fix is inactive and a code with that fault would pass
 anyway."""
-cfg_fixture(; kw...) = Config(; GEOM_MODE="WEDGE",
+cfg_fixture(; kw...) = Config(:legacy; GEOM_MODE="WEDGE",
     Nx_sc=12, Ny_sc=8, Nz_sc=4, dx=0.5, dy=0.5, dz=0.5,
     kappa_s=2.0, kappa_p=2.0, xi_ratio=1.30, gamma12=0.001,
     gamma_ratio=1.3, H_const=0.50, J_list=[0.0],

@@ -1,0 +1,28 @@
+# The two-band notched box at kappa = 2 with the open boundary of the self-field: the faces see the free-space field of
+# the screening currents, which a mirror face (:bar) suppresses at small kappa, and the two polarities separate more.
+# Short windows: a demonstration of the option, not a measurement.  Minutes on one core per polarity.
+#   OPENBLAS_NUM_THREADS=1 julia --project=tdgl2 tdgl2/scripts/run.jl tdgl2/examples/open_k2.toml
+[material]
+file = "mgb2_model_II.toml"
+kappa = 2.0
+
+[mesh]
+nx = 40
+ny = 24
+nz = 6
+dx = 0.5
+
+[geometry]
+GEOM_MODE = "WEDGE"
+
+[scheme]
+selffield_bc = "open"     # "bar" (default) | "open" | "slab" (release 1.x)
+
+[protocol]
+t_min_GL = 200.0
+t_min_GL_res = 400.0
+
+[run]
+J = [0.40, 0.55, 0.70]
+H = 0.03
+out_dir = "tdgl2/runs/open_k2"

@@ -4,15 +4,22 @@
           H_const=0.03, J_list=[0.0], selftest=false, snap_every=0, out_dir="",
           verbose=false, use_threads=false)
     # (1) off by default; on, the Maxwell bound leaves the step
-    @test Config().maxwell_implicit == false
-    p0 = derive_params(Config(; kw...)); p1 = derive_params(Config(; kw..., maxwell_implicit=true))
+    @test Config(:legacy).maxwell_implicit == false
+    p0 = derive_params(Config(:legacy; kw...)); p1 = derive_params(Config(:legacy; kw..., maxwell_implicit=true))
     @test occursin("Maxwell", p0.dt_limitante) && !occursin("Maxwell", p1.dt_limitante)
     @test p1.dt > 30 * p0.dt
-    @test_throws ErrorException derive_params(Config(; kw..., maxwell_implicit=true, use_phi=true))
+    # with Φ the run switches to the explicit scheme of 1.0.0 by itself (Φ runs only there)
+    cφ = Config(:legacy; kw..., maxwell_implicit=true, use_phi=true); pφ = derive_params(cφ)
+    @test !cφ.maxwell_implicit && cφ.cfl_legacy && cφ.pi_substeps == 1 && pφ.dt == derive_params(Config(:legacy; kw..., use_phi=true)).dt
+    # and is Config(:legacy) with the run's keywords: a choice other than the production default (dt_scale = 0.25 for a
+    # convergence study in dt) is kept, not reset to the 1.0.0 value
+    cs = Config(; kw..., use_phi=true, dt_scale=0.25); ps = derive_params(cs)
+    @test !cs.maxwell_implicit && cs.cfl_legacy && cs.pi_substeps == 1 && cs.dt_scale == 0.25
+    @test ps.dt == derive_params(Config(:legacy; kw..., use_phi=true, dt_scale=0.25)).dt
     # (2) the factorised operator is the explicit curl-curl term of [C], link by link,
     #     including the affine part from a tilt field
-    p = derive_params(Config(; kw..., maxwell_implicit=true, h_tilt=0.01))
-    g = build_geometry(Config(; kw...), p)
+    p = derive_params(Config(:legacy; kw..., maxwell_implicit=true, h_tilt=0.01))
+    g = build_geometry(Config(:legacy; kw...), p)
     mi = MaxwellImplicit(p, g); s = initial_state(p, g, 0.0, Strict())
     for f in (s.phix, s.phiy, s.phiz); f .= 0.1 .* reshape(sin.(1:length(f)), size(f)); end
     ox, oy, oz = similar(s.phix), similar(s.phiy), similar(s.phiz)
@@ -37,7 +44,7 @@
     # (3) the same fixed point: the J = 0 seed at kappa = 25 relaxed with both schemes
     #     (measured: |Psi| to 3e-8, hz to 2e-11, M to 8 digits, at a 38 times larger step)
     estados = map((false, true)) do imp
-        c = Config(; kw..., maxwell_implicit=imp, t_min_GL=0.0, iter_min=1, mMax=10^5,
+        c = Config(:legacy; kw..., maxwell_implicit=imp, t_min_GL=0.0, iter_min=1, mMax=10^5,
                    eps_conv_seed=1.0, tie_seed_tolerance=true, eps_conv_rate=1e-7)
         q = derive_params(c); gg = build_geometry(c, q)
         TDGL.sweep([0.0], [0.03], "J+", gg, q, Strict())

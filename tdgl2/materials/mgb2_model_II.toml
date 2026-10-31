@@ -1,0 +1,24 @@
+# Two-band model of the notched-box diode studies: xi_pi/xi_sigma = 4, D_pi/D_sigma = 9.44 at Gamma_r = 1.
+# MgB2-like band labels, model parameters.  Not quantitative MgB2 (see regime).
+name = "MgB2-like two-band model of the diode studies"
+regime = "GL near Tc, dirty limit; Gurevich-Vinokur regime l_J = 33 xi_sigma > sample; invariant gamma^2/(alpha_s alpha_p) = 1.7e-6 (10^5-10^6 below MgB2 estimates); u = 1"
+kappa = 25.0
+sigma_n = 1.0     # the model of the diode studies (u = 1); a dirty BCS material with these bands has 1.80 (sigma_n = "dirty")
+T = 0.0
+gamma12 = 1e-3
+
+[[band]]
+name = "sigma"
+m = 1.0
+Gamma = 1.0
+a = 1.0
+
+[[band]]
+name = "pi"
+xi_ratio = 4.0
+Gamma = 1.0
+a = 0.59
+
+[sources]
+xi_ratio = "model choice"
+kappa = "25 or 2 in the diode studies (override kappa in the run file)"

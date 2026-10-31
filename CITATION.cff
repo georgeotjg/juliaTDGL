@@ -1,5 +1,5 @@
 cff-version: 1.2.0
-title: "juliaTDGL: a three-dimensional two-band time-dependent Ginzburg-Landau solver"
+title: "juliaTDGL: three-dimensional multiband time-dependent Ginzburg-Landau solvers"
 message: >
   If you use this software, please cite it using the metadata below.
 type: software
@@ -10,9 +10,14 @@ authors:
     affiliation: Universidad Nacional de Colombia
     orcid: "https://orcid.org/0009-0007-0557-0263"
 abstract: >
-  Three-dimensional two-band time-dependent Ginzburg-Landau solver in Julia for the
-  geometric superconducting diode effect in two-gap superconductors (MgB2 as target).
-  Link variables, self-consistent vector potential, optional scalar potential by Coulomb
+  Three-dimensional time-dependent Ginzburg-Landau solvers in Julia for the geometric
+  superconducting diode effect in two-gap superconductors (MgB2 as target). Release 2.0:
+  N bands with Kramer-Watts-Tobin relaxation per band (the charge imbalance at the contacts),
+  normal fluids per band, thermal noise, regions of different materials, sculpted samples,
+  stabilised Runge-Kutta-Chebyshev stages and a rotating frame for the stiff bands, open and bar
+  boundaries for the self-field, an insulating buffer, and the onset by the delay of the first phase slip;
+  with the new terms off it reproduces release 1.2. Release 1.2, the two-band solver:
+  link variables, self-consistent vector potential, optional scalar potential by Coulomb
   projection, Josephson voltmeter with a crossing-count verdict rule, and a production scheme
   with the curl-curl term implicit and the light band in substeps. Optional terms, all off
   by default, add interband drag, a temperature field with Joule heating, a diffused gauge
@@ -21,12 +26,14 @@ keywords:
   - time-dependent Ginzburg-Landau
   - superconducting diode effect
   - two-band superconductivity
+  - multiband superconductivity
+  - Kramer-Watts-Tobin
   - MgB2
   - vortex dynamics
   - Julia
 license: MIT
-version: 1.2.0
-date-released: "2026-10-13"
+version: 2.0.0
+date-released: "2026-10-26"
 repository-code: "https://github.com/georgeotjg/juliaTDGL"
 preferred-citation:
   type: article

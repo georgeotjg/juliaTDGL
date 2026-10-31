@@ -19,6 +19,8 @@ const FORMAS = joinpath(JULIA, "shapes")
 const EDITOR = joinpath(JULIA, "editor", "server.jl")
 const PRESET = joinpath(JULIA, "scripts", "run_preset.jl")
 const RUNS = joinpath(JULIA, "runs")
+const V4 = (d = joinpath(BASE, "tdgl2"); isdir(d) ? d : joinpath(BASE, "v4"))   # the N-band package (release 2), next to julia/
+const V4RUN = joinpath(V4, "scripts", "run.jl")
 const CARPETAS = joinpath(get(ENV, "XDG_CONFIG_HOME", joinpath(homedir(), ".config")), "tdgl_tui", "carpetas.txt")
 
 # --- small path helpers (Base has no glob) -----------------------------------------------------
@@ -71,11 +73,24 @@ function _recargar_carpetas()
     empty!(ROOTS); append!(ROOTS, ROOTS_PROYECTO); append!(ROOTS, [d for d in EXTRA if !(d in ROOTS_PROYECTO)])
 end
 
+"""%XX escapes decoded as bytes, so that a UTF-8 letter (%C3%A9 = é) comes back as one letter."""
+function _pct_bytes(t)
+    b = UInt8[]; i = 1; u = codeunits(t)
+    while i <= length(u)
+        if u[i] == UInt8('%') && i + 2 <= length(u) && (x = tryparse(UInt8, String(u[i+1:i+2]); base=16)) !== nothing
+            push!(b, x); i += 3
+        else
+            push!(b, u[i]); i += 1
+        end
+    end
+    String(b)
+end
+
 """A path typed, pasted or dragged from a file manager ('...', file:///..., ~/...)."""
 function _ruta_pegada(t)
     t = strip(strip(t), ['\'', '"'])
     if startswith(t, "file://")
-        t = replace(t[8:end], r"%([0-9A-Fa-f]{2})" => m -> string(Char(parse(UInt8, m[2:3]; base=16))))
+        t = _pct_bytes(t[8:end])
     end
     abspath(expanduser(isempty(t) ? "." : t))
 end
@@ -426,7 +441,7 @@ function collect_runs()
                 try last = @sprintf("J%+.3f", parse(Float64, hist[end]["J"])) catch end
             end
             partes = splitpath(relpath(rundir, root))
-            tag = join(partes[1:min(2, end)], "/")
+            tag = join(partes[max(1, end - 1):end], "/")     # the last two folders: the run, not its campaign
             pts = _j_points(rundir, hist)
             mt = maximum(_mtime.(vcat(status, _hasta2(rundir, "j_history.csv"))))
             push!(rows, Dict{String,Any}("tag" => tag, "on" => on, "etime" => et, "pcpu" => pc, "last" => last,
@@ -501,7 +516,8 @@ function _input(prompt)
     print(prompt); flush(stdout)
     io = _ENTRADA[]
     eof(io) && throw(EOFError())
-    String(strip(readline(io)))
+    # a letter with an accent erased by Backspace on a terminal without iutf8 leaves half of it behind
+    String(strip(filter(isvalid, readline(io))))
 end
 _volver() = _input("$(_K("Enter")) back ")
 _clear() = _tty() && print("\e[H\e[2J")
@@ -633,10 +649,10 @@ function detail(r)
     if r["status"] == "running (script)" || r["frozen"]
         println(r["frozen"] && r["status"] != "running (script)" ? "Article run (archive): read only." :
                 "Launched by a script, outside the menu: read only here.")
-        println(); println("$(_K("Enter")) or $(_K("b")) back   $(_K("o")) folder   $(_K("e")) csv   $(_K("f")) figures")
+        println(); println("$(_K("Enter")) or $(_K("b")) back   $(_K("o")) folder   $(_K("e")) csv   $(_K("f")) figures" * _film_key(r))
     else
         println(); println("$(_K("Enter")) or $(_K("b")) back   $(_K("s")) stop   $(_K("u")) resume   $(_K("o")) folder   " *
-                           "$(_K("d")) to trash_   $(_K("e")) csv   $(_K("f")) figures")
+                           "$(_K("d")) to trash_   $(_K("e")) csv   $(_K("f")) figures" * _film_key(r) * _loop_keys(r))
     end
     k = lowercase(_input("> "))
     if k == "o"; _open_dir(d)
@@ -646,7 +662,58 @@ function detail(r)
     elseif k == "e"
         c = joinpath(csvd, "j_history.csv"); println(isfile(c) ? c : "(no j_history.csv yet)"); _volver()
     elseif k == "f"; _figuras(r)
+    elseif k == "m" && occursin("3D film", _film_key(r)); _pelicula(r)
+    elseif k == "h" && !r["frozen"] && occursin("down branch", _loop_keys(r)); _bajada(r)
+    elseif k == "l" && !r["frozen"] && occursin("M(H)", _loop_keys(r)); _lazo_mh(r)
+    elseif k == "c" && occursin("Colab", _loop_keys(r)); _colab_gpu(r)
+    elseif k == "w" && _film_html(r) !== nothing; f = _film_html(r); println(f); _abrir(f)
     end
+end
+
+# the 3D film of a release-2 run (scripts/film.jl): only when the run kept its rung states
+_film_key(r) = (isfile(joinpath(r["dir"], "run.toml")) && isdir(joinpath(r["dir"], "restart", "rungs")) &&
+                isfile(joinpath(V4, "scripts", "film.jl")) ? "   $(_K("m")) 3D film" : "") *
+               (_film_html(r) === nothing ? "" : "   $(_K("w")) open the film in the browser")
+"""The newest film.html of a run (figures/film_*/), or nothing."""
+function _film_html(r)
+    d = joinpath(r["dir"], "figures"); isdir(d) || return nothing
+    fs = [joinpath(d, f, "film.html") for f in readdir(d) if startswith(f, "film_") && isfile(joinpath(d, f, "film.html"))]
+    isempty(fs) ? nothing : fs[argmax(mtime.(fs))]
+end
+
+"""The 3D film of a release-2 run, in the background: the vortex events only, as a page to turn in the browser (film.html), a GIF
+and the data as VTK files (film.pvd)."""
+function _pelicula(r)
+    println("3D film (scripts/film.jl): from the kept state of the first flowing rung, at its J, the frames around each vortex")
+    println("event only: film.html (3D, turn it with the mouse), film.gif and the data (film.pvd), in figures/film_<polarity>_J<J>/.")
+    pol = strip(_input("polarity [+ / -, Enter +] > ")); pol = pol == "-" ? "-" : "+"
+    Js = strip(_input("J [Enter: the first flowing rung; a higher J gives the events sooner] > "))
+    ev = strip(_input("events [Enter 2] > "))
+    args = String[r["dir"], pol]
+    isempty(Js) || push!(args, "--J", Js)
+    isempty(ev) || push!(args, "--events", ev)
+    log = joinpath(r["dir"], "figures", "film_log.txt"); mkpath(dirname(log))
+    cmd = addenv(`$(Base.julia_cmd().exec[1]) --startup-file=no --project=$V4 $(joinpath(V4, "scripts", "film.jl")) $args`,
+                 "OPENBLAS_NUM_THREADS" => "1")
+    try
+        run(pipeline(cmd; stdout=log, stderr=log); wait=false)
+        println("running in the background; it writes $log (minutes for a small box, more near the onset)")
+    catch e; println(sprint(showerror, e)) end
+    _volver()
+end
+
+# the down branch (scripts/hysteresis.jl) and the magnetisation loop (scripts/mh.jl) of a release-2 run
+_v4script(n) = joinpath(V4, "scripts", n)
+_loop_keys(r) = !isfile(joinpath(r["dir"], "run.toml")) ? "" :
+    (isfile(_v4script("hysteresis.jl")) && any(l -> isfile(joinpath(r["dir"], "restart", "state_$l.jld2")), ("J+", "J-")) ?
+     "   $(_K("h")) down branch" : "") * (isfile(_v4script("mh.jl")) ? "   $(_K("l")) M(H) loop" : "") *
+    (_colab_ok(r) ? "   $(_K("c")) again on a Colab GPU" : "")
+# the Colab GPU key (colab.jl, a file of the private project only; without it the menu has no such key)
+if isfile(joinpath(@__DIR__, "colab.jl"))
+    include("colab.jl")
+else
+    _colab_ok(r) = false
+    _colab_gpu(r) = nothing
 end
 
 _open_dir(d) = (println(d); _abrir(d))
@@ -1023,11 +1090,104 @@ function _w_resumen(s)
     elseif get(par, "scheme", "") == "prod" && (something(tryparse(Float64, get(par, "T", "0")), 0.0) > 0 || haskey(t, "drag") || haskey(t, "calor"))
         push!(lin, _dim("with heat, drag or T the faster scheme is used: prod at large κ, legacy otherwise"))
     end
+    v4ok = isfile(V4RUN) && get(par, "phi", "off") == "off" && !haskey(t, "qss")
+    vac = _con_vacio(forma)          # a sculpted sample: release 2 only, with the insulating padding
+    if vac
+        push!(lin, _dim(v4ok && !haskey(t, "drag") && !haskey(t, "calor") ?
+                        "the shape has vacuum (a sculpted sample): release 2 only; the run file gets sigma_vac = 0.01" :
+                        "the shape has vacuum: release 2 only, and not with Φ, Q, heat or drag; remove them to launch"))
+        v4ok = v4ok && !haskey(t, "drag") && !haskey(t, "calor")
+    elseif isfile(V4RUN)
+        push!(lin, _dim(v4ok ? "2 = this run with release 2, the current solver (recommended; the model of release 1.2, KWT off) · y = release 1.2" :
+                               "release 2 has no scalar potential Φ nor Q: this run is release 1.2 only"))
+        v4ok && push!(lin, _dim("  release 2: self-field boundary :bar (the one of 1.2: selffield_bc = \"slab\")"))
+    end
     caja("about to launch", lin; color="32")
-    k = _ask("launch? y/N", "N"); k === nothing && return :back
-    lowercase(k) in ("y", "s", "si", "yes") || (println("cancelled"); return :cancel)
+    vac && !v4ok && (_volver(); return :back)
+    k = _ask(vac ? "launch? 2 = release 2 · N" : v4ok ? "launch? 2 = release 2 (recommended) · y = release 1.2 · N" : "launch? y/N", "N"); k === nothing && return :back
+    if v4ok && strip(k) == "2"
+        rundir = joinpath(RUNS, basename(V4) * "_" * replace(geom, r"[^A-Za-z0-9_]" => "_") * "_" * Dates.format(now(), "yyyymmdd_HHMMSS"))
+        f = _toml_v4(geom, par, rundir; rotate=rot, forma=forma, terminos=t)
+        _v4_spawn(rundir, f, par["cpus"])
+        println("launched with release 2: $f\nClosing the menu does not stop the run; [s] stops it after the current point, [u] resumes it.")
+        _volver(); return :next
+    end
+    (vac || !(lowercase(k) in ("y", "s", "si", "yes"))) && (println("cancelled"); return :cancel)
     _spawn(geom, par; rotate=rot, forma=forma, terminos=t)
     _volver(); :next
+end
+
+"""Does the shape file have vacuum (a sculpted sample, release 2 only)?"""
+_con_vacio(forma) = !isempty(forma) && isfile(forma) && occursin(r"vacuum\s*=\s*true", read(forma, String))
+
+"""The run of the wizard as a run file of release 2, written into `rundir`: the two-band model of release 1.2
+(a₂ₙ = 0.59, Γr = 1, the bath T felt by both bands, as run_preset.jl --T), its mesh and buffer, the geometry (a shape of the
+editor is copied next to the file), the windows, the currents and the optional term.  KWT is off; add gamma_kwt to the
+bands of the file to turn it on."""
+function _toml_v4(geom, par, rundir; rotate="", forma="", terminos=Dict{String,String}())
+    mkpath(rundir)
+    tam, dx = split(par["malla"], ','); nx, ny, nz = split(tam, 'x'); tmin, tres = split(par["t"], ',')
+    js = haskey(par, "J_lista") ? par["J_lista"] : join(_gfmt.(_lista_J(par["J"])), ", ")
+    g0 = replace(geom, "_REF" => "")
+    gl = ["GEOM_MODE = \"$(isempty(forma) ? geom : (endswith(geom, "_REF") ? "CUSTOM_REF" : "CUSTOM"))\"",
+          "z_mode = \"$(par["z"])\""]
+    if !isempty(forma)
+        cp(forma, joinpath(rundir, "shape.toml"); force=true)
+        push!(gl, "geom_file = \"$(joinpath(rundir, "shape.toml"))\"")
+    end
+    isempty(rotate) || push!(gl, "prism_phi = $(deg2rad(parse(Float64, rotate)))")
+    g0 == "WEDGE_BOTH" && push!(gl, "wedge_depth2 = 0.20")          # as run_preset.jl
+    sc = String[]; ht = String[]
+    haskey(terminos, "drag") && push!(sc, "drag = $(get(terminos, "nu", "0.05"))")
+    _con_vacio(forma) && push!(sc, "sigma_vac = 0.01      # the shape has vacuum: the insulating padding (a sculpted sample)")
+    if haskey(terminos, "calor")
+        append!(ht, ["[heat]", "gamma_bath = $(terminos["calor"])", "joule = $(get(terminos, "joule", "0") == "1")",
+                     "margin = $(get(terminos, "margen", "0"))", ""])
+    end
+    T = something(tryparse(Float64, get(par, "T", "0")), 0.0)
+    txt = """
+    # Written by the launch wizard of the terminal menu: the run of release 1.2 it was given, with release 2.
+    # KWT is off (the model of release 1.2); add gamma_kwt = 10.0 to the bands below to turn it on.
+    [material]
+    name = "two-band model of release 1.2"
+    kappa = $(par["kappa"])
+    sigma_n = 1.0
+    T = $T
+    gamma12 = $(par["g12"])
+
+    [[material.band]]
+    name = "sigma"
+
+    [[material.band]]
+    name = "pi"
+    xi_ratio = $(par["xi"])
+    a = 0.59
+    Gamma = 1.0
+
+    [mesh]
+    nx = $nx
+    ny = $ny
+    nz = $nz
+    dx = $dx
+    buf = 1
+
+    [geometry]
+    $(join(gl, "\n"))
+
+    [scheme]
+    $(join(sc, "\n"))
+
+    $(join(ht, "\n"))[protocol]
+    t_min_GL = $(parse(Float64, tmin))
+    t_min_GL_res = $(parse(Float64, tres))
+
+    [run]
+    J = [$js]
+    H = $(par["H"])
+    """
+    f = joinpath(rundir, "run.toml")
+    write(f, txt)
+    f
 end
 
 function _launch_wizard()
@@ -1075,6 +1235,46 @@ function _spawn(geom, par; rotate="", forma="", terminos=Dict{String,String}(), 
     println("launched. Closing the menu does not stop the run. log: $log")
     log
 end
+
+"""A run of the N-band package (release 2) from a TOML file: one of its examples/ or any path. It writes into
+julia/runs/<package folder>_<name>_<time>/ (or the folder given), where this menu lists it with its points."""
+function _launch_v4()
+    isfile(V4RUN) || (println("no N-band package (release 2) next to julia/ ($V4RUN)"); return _volver())
+    exdir = joinpath(V4, "examples")
+    ej = isdir(exdir) ? sort([joinpath(exdir, f) for f in readdir(exdir) if endswith(f, ".toml")]) : String[]
+    lin = [string(_K(string(i)), " ", basename(f), "  ", _dim(_primera_linea(f))) for (i, f) in enumerate(ej)]
+    caja("release 2 run from a file", vcat(lin, ["", _dim("a number, or the path of a run file (TOML); b = back")]); color="36")
+    s = _input("run file > ")
+    lowercase(s) in ("", "b", "q") && return
+    n = tryparse(Int, s)
+    file = n !== nothing && 1 <= n <= length(ej) ? ej[n] : abspath(expanduser(s))
+    isfile(file) || (println("not a file: $file"); return _volver())
+    nombre = replace(splitext(basename(file))[1], r"[^A-Za-z0-9_.-]" => "_")
+    rundir = _ask("run folder", joinpath(RUNS, basename(V4) * "_" * nombre * "_" * Dates.format(now(), "yyyymmdd_HHMMSS")))
+    rundir === nothing && return
+    println(_dim("  two CPUs (e.g. 2,3) run the two polarities in parallel, one process each; one CPU runs them in turn"))
+    cpus = _ask("CPUs to pin it to", "0,1")
+    cpus === nothing && return
+    mkpath(rundir)
+    _v4_spawn(rundir, file, cpus)
+    println("launched. Closing the menu does not stop the run; [s] stops it after the current point, [u] resumes it.")
+    _volver()
+end
+
+# One process (both polarities) or two (one per polarity, each on its CPU), detached; launch.txt keeps the CPUs for [u].
+function _v4_spawn(rundir, file, cpus; resume=false)
+    cs = filter(!isempty, strip.(split(cpus, ',')))
+    write(joinpath(rundir, "launch.txt"), "cpus=$(join(cs, ','))\n")
+    log = joinpath(rundir, "TUI_launch.log")
+    jobs = length(cs) >= 2 ? [(cs[1], ["--polarity", "+"]), (cs[2], ["--polarity", "-"])] : [(isempty(cs) ? "0" : cs[1], String[])]
+    for (c, extra) in jobs
+        cmd = String[LANZAR, c, Base.julia_cmd().exec[1], "--project=$V4", V4RUN, file, "--dir", rundir, extra...]
+        resume && push!(cmd, "--resume")
+        run(pipeline(_suelto(cmd); stdout=log, stderr=log, append=true); wait=false)
+    end
+end
+_es_v4(dir) = isfile(joinpath(dir, "run.toml")) && isdir(joinpath(dir, "restart")) && !isfile(joinpath(dir, "job.json"))
+_primera_linea(f) = (l = filter(x -> startswith(x, "#"), readlines(f)); isempty(l) ? "" : _corta(lstrip(l[1], ['#', ' ']), 70))
 
 """Wizard parameters rebuilt from a run_preset job.json."""
 function _par_de_job(job)
@@ -1126,6 +1326,25 @@ function _stop_job(r)
 end
 
 function _resume_job(r)
+    if _es_v4(r["dir"]) && !r["frozen"]
+        r["on"] && (println("still running; not relaunching on top of it."); return _volver())
+        isfile(joinpath(r["dir"], "STOP.txt")) && println(_dim("  STOP.txt is still there: it goes to trash_/tui_jobs/ before resuming"))
+        lt = joinpath(r["dir"], "launch.txt")
+        prev = isfile(lt) ? replace(strip(read(lt, String)), "cpus=" => "") : "0"
+        println("resume the release 2 run $(r["tag"]) from its checkpoints (each polarity from its last closed point)")
+        cpus = _ask("CPUs (two: one process per polarity)", prev)
+        cpus === nothing && return
+        k = _ask("resume? y/N", "N")
+        (k === nothing || !(lowercase(k) in ("y", "s", "si", "yes"))) && return
+        sp = joinpath(r["dir"], "STOP.txt")
+        if isfile(sp)
+            t = joinpath(BASE, "trash_", "tui_jobs"); mkpath(t)
+            mv(sp, joinpath(t, "STOP_" * basename(r["dir"]) * "_" * Dates.format(now(), "yyyymmdd_HHMMSS") * ".txt"))
+        end
+        _v4_spawn(r["dir"], joinpath(r["dir"], "run.toml"), cpus; resume=true)
+        println("resumed. log: $(joinpath(r["dir"], "TUI_launch.log"))")
+        return _volver()
+    end
     job = isempty(r["job"]) ? _job_json(r["dir"]) : r["job"]
     if isempty(job) || !(get(job, "project", "") in ("julia", "juliatdgl_v3", "juliatdgl_v2")) || r["frozen"]
         println("Only runs launched from this menu (with their job.json) are resumed here.")
@@ -1148,11 +1367,17 @@ end
 function _help()
     caja("help", [
         "$(_K("l")) launch: starting point → geometry → parameters → Φ → optional term → summary",
+        "$(_K("n")) launch a run of the N-band package (release 2) from a TOML file (its examples or any path)",
         "$(_K("s")) stop a live run: STOP.txt (closes the current point) or SIGTERM (loses it)",
-        "$(_K("u")) resume from the last closed point (checkpoint)",
+        "$(_K("u")) resume from the last closed point (checkpoint); release 2 runs too, each polarity from its own",
         "$(_K("d")) move a finished run to trash_/tui_jobs/ (nothing is deleted)",
         "$(_K("a")) live only / all      $(_K("r")) refresh      $(_K("o")) open folder",
-        "$(_K("f")) 2D figures (V(J), |Ψ|² maps; matplotlib) in RUN/figures/; 3D: vtk_from_checkpoint → ParaView",
+        "$(_K("f")) figures in RUN/figures/ (matplotlib). Release 2: the ladder sheet, |Ψ|² of each band on three cuts with the vortices,\n  the band shares along x (README.txt says which is which). Release 1.2: V(J), |Ψ|² maps; 3D: vtk_from_checkpoint → ParaView",
+        "$(_K("m")) in the details of a release-2 run that kept its rung states: the 3D film of its vortex events (scripts/film.jl)",
+        "$(_K("w")) in the details of a run with a film: open its film.html (3D, turned with the mouse) in the browser",
+        "$(_K("h")) in the details of a release-2 run: its down branch (scripts/hysteresis.jl), the retrapping current and Ic − Ir",
+        "$(_K("l")) in the details of a release-2 run: the M(H) loop of its run file (scripts/mh.jl), into <run>_MH_H<Hmax>_d<dH>/",
+        (isfile(joinpath(@__DIR__, "colab.jl")) ? "$(_K("c")) in the details of a release-2 run: the same run file on a Colab GPU, back as <run>_gpu/\n" : "") *
         "$(_K("g")) geometries: catalogue and shape editor in the browser",
         "$(_K("v")) results: Ic brackets with the verdict rule (crossings per line <1 silent, ≥10",
         "  dissipating), η with its range, undecided rungs, σ_V where both polarities flow",
@@ -1181,7 +1406,13 @@ end
 
 function _figuras(r)
     script = joinpath(JULIA, "scripts", "plot_summary.py")
-    if Sys.which("python3") === nothing
+    if isfile(joinpath(r["dir"], "run.toml")) && isfile(joinpath(V4, "scripts", "figures.jl"))
+        # a release-2 run: its standard figures (the ladder sheet, |Ψ|² cuts with vortices, the band shares along x)
+        println("release-2 figures (scripts/figures.jl) in ", joinpath(r["dir"], "figures"), " — README.txt there says what each one is")
+        try run(addenv(`$(Base.julia_cmd().exec[1]) --startup-file=no --project=$V4 $(joinpath(V4, "scripts", "figures.jl")) $(r["dir"])`,
+                       "OPENBLAS_NUM_THREADS" => "1"))
+        catch e; println(sprint(showerror, e)) end
+    elseif Sys.which("python3") === nothing
         println("2D figures need Python 3 with matplotlib (optional); 3D: vtk_from_checkpoint.jl → ParaView")
     else
         println("2D figures with matplotlib (V(J) and |Ψ|² maps) in ", joinpath(r["dir"], "figures"))
@@ -1201,9 +1432,9 @@ function _carpetas_menu()
         append!(lin, ["", _dim("A Julia script that loads TDGL shows as live from any folder, listed or not."),
                       _dim("Listing a folder adds its finished runs to the table and to the results.")])
         caja("watched folders", lin; color="36")
-        println("$(_K("+")) add: paste or drag the folder here (Enter alone = the current one)   $(_K("-")) number: remove   Enter: back")
+        println("$(_K("+")) add: paste or drag the folder here   $(_K("-")) number: remove   Enter or $(_K("b")): back")
         r = _input("> ")
-        isempty(r) && return
+        (isempty(r) || lowercase(r) in ("b", "q")) && return
         if startswith(r, "-")
             n = tryparse(Int, strip(r[2:end]))
             (n !== nothing && 1 <= n <= length(guardadas)) && (println(_cambiar_carpeta(guardadas[n], true)); sleep(0.8))
@@ -1219,9 +1450,10 @@ function _accion(key, rows, show, only_on)
     k = lowercase(key)
     if k == "g"; _geom_menu()
     elseif k == "l"; _launch_wizard()
+    elseif k == "n"; _launch_v4()
     elseif k in ("h", "?"); _help()
     elseif k == "s"; r = _pick(filter(r -> r["on"], rows), "stop # > "); r === nothing || _stop_job(r)
-    elseif k == "u"; r = _pick(filter(r -> !r["on"] && isfile(joinpath(r["dir"], "job.json")), rows), "resume # > "); r === nothing || _resume_job(r)
+    elseif k == "u"; r = _pick(filter(r -> !r["on"] && (isfile(joinpath(r["dir"], "job.json")) || _es_v4(r["dir"])), rows), "resume # > "); r === nothing || _resume_job(r)
     elseif k == "d"; r = _pick(filter(r -> !r["on"] && !r["frozen"], only_on ? collect_runs() : rows), "to trash_ # > "); r === nothing || _delete_job(r)
     elseif k == "o"; r = _pick(isempty(show) ? rows : show, "open # > "); r === nothing || _open_dir(r["dir"])
     elseif k == "f"; r = _pick(isempty(show) ? collect_runs() : show, "figures # > "); r === nothing || _figuras(r)
@@ -1232,12 +1464,30 @@ function _accion(key, rows, show, only_on)
     end
 end
 
+"""Redraw the main menu when the terminal changes size while it waits for a key: a window that opens at 80 columns and is
+maximized right after (WezTerm with a maximize rule) otherwise keeps the narrow boxes, and on Wayland stays black until a key."""
+function _al_redimensionar(dibujar, esperando, intervalo=0.25)
+    antes = displaysize(stdout)
+    while true
+        sleep(intervalo)
+        ahora = displaysize(stdout)
+        ahora == antes && continue
+        antes = ahora
+        esperando[] || continue
+        try
+            dibujar(); print("> "); flush(stdout)
+        catch
+        end
+    end
+end
+
 function interactive()
     ccall(:jl_generating_output, Cint, ()) == 1 || Base.exit_on_sigint(false)
     _tty() && print("\e]0;TDGL\a")             # the terminal tab says TDGL, not Julia
     only_on = true
-    _VIGIA[] && @async _vigia()
-    while true
+    rows, show = Dict{String,Any}[], Dict{String,Any}[]
+    esperando = Ref(false)                      # the menu waits for a key: the size watcher may redraw it
+    function dibujar()
         _clear()
         isempty(TERMINADAS) || caja("finished while the menu was open", TERMINADAS[max(1, end - 4):end]; color="32")
         rows = try
@@ -1249,13 +1499,21 @@ function interactive()
         caja("keys", [
             "$(_K("l")) launch   $(_K("s")) stop   $(_K("u")) resume   $(_K("d")) to trash_   " * _dim("number = details"),
             "$(_K("a")) live/all   $(_K("r")) refresh   $(_K("o")) folder   $(_K("f")) figures   $(_K("v")) results",
-            "$(_K("c")) watched folders   $(_K("g")) geometries and shape editor   $(_K("h")) help   $(_K("q")) quit (runs continue)",
+            "$(_K("c")) watched folders   $(_K("g")) geometries and shape editor   $(_K("n")) 2.0 run   $(_K("h")) help   $(_K("q")) quit (runs continue)",
             _dim("In every menu: Enter = default, b = previous step, Ctrl+C = back here.")]; color="33")
+    end
+    _VIGIA[] && @async _vigia()
+    _VIGIA[] && _tty() && @async _al_redimensionar(dibujar, esperando)
+    while true
+        dibujar()
         key = try
+            esperando[] = true
             _input("> ")
         catch e
             (e isa EOFError || e isa InterruptException) && (println(); return)
             rethrow()
+        finally
+            esperando[] = false
         end
         key in ("q", "Q") && return
         if key in ("a", "A")
@@ -1340,13 +1598,15 @@ end
 #   GET  /shapes            list of julia/shapes/*.toml (JSON)
 #   GET  /shape?name=x      shape x as JSON (TOML parsed) plus its text
 #   POST /save?name=x       writes shapes/x.toml; an existing one is MOVED to trash_/shapes/ (never deleted)
+#   GET  /materials         the material files of release 2 (materials/*.toml): file, name, bands (JSON)
+#   POST /saverun?name=x    writes shapes/x_run.toml, the run file the editor drafted (an existing one is MOVED to trash_)
 #   GET  /ping, /quit       keep-alive from the page, and its "close server" button
 const EDITOR_HTML = joinpath(JULIA, "editor", "shape_editor.html")
 const _NOMBRE_OK = r"^[A-Za-z0-9_\-]{1,64}$"
 const _ULTIMA = Ref(time())
 
 _json(code, x) = (code, "application/json; charset=utf-8", Vector{UInt8}(json_string(x)))
-_pct_dec(t) = replace(replace(t, "+" => " "), r"%([0-9A-Fa-f]{2})" => m -> string(Char(parse(UInt8, m[2:3]; base=16))))
+_pct_dec(t) = _pct_bytes(replace(t, "+" => " "))
 function _query(ruta)
     q = Dict{String,String}()
     i = findfirst('?', ruta); i === nothing && return (ruta, q)
@@ -1369,6 +1629,15 @@ function _responder(metodo, ruta, cuerpo::Vector{UInt8})
         if camino == "/shapes"
             mkpath(FORMAS)
             return _json(200, sort([splitext(f)[1] for f in readdir(FORMAS) if endswith(f, ".toml")]))
+        elseif camino == "/materials"
+            d = joinpath(V4, "materials")
+            L = Dict{String,Any}[]
+            for f in (isdir(d) ? sort(readdir(d)) : String[])
+                endswith(f, ".toml") && f != "template.toml" || continue
+                m = try TOML.parsefile(joinpath(d, f)) catch; continue end
+                push!(L, Dict("file" => f, "name" => string(get(m, "name", "")), "bands" => length(get(m, "band", []))))
+            end
+            return _json(200, L)
         elseif camino == "/shape"
             occursin(_NOMBRE_OK, nombre) || return _json(400, Dict("error" => "name: letters, digits, _ and - (max. 64)"))
             p = joinpath(FORMAS, nombre * ".toml")
@@ -1377,6 +1646,18 @@ function _responder(metodo, ruta, cuerpo::Vector{UInt8})
             datos = try TOML.parse(texto) catch e; return _json(422, Dict("error" => "invalid TOML: " * sprint(showerror, e))) end
             return _json(200, Dict("toml" => datos, "text" => texto))
         end
+    elseif metodo == "POST" && camino == "/saverun"
+        occursin(_NOMBRE_OK, nombre) || return _json(400, Dict("error" => "name: letters, digits, _ and - (max. 64)"))
+        (isempty(cuerpo) || length(cuerpo) > 200_000) && return _json(400, Dict("error" => "empty or too large body"))
+        texto = String(copy(cuerpo))
+        try TOML.parse(texto) catch e; return _json(422, Dict("error" => "invalid TOML: " * sprint(showerror, e))) end
+        mkpath(FORMAS); dest = joinpath(FORMAS, nombre * "_run.toml"); movido = nothing
+        if isfile(dest)
+            papelera = joinpath(BASE, "trash_", "shapes"); mkpath(papelera)
+            movido = joinpath(papelera, nombre * "_run_" * Dates.format(now(), "yyyymmdd_HHMMSS") * ".toml"); mv(dest, movido)
+        end
+        write(dest, texto)
+        return _json(200, Dict("ok" => true, "path" => relpath(dest, BASE), "previous" => movido === nothing ? nothing : relpath(movido, BASE)))
     elseif metodo == "POST" && camino == "/save"
         occursin(_NOMBRE_OK, nombre) || return _json(400, Dict("error" => "name: letters, digits, _ and - (max. 64)"))
         (isempty(cuerpo) || length(cuerpo) > 2_000_000) && return _json(400, Dict("error" => "empty or too large body"))

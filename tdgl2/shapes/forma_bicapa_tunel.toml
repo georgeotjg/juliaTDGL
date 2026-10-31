@@ -1,0 +1,10 @@
+# A tunnel-coupled bilayer: the top half of the slab is the material "lenta" of the run file (tdgl2/examples/bicapa_tunel.toml),
+# the bottom half the run's [material].  Each slab is >= 3 ξ thick on the mesh of the example (nz = 12, dx = 0.5: 3 ξ each).
+[[shape]]
+type = "rect"
+x = 0.0
+y = 0.0
+w = 1000.0
+h = 1000.0
+z = "top"
+material = "lenta"

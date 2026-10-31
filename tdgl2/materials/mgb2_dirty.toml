@@ -1,0 +1,49 @@
+# MgB2, dirty film: two-band dirty-limit GL (Gurevich, PRB 67, 184515 (2003), Eqs. 15-18) in the units of the
+# code (band 1 = sigma with g = Gamma = beta = a = 1; lengths xi_sigma, times xi_sigma^2/D_sigma, H in Hc2 of
+# the uncoupled sigma band).  With Psi_mu = Delta_mu/s_mu and s chosen so that beta_pi = 1:
+#     a_pi    = sqrt(nu) (l - l_ss/w)/(l - l_pp/w)
+#     g_pi    = sqrt(nu) D_pi/D_sigma
+#     Gamma_pi = sqrt(nu)                     (TDGL coefficient pi N_mu/8T of each band)
+#     gamma12 = (l_sp/w)/(l - l_pp/w) nu^(-1/4)
+# nu = N_pi/N_sigma = l_sp/l_ps, w = l_ss l_pp - l_sp l_ps, l = l_c + ln(Tc/T), 1 - (l_ss + l_pp) l_c + w l_c^2 = 0.
+# Evaluated at T = 0.7 Tc.  GL is quantitative only near Tc; the sigma coefficient that sets the units vanishes
+# at T_sigma = 0.915 Tc (the pi one at 0.084 Tc), so the working temperature must stay below 0.915 Tc, and
+# a_pi < 0: the pi condensate is induced by the coupling.  Other temperatures: see [sources].temperature.
+name = "MgB2, dirty film (two-band dirty GL at T = 0.7 Tc)"
+regime = "dirty limit, GL extrapolated to 0.7 Tc; passive pi band (a_pi < 0); invariant gamma^2/|a_s a_p| = 0.39 (the model of the diode studies has 1.7e-6); interband scattering neglected (Mazin 2002: gamma_ps ~ 0)"
+kappa = 2.0           # NOT MgB2: the kappa = 2 of the diode studies, for the KWT gate; replace with the sample's (see sources)
+sigma_n = "dirty"     # (1 + nu D_pi/D_sigma)/5.79 = 0.188, u = Gamma_sigma/sigma_n = 5.32
+T = 0.0               # the working temperature is in a_mu (0.7 Tc); T here is the bath offset of the heat model
+gamma12 = 1.886
+
+[[band]]
+name = "sigma"
+g = 1.0
+Gamma = 1.0
+a = 1.0
+beta = 1.0
+gamma_kwt = 0.0       # KWT: 2 tau_E s_sigma/hbar = 11.3 tau_E[ps] at 0.7 Tc (s_sigma = 3.73 meV); sweep 0, 3, 10, 30
+
+[[band]]
+name = "pi"
+g = 0.0770
+Gamma = 1.150
+a = -9.107
+beta = 1.0
+gamma_kwt = 0.0       # 2 tau_E,pi s_pi/hbar = 10.5 tau_E,pi[ps] (s_pi = 3.47 meV); 0.93 gamma_kwt(sigma) if tau_E,pi = tau_E,sigma
+
+# With gamma_kwt > 0 (KWT), the Stepper turns on rotframe and rkl_margin = 1.1 by itself (without the rotating
+# frame the state depended on dt and gamma_kwt = 30 diverged).  KWT lengthens the conversion at the contacts: check
+# regime(md; L).L_over_lambda_c, and keep it >~ 10 so that the middle of the sample carries no unconverted normal current
+# (with 5, as in a 20 xi box at kappa = 2 and gamma_kwt = 30, that current alone moves the onset).
+
+[sources]
+couplings = "lambda_ss = 0.81, lambda_pp = 0.285, lambda_sp = 0.119, lambda_ps = 0.09 (BCS-effective, lambda - mu*): Golubov et al., J. Phys.: Condens. Matter 14, 1353 (2002), as used by Gurevich PRB 67, 184515 (2003); arXiv:cond-mat/0212129, arXiv:cond-mat/0111262"
+nu = "N_pi/N_sigma = lambda_sp/lambda_ps = 1.322 (DFT 0.41/0.30 = 1.37)"
+D_ratio = "D_pi/D_sigma = 0.067: in-plane plasma frequencies (sigma 4.14 eV, pi 5.89 eV) and dirty-film scattering rates (sigma 54 meV, pi 1.2 eV), Mazin et al., PRL 89, 107002 (2002), arXiv:cond-mat/0204013; Gurevich's Hc2 fits of dirty films give 0.1-0.2"
+Gamma = "dirty TDGL, Gamma_mu proportional to N_mu (Gurevich-Vinokur); no measured value"
+sigma_n = "dirty BCS: sigma_n = sum g Gamma/beta / 5.79 (model.jl, sigma_dirty)"
+gamma_kwt = "gamma = 2 tau_E Delta/hbar referred to |Psi|: s_mu from the GL gap scale at 0.7 Tc, Tc = 39 K; tau_E from Xu et al. (arXiv:cond-mat/0309664): 0.16 ps (fast) to a few ps; no per-band value"
+temperature = "a_pi, gamma12 at 0.6 / 0.7 / 0.8 Tc: -5.36, 1.196 / -9.11, 1.886 / -19.3, 3.77 (g_pi, Gamma_pi do not depend on T)"
+kappa = "not fixed by these numbers: the code's kappa is lambda/xi_sigma(uncoupled) times sqrt(sum g|Psi|^2); dirty MgB2 films: kappa of order 20-40 (coupled; order of magnitude, no source cited)"
+anisotropy = "isotropic stiffness: in-plane values; the c-axis sigma plasma frequency (0.68 eV) is not representable"

@@ -1,0 +1,39 @@
+# Three identical bands with equal repulsive Josephson couplings (gamma < 0), in the units of the code (band 1: g = Gamma = a
+# = beta = 1).  The phases are frustrated: the ground state breaks time reversal, with phases 0 and +-2 pi/3 and
+# |Psi|^2 = 1 + |gamma| per band (the analytic state the suite checks).  A MODEL, not a material: three-band frustration of
+# this kind was proposed for iron-based superconductors (s + is), where the couplings are not equal and not known to this
+# precision.  For a run file of it see examples/three_bands.toml.
+name = "three frustrated bands (a model: s + is, time reversal broken)"
+regime = "a model: three identical bands, equal repulsive couplings |gamma| = 0.1 (frustrated, TRSB ground state); not fitted to a material"
+kappa = 2.0
+sigma_n = 1.0
+T = 0.0
+gamma = [[0.0, -0.1, -0.1], [-0.1, 0.0, -0.1], [-0.1, -0.1, 0.0]]
+
+[[band]]
+name = "1"
+g = 1.0
+Gamma = 1.0
+a = 1.0
+beta = 1.0
+gamma_kwt = 0.0
+
+[[band]]
+name = "2"
+g = 1.0
+Gamma = 1.0
+a = 1.0
+beta = 1.0
+gamma_kwt = 0.0
+
+[[band]]
+name = "3"
+g = 1.0
+Gamma = 1.0
+a = 1.0
+beta = 1.0
+gamma_kwt = 0.0
+
+[sources]
+model = "three-band GL with frustrated interband couplings and its time-reversal-breaking ground state: Stanev and Tesanovic, PRB 81, 134522 (2010), arXiv:0912.5214"
+state = "phases 0, +-2 pi/3 and |Psi|^2 = 1 + |gamma| for three identical bands: the analytic three-band test of the suite (test_physics.jl)"

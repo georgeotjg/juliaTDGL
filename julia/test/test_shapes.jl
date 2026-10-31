@@ -8,7 +8,7 @@ const KWF = (Nx_sc=40, Ny_sc=24, Nz_sc=6, buf=1, dx=0.5, dy=0.5, dz=0.5,
              kappa_s=25.0, kappa_p=25.0, xi_ratio=4.0, H_const=0.030,
              selftest=false, verbose=false, use_threads=false, out_dir="")
 
-_fmask(; kw...) = (cfg = Config(; KWF..., kw...); p = derive_params(cfg);
+_fmask(; kw...) = (cfg = Config(:legacy; KWF..., kw...); p = derive_params(cfg);
                    (build_geometry(cfg, p).fmask, p))
 
 @testset "shape: catalogue written as a file, to the bit" begin
@@ -137,6 +137,23 @@ end
         fb, _ = _fmask(GEOM_MODE="CUSTOM", geom_file=b)
         @test fa == fb
         @test count(<(1), fa) > 0
+    finally
+        rm(dir; recursive=true)
+    end
+end
+
+@testset "shape: a figure on another face (axis), kept (outside); vacuum is release 2" begin
+    dir = mktempdir(joinpath(@__DIR__, ".."))
+    try
+        a = joinpath(dir, "axis_x.toml")
+        write(a, "[[shape]]\ntype = \"circle\"\naxis = \"x\"\nu = 6.0\nv = 1.25\nr = 1.0\noutside = true\nf = 0.0\n")
+        f, p = _fmask(GEOM_MODE="CUSTOM", geom_file=a)
+        (; x1, x2, y1, y2, z1, z2, dx, dz) = p
+        esp = [((j - y1) * dx - 6.0)^2 + ((k - z1) * dz - 1.25)^2 <= 1.0 + 1e-9 ? 1.0 : 0.0 for i in x1:x2, j in y1:y2, k in z1:z2]
+        @test f[x1:x2, y1:y2, z1:z2] == esp
+        b = joinpath(dir, "vac.toml")
+        write(b, "[[shape]]\ntype = \"circle\"\nx = 10.0\ny = 6.0\nr = 2.0\nvacuum = true\n")
+        @test_throws ErrorException _fmask(GEOM_MODE="CUSTOM", geom_file=b)
     finally
         rm(dir; recursive=true)
     end

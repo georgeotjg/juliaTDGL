@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The numerics · juliaTDGL</title>
+<meta name="description" content="juliaTDGL: three-dimensional multiband time-dependent Ginzburg-Landau solvers in Julia for the geometric superconducting diode effect.">
+<link rel="icon" href="img/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="style.css">
+<script>try { const t = localStorage.getItem('theme'); if (t) document.documentElement.dataset.theme = t; } catch (e) {}</script>
+<script>window.MathJax = { tex: { inlineMath: [['\\(', '\\)']], displayMath: [['\\[', '\\]']] }, chtml: { displayAlign: 'left' } };</script>
+<script defer src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="top">
+<a class="name" href="index.html"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 566 140" role="img" class="wm" aria-labelledby="wm-t"><title id="wm-t">juliaTDGL: the four dots of the Julia logo as vortices over the j and the i</title><path class="k" d="M28.0625 47.5H44.84375V99.0625Q44.84375 109.609375 39.78125 115.1640625Q34.71875 120.71875 25.109375 120.71875H16.8125V109.703125H19.71875Q24.5 109.703125 26.28125 107.546875Q28.0625 105.390625 28.0625 99.0625Z"/><path class="k" d="M61.40625 79.5625V47.5H78.28125V52.75Q78.28125 57.015625 78.234375 63.4609375Q78.1875 69.90625 78.1875 72.0625Q78.1875 78.390625 78.515625 81.1796875Q78.84375 83.96875 79.640625 85.234375Q80.671875 86.875 82.3359375 87.765625Q84.0 88.65625 86.15625 88.65625Q91.40625 88.65625 94.40625 84.625Q97.40625 80.59375 97.40625 73.421875V47.5H114.1875V100.0H97.40625V92.40625Q93.609375 97.0 89.3671875 99.1796875Q85.125 101.359375 80.015625 101.359375Q70.921875 101.359375 66.1640625 95.78125Q61.40625 90.203125 61.40625 79.5625Z"/><path class="k" d="M131.3125 27.0625H148.09375V100.0H131.3125Z"/><path class="k" d="M165.21875 47.5H182.0V100.0H165.21875Z"/><path class="k" d="M222.65625 76.375Q217.40625 76.375 214.7578125 78.15625Q212.109375 79.9375 212.109375 83.40625Q212.109375 86.59375 214.2421875 88.3984375Q216.375 90.203125 220.171875 90.203125Q224.90625 90.203125 228.140625 86.8046875Q231.375 83.40625 231.375 78.296875V76.375ZM248.296875 70.046875V100.0H231.375V92.21875Q228.0 97.0 223.78125 99.1796875Q219.5625 101.359375 213.515625 101.359375Q205.359375 101.359375 200.2734375 96.6015625Q195.1875 91.84375 195.1875 84.25Q195.1875 75.015625 201.5390625 70.703125Q207.890625 66.390625 221.484375 66.390625H231.375V65.078125Q231.375 61.09375 228.234375 59.2421875Q225.09375 57.390625 218.4375 57.390625Q213.046875 57.390625 208.40625 58.46875Q203.765625 59.546875 199.78125 61.703125V48.90625Q205.171875 47.59375 210.609375 46.9140625Q216.046875 46.234375 221.484375 46.234375Q235.6875 46.234375 241.9921875 51.8359375Q248.296875 57.4375 248.296875 70.046875Z"/><path class="b" d="M257.3125 30.015625H321.8125V43.65625H298.609375V100.0H280.5625V43.65625H257.3125Z"/><path class="b" d="M350.1875 43.65625V86.359375H356.65625Q367.71875 86.359375 373.5546875 80.875Q379.390625 75.390625 379.390625 64.9375Q379.390625 54.53125 373.578125 49.09375Q367.765625 43.65625 356.65625 43.65625ZM332.140625 30.015625H351.171875Q367.109375 30.015625 374.9140625 32.2890625Q382.71875 34.5625 388.296875 40.0Q393.21875 44.734375 395.609375 50.921875Q398.0 57.109375 398.0 64.9375Q398.0 72.859375 395.609375 79.0703125Q393.21875 85.28125 388.296875 90.015625Q382.671875 95.453125 374.796875 97.7265625Q366.921875 100.0 351.171875 100.0H332.140625Z"/><path class="b" d="M475.734375 94.796875Q468.984375 98.078125 461.71875 99.71875Q454.453125 101.359375 446.71875 101.359375Q429.234375 101.359375 419.015625 91.5859375Q408.796875 81.8125 408.796875 65.078125Q408.796875 48.15625 419.203125 38.453125Q429.609375 28.75 447.703125 28.75Q454.6875 28.75 461.0859375 30.0625Q467.484375 31.375 473.15625 33.953125V48.4375Q467.296875 45.109375 461.5078125 43.46875Q455.71875 41.828125 449.90625 41.828125Q439.125 41.828125 433.2890625 47.8515625Q427.453125 53.875 427.453125 65.078125Q427.453125 76.1875 433.078125 82.234375Q438.703125 88.28125 449.0625 88.28125Q451.875 88.28125 454.2890625 87.9296875Q456.703125 87.578125 458.625 86.828125V73.234375H447.609375V61.140625H475.734375Z"/><path class="b" d="M492.625 30.015625H510.671875V86.359375H542.359375V100.0H492.625Z"/><g fill="none" stroke="#4063D8" stroke-linecap="round"><path d="M36.5 21.0 a9.0 9.0 0 1 1 -8.50 6.20" stroke-width="3.0"/><path d="M36.5 15.0 a15.0 15.0 0 1 1 -14.29 10.39" stroke-width="2.6" opacity="0.5"/></g><circle cx="36.5" cy="30" r="5.2" fill="#4063D8"/><g fill="none" stroke="#389826" stroke-linecap="round"><path d="M173.6 6.4 a5.6 5.6 0 1 1 -5.27 3.84" stroke-width="2.1"/><path d="M173.6 2.7 a9.3 9.3 0 1 1 -8.86 6.44" stroke-width="1.8" opacity="0.5"/></g><circle cx="173.6" cy="12" r="3.2" fill="#389826"/><g fill="none" stroke="#CB3C33" stroke-linecap="round"><path d="M163.6 23.4 a5.6 5.6 0 1 1 -5.27 3.84" stroke-width="2.1"/><path d="M163.6 19.7 a9.3 9.3 0 1 1 -8.86 6.44" stroke-width="1.8" opacity="0.5"/></g><circle cx="163.6" cy="29" r="3.2" fill="#CB3C33"/><g fill="none" stroke="#9558B2" stroke-linecap="round"><path d="M183.6 23.4 a5.6 5.6 0 1 1 -5.27 3.84" stroke-width="2.1"/><path d="M183.6 19.7 a9.3 9.3 0 1 1 -8.86 6.44" stroke-width="1.8" opacity="0.5"/></g><circle cx="183.6" cy="29" r="3.2" fill="#9558B2"/></svg></a><span class="ver">v2.0.0</span>
+<button class="theme" id="theme" type="button" title="Theme: system, light or dark">◐</button>
+<a class="gh" href="https://github.com/georgeotjg/juliaTDGL">GitHub</a>
+</header>
+<details class="menu"><summary>Contents</summary>
+<ul>
+<li><a href="index.html">Home</a>
+</li>
+<li><a href="getting-started.html">Start</a>
+</li>
+<li><a href="theory.html">Model</a>
+</li>
+<li class="here"><a href="numerics.html">Numerics</a>
+<ul class="sub"><li><a href="#lattice">The lattice</a></li><li><a href="#bands">The band update</a></li><li><a href="#field">The field update</a></li><li><a href="#step">The time step</a></li><li><a href="#stages">Stabilised stages</a></li><li><a href="#frame">The rotating frame</a></li><li><a href="#noise">Noise in a stiff band</a></li><li><a href="#repro">Reproducibility</a></li></ul>
+</li>
+<li><a href="protocol.html">Protocol</a>
+</li>
+<li><a href="examples.html">Examples</a>
+</li>
+<li><a href="tools.html">Tools</a>
+</li>
+<li><a href="validation.html">Validation</a>
+</li>
+<li><a href="performance.html">Performance</a>
+</li>
+<li><a href="reference.html">Reference</a>
+</li>
+<li><a href="publications.html">Publications</a>
+</li>
+</ul>
+</details>
+<div class="wrap">
+<nav class="side" aria-label="Contents">
+<ul>
+<li><a href="index.html">Home</a>
+</li>
+<li><a href="getting-started.html">Start</a>
+</li>
+<li><a href="theory.html">Model</a>
+</li>
+<li class="here"><a href="numerics.html">Numerics</a>
+</li>
+<li><a href="protocol.html">Protocol</a>
+</li>
+<li><a href="examples.html">Examples</a>
+</li>
+<li><a href="tools.html">Tools</a>
+</li>
+<li><a href="validation.html">Validation</a>
+</li>
+<li><a href="performance.html">Performance</a>
+</li>
+<li><a href="reference.html">Reference</a>
+</li>
+<li><a href="publications.html">Publications</a>
+</li>
+</ul>
+</nav>
+<main><article>
+<h1>The numerics</h1>
+<p class="lead">How release 2.0 discretises the model, and why each choice is there.</p>
+
+<h2 id="lattice">The lattice</h2>
+<p>A staggered Cartesian mesh carries Ψ<sub>μ</sub> on the nodes, the vector potential on the links and the field on the plaquettes.
+The links hold link variables \( U = e^{-i\mathbf A\cdot d\mathbf l} \), so lattice gauge invariance is exact. The condensation mask
+f sits on the nodes. The six faces of the sample have covariant Neumann conditions, written as ghost nodes
+\( \Psi_{\mathrm{face}} = U\,\Psi_{\mathrm{interior}} \). Every loop over nodes or links is free of reductions, so a run gives the same bits
+with any number of threads.</p>
+<p>The voltage is gauge-invariant by construction: the time derivative of the phase difference \( \arg(\Psi_i^* U \Psi_j) \)
+summed along measuring lines between two planes inside the contacts. Each 2π slip of a line is one vortex crossing.</p>
+
+<h2 id="bands">The band update</h2>
+<p>Without KWT a band takes an explicit step of its right-hand side R<sub>μ</sub>, a Jacobi sweep over the interior nodes,
+\( \Psi_\mu^{n+1} = \Psi_\mu^n + (dt/\Gamma_\mu)R_\mu \). With KWT the left-hand side is a symmetric positive operator on Ψ seen as a
+vector of ℝ², inverted per node without dividing by Ψ:</p>
+\[ \partial_t\Psi = R' - \frac{\tilde\gamma^2\,\Psi\,\mathrm{Re}(\Psi^* R')}{1+\tilde\gamma^2|\Psi|^2}, \qquad R' = \frac{\sqrt{1+\tilde\gamma^2|\Psi|^2}}{\Gamma}\,R . \]
+<p>With materials the coefficients are read per node, through one index per node into small tables; with one material the kernel is the
+one of before, at the same speed and with the same bits.</p>
+
+<h2 id="field">The field update</h2>
+<p>The curl-curl term is implicit, one solve per step; the supercurrent is explicit:</p>
+\[ \Big(I + \frac{dt}{\sigma_n}\kappa^2 K\Big)\mathbf A^{n+1} = \mathbf A^n + \frac{dt}{\sigma_n}\mathbf J_s^n - \frac{dt}{\sigma_n}\kappa^2\mathbf c , \]
+<p>with K the Yee curl-curl and c the boundary fields. With dx = dy = dz, K is diagonalised by per-axis bases, and per wavevector
+\( (I+aK)^{-1} = P_L + P_T/(1+a|k|^2) \): an exact, direct solve by dense products along each axis. Only the transverse part is
+implicit; the longitudinal part (the conversion layers) moves with J<sub>s</sub>.</p>
+<p><strong>With an insulating buffer or a sample carved in vacuum</strong> the conductivity changes from link to link and the system is
+no longer separable. It is solved by conjugate gradients with the separable solve as preconditioner. The iterations are set by the
+smooth solenoidal fields of the vacuum: they sit in the middle of the preconditioned spectrum, nearly independent of the
+conductivity contrast. That is why no cheap separable preconditioner removes them, and a full auxiliary-space (multigrid) correction
+would cost more per iteration than it saves. What pays is the tolerance (10<sup>−8</sup> of the step's right-hand side) and a first
+guess extrapolated from the last two steps, with the preconditioner in single precision inside a flexible conjugate gradient. On the
+nanowire box that takes 14 iterations to 6.5 and the step from 10.1 to 4.5 ms; the state stays within 2 × 10<sup>−9</sup>, and a
+ladder resumes to the bit.</p>
+
+<h2 id="step">The time step</h2>
+<p>The step is the smallest of the stability bounds, times 0.99 and <code>dt_scale</code> (0.5 by default). For band μ,</p>
+\[ dt_\mu = \frac{2\Gamma_\mu}{4g_\mu\sum_i dx_i^{-2} + h_\mu}\cdot\frac{1}{\sqrt{1+\tilde\gamma_\mu^2 P_\mu^2}}, \qquad h_\mu = 3\beta_\mu P_\mu^2 - \varepsilon_\mu , \]
+<p>with P<sub>μ</sub> the amplitude of the coupled homogeneous equilibrium. The explicit supercurrent adds
+\( 2\sigma_n/\sum_\mu g_\mu n_\mu \), with n<sub>μ</sub> = a<sub>μ</sub>/β<sub>μ</sub> for a band that condenses alone and
+P<sub>μ</sub>² for a passive one (a ≤ 0, condensed by the coupling); the heat model adds 0.15 dx²/D<sub>T</sub>. The summary of a run names the bound that set the
+step. KWT makes the phase mode √(1 + γ̃²P²) times faster: with γ̃ = 10 the explicit step would be ten times shorter.</p>
+
+<h2 id="stages">Stabilised stages</h2>
+<p>Instead of shortening the step, a band made stiff by KWT advances by first-order stabilised Runge–Kutta stages over the step of
+the same model without KWT:</p>
+\[ Y_0 = \Psi^n,\quad Y_1 = E(Y_0),\quad Y_j = \mu_j E(Y_{j-1}) + \nu_j Y_{j-2},\quad \Psi^{n+1} = Y_s , \]
+<p>with E an Euler step of dt/q. Two families are in the code:</p>
+<ul>
+<li><strong>Runge–Kutta–Chebyshev (the default).</strong> Damped RKC (Verwer, Hundsdorfer and Sommeijer):
+\( \omega_0 = 1 + \epsilon/s^2 \), \( \omega_1 = T_s(\omega_0)/T_s'(\omega_0) \), \( \mu_j = 2\omega_0 T_{j-1}/T_j \),
+\( \nu_j = -T_{j-2}/T_j \), q = ω<sub>0</sub>/ω<sub>1</sub>. Its stability polynomial is
+\( T_s(\omega_0+\omega_1 z)/T_s(\omega_0) \), so s stages bridge 0.762 s² explicit steps with the damping ε = 0.5. The textbook
+damping, 0.05, lets the splitting with the field and the other band grow a mode, and the notched KWT box diverged within 100 steps.</li>
+<li><strong>Runge–Kutta–Legendre</strong> (Meyer, Balsara and Aslam), <code>rkl = true</code>: μ<sub>j</sub> = (2j−1)/j,
+ν<sub>j</sub> = (1−j)/j, q = s(s+1)/2.</li>
+</ul>
+<p>A band takes RKC only where it saves a stage, so a run without KWT keeps the bits of RKL. On the notched KWT box of the examples
+RKC is 6 % faster per step at γ̃ = 10 and 10 % at γ̃ = 30, with the same brackets, the same delay of the first slip (0.05 %) and the
+same energy balance.</p>
+
+<h2 id="frame">The rotating frame</h2>
+<p>In the gauge Φ = 0 a stationary state with charge imbalance is not a fixed point of an explicit step. Where its phase turns at
+rate ω, the step of that rotation, |1 + iωh| &gt; 1, leaves a radial error ∝ ω²dt, and KWT multiplies it by √(1 + γ̃²|Ψ|²). With
+<code>rotframe</code> (on with KWT) each band is stepped in the gauge that turns with it,
+\( \Psi = e^{i\hat\omega\tau}\tilde\Psi \). The band equation gains −iω̂Ψ̃, the links gain the difference of the rates, and the state is
+turned back exactly at the end of the step. A stationary state is then a fixed point of every stage for any dt: the KWT state is the
+same to six digits at dt, dt/2, dt/4 and with explicit substeps, for γ̃ = 0, 10 and 30. Any bounded ω̂ is an exact change of gauge.</p>
+
+<h2 id="noise">Noise in a stiff band</h2>
+<p>With KWT the phase modes of the lattice are s ≈ 8–23 times faster, and thermal noise excites them at the scale of the mesh. A kick
+added after the stages over-heats them, by a factor 2|z|/(1 − R²) for a mode with z = λdt and stability function R. Even when the run
+stayed finite, the equilibrium came out wrong. So with noise a KWT band steps in log-polar form: its increments, the frame term and
+the combination of its stages act on the phase as rotations, and the frame rate is smoothed. Its phase kick enters the first RKC stage
+(SK-ROCK: Abdulle, Almuslimani and Vilmart, 2018), and its amplitude kick is polar, with the drift \( \tilde T/(2\Gamma dV\rho s^3) \).
+The equilibrium ⟨|Ψ|²⟩ with KWT then matches the one without KWT, which it must, because the Gibbs measure does not depend on the
+mobility:</p>
+<ul>
+<li>within 1.2 % at T̃ = 10<sup>−3</sup>;</li>
+<li>at T̃ = 10<sup>−2</sup>, the stiff π band comes out 5–10 % high at the production step. That is the integrator on its stiffest
+modes, and it goes away when the step resolves them.</li>
+</ul>
+<p>RKL stages with noise and KWT are refused, because their equilibrium is biased.</p>
+
+<h2 id="repro">Reproducibility</h2>
+<ul>
+<li><strong>To the bit.</strong> With the new terms off, release 2.0 reproduces release 1.2 state by state, to the bit with the Haswell
+kernels of OpenBLAS (any x86 machine with AVX2), and to 10<sup>−10</sup> on other kernels. Verdicts and counts are exact either way.</li>
+<li><strong>Stop and resume.</strong> A checkpoint per closed point carries the state and the whole ladder: the solver's last solutions,
+the noise stream, the temperature, the open-boundary ramp. A stopped run resumes to the bit.</li>
+<li><strong>The scheme defaults travel with the run.</strong> A run folder keeps the defaults it started with
+(<code>scheme_defaults.toml</code>), so resuming, refining or filming an old run never switches its integrator in the middle of a
+ladder. A key given in the run file always wins.</li>
+<li><strong>Threads give the same bits</strong>, but no speed on a laptop: the step is limited by memory bandwidth, so a campaign runs one
+single-threaded process per physical core.</li>
+</ul>
+<div class="pn"><a href="theory.html">← Model</a><a href="protocol.html">Protocol →</a></div>
+</article></main>
+<aside class="toc" aria-label="On this page"><p>On this page</p><ul><li><a href="#lattice">The lattice</a></li><li><a href="#bands">The band update</a></li><li><a href="#field">The field update</a></li><li><a href="#step">The time step</a></li><li><a href="#stages">Stabilised stages</a></li><li><a href="#frame">The rotating frame</a></li><li><a href="#noise">Noise in a stiff band</a></li><li><a href="#repro">Reproducibility</a></li></ul></aside>
+</div>
+<footer>© 2026 Jorge Alfredo Robles Calderón · Universidad Nacional de Colombia · MIT License · <a href="https://github.com/georgeotjg/juliaTDGL">github.com/georgeotjg/juliaTDGL</a></footer>
+<script>
+(() => {
+  const b = document.getElementById('theme'), root = document.documentElement, order = ['', 'light', 'dark'];
+  const show = () => { const t = root.dataset.theme || ''; b.textContent = t === 'light' ? '☀' : t === 'dark' ? '☾' : '◐';
+                       b.title = 'Theme: ' + (t || 'system') + ' (click to change)'; };
+  b.addEventListener('click', () => {
+    const t = order[(order.indexOf(root.dataset.theme || '') + 1) % order.length];
+    if (t) root.dataset.theme = t; else delete root.dataset.theme;
+    try { t ? localStorage.setItem('theme', t) : localStorage.removeItem('theme'); } catch (e) {}
+    show();
+  });
+  show();
+})();
+</script>
+<script>
+(() => {
+  const links = [...document.querySelectorAll('aside.toc a')]; if (!links.length) return;
+  const heads = links.map(a => document.getElementById(a.hash.slice(1))).filter(Boolean);
+  const lit = () => {
+    let cur = heads[0];
+    for (const h of heads) if (h.getBoundingClientRect().top < 120) cur = h;
+    if (innerHeight + scrollY >= document.body.scrollHeight - 4) cur = heads[heads.length - 1];
+    links.forEach(a => a.classList.toggle('on', a.hash === '#' + cur.id));
+  };
+  addEventListener('scroll', lit, { passive: true }); addEventListener('resize', lit); lit();
+})();
+</script>
+</body>
+</html>

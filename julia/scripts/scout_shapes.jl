@@ -12,7 +12,7 @@
 #   --mirror       also run the mirror (CUSTOM_REF) of every shape: η must change sign
 #
 # Fixed: production box 40×24×6, dx = 0.5, κ = 2, ξπ/ξσ = 1.30, γ12 = 1e-3, self-field injection,
-# Strict. Each shape writes to julia/runs/scout/<name>/; the ranking goes to julia/runs/scout/RANKING.txt.
+# the default scheme and mode (prod, Fast). Each shape writes to julia/runs/scout/<name>/; the ranking goes to julia/runs/scout/RANKING.txt.
 #
 # What the numbers are. On these short windows a slow onset carries few crossings, so two readings
 # are printed:
@@ -73,7 +73,7 @@ for shp in o["shapes"], geom in (o["mirror"] ? ("CUSTOM", "CUSTOM_REF") : ("CUST
                  eps_conv=1e-5, selftest=false, snap_every=1, verbose=false, use_threads=false,
                  out_dir=joinpath(root, name), run_tag=name)
     t0 = time()
-    sde = run_case(cfg; mode=Strict())
+    sde = run_case(cfg)
     tc = sde.p.dt * sde.p.lMax
     tp = sde.pos.m_arr .* tc; tn = sde.neg.m_arr .* tc
     # the rule needs the second-half rate of every point (V_arr of a fixed point is its last 40 cycles)

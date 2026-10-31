@@ -1,5 +1,72 @@
 # Changelog
 
+## 2.0.0 (2026-10-20; updated 2026-10-30)
+
+Release 2.0 is complete in its scope (the sculpted sample was the last item, and a material per region came after it); apart
+from it, a GPU port is planned. The tag `v2.0.0` follows it.
+
+**30-oct.** A documentation site (`docs/`, on GitHub Pages): the two formalisms, the numerics, the measuring protocol,
+examples, tools, validation, performance, every key of a run file and the citations. Release 2.0 (`tdgl2/`): a material of the
+catalogue in `[materials.<name>]` (`file = "<name>.toml"`); the down branch of a run (`scripts/hysteresis.jl`: from the state
+its ladder ended in, the currents walked back down; the retrapping bracket and the width Ic − Ir) and the magnetisation loop
+(`scripts/mh.jl`: M(H) at a fixed current, 0 → H → 0, with the vortex count of each band). The shape editor suggests the
+material catalogue and drafts the run file of a shape. Later that day: both scripts stop and resume to the bit, and the terminal
+menu launches them; one-band Nb, NbN and a-MoGe in the catalogue, then a three-band model that breaks time reversal and an iron-based s± model; fixed: a passive band (condensed by the coupling) made the step
+of the clean MgB₂ file negative (the other models keep their bits); the site has a light/dark switch. In the evening, fixed: with KWT the heat source counted the dissipation of a
+turning phase √(1 + γ̃²|Ψ|²) times over (the TDGL form Γ|Ψ̇|²); it is now the dissipation of the functional with KWT (runs with heat
+and KWT heated too fast; without KWT nothing changes). Details in
+[`tdgl2/CHANGELOG.md`](tdgl2/CHANGELOG.md).
+
+**26-oct.** Release 2.0 (`tdgl2/`): a material per region (`material = "name"` on a shape region, `[materials.<name>]` tables
+in the run file, a barrier transparency; `tdgl2/examples/bicapa_tunel.toml`, a tunnel-coupled bilayer). Damped
+Runge–Kutta–Chebyshev stages and a field-solver tolerance of 1e-8 are the defaults (−6 % and −10 % per step with KWT at γ̃ = 10
+and 30; −41 % per step with the insulating padding; the same brackets); a run folder keeps the defaults it started with, and
+`rkl = true`, `pcg_tol = 1e-11` give the runs made before. The shape editor writes, draws and checks materials (a colour per
+material in its three views, its 3D model and its legend; a material region breaks a symmetry as an f does), and the 3D films
+tint each material. Later that day: σ_n per region, `qp_exchange` with materials, a one-band metal next to a two-band
+superconductor (`absent`), noise, anisotropic bands and heat per material; the insulating solve starts from the extrapolation of
+the last two steps with a single-precision preconditioner (−55 % per step on the nanowire; the defaults). Thermal noise with KWT fixed: it
+diverged on the two-band box at κ = 2, and when finite its equilibrium was wrong; a KWT band with noise now steps in log-polar form
+with the phase kick inside the stages (SK-ROCK), its equilibrium within 1.2 % of the one without KWT at T̃ = 1e-3 (the stiff π band
++5–10 % at T̃ = 1e-2 at the production step). Details in [`tdgl2/CHANGELOG.md`](tdgl2/CHANGELOG.md).
+
+**23-oct.** Release 2.0 (`tdgl2/`): two normal fluids with a finite interband quasiparticle exchange (`qp_exchange`; the
+slaved branch imbalance of each band, with KWT, and its exchange), anisotropic bands (a mass per axis), thermal (Langevin)
+noise; all off by default, and off they keep the bits. Fixed: the two polarities launched together could race for the run
+file; resuming left duplicate rows in the menu history; in `julia/`, a run with the scalar potential reset a `dt_scale` the
+run had set. Later the same day: normal fluids per band with any number of bands (`qp_exchange` as a matrix of rates with
+detailed balance; with two bands it gives the two-band result to rounding), and thermal noise with KWT (the kick scaled by the
+Ψ-dependent mobility, with its Itô drift). The launch wizard of the terminal menu recommends release 2.0. In the evening: a
+sculpted sample (a shape with `vacuum = true`: a free surface, the insulating padding and the leads follow the sample's
+section; `tdgl2/examples/cable_k2.toml`), shape figures on any face (`axis`) and kept figures (`outside`), and the shape editor
+draws figures on its three views (before, only on the top one), with the work face starting through the sample. Details in
+[`tdgl2/CHANGELOG.md`](tdgl2/CHANGELOG.md).
+
+**21-oct.** The two-band package (`julia/`, metadata 1.3.0) runs the production scheme and the Fast mode by default: `Config(...)`
+is what `Config(:prod; ...)` was, and `run_case` takes `mode=Fast()`. `Config(:legacy; ...)` with `mode=Strict()` is the
+explicit scheme of 1.0.0 to the digit (the tests and the scripts of the published runs ask for it). A run with the scalar
+potential switches to the explicit scheme by itself, with a note, instead of an error. Suite 56 387/56 387.
+
+Release 2.0 (`tdgl2/`): the onset by the delay works with the heat model; `sigma_vac` for the insulating buffer in a run
+file; run files for every option in `tdgl2/examples/`; its README says what each release has and what each option costs.
+The launch wizard of the terminal menu launches the same run with release 2.0 (key `l`, then `2`); `dt_scale = 1` is
+validated with KWT for onsets. Details in [`tdgl2/CHANGELOG.md`](tdgl2/CHANGELOG.md).
+
+**20-oct.** A new release of the package, in `tdgl2/`, next to release 1.2.0 (`julia/`), which stays to reproduce the
+published work. Its changes are in [`tdgl2/CHANGELOG.md`](tdgl2/CHANGELOG.md) and its guide is
+`docs/solver_guide_2.pdf`. In short: N bands with a Josephson matrix; Kramer–Watts-Tobin relaxation per
+band; Runge–Kutta–Legendre stages and a rotating frame for the stiff bands; self-field boundaries `:bar`
+(default) and `:open`; an insulating buffer; the onset by the delay of the first phase slip and a verdict
+for a sample gone normal; runs from TOML files with a JSON summary, stopped and resumed to the bit, with the two
+polarities in one process or in two. With the new terms off and the boundary
+of 1.x it reproduces 1.2.0 (to the bit on OpenBLAS's Haswell kernels, to 1e-10 elsewhere). Julia 1.13 or
+later.
+
+Around it: the terminal menu launches, lists, stops and resumes runs of 2.0 (keys `n`, `s`, `u`), no longer fails on a letter with an
+accent erased by Backspace, reads dragged `file://` paths with accents, and redraws itself when the terminal changes size (a
+window maximized right after it opens stayed narrow, or black until a key on some Wayland terminals); the guide of 1.2 carries the
+release, not a date; GitHub Actions runs the suite of 2.0 on every push.
+
 ## 1.2.0 (2026-10-13)
 
 Same solver and the same results as 1.1.0: the test suite reproduces its reference states to the

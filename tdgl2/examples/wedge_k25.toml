@@ -1,0 +1,26 @@
+# The two-band notched box at kappa = 25 and H = 0.03 Hc2, one short ladder per polarity.
+#   OPENBLAS_NUM_THREADS=1 julia --project=tdgl2 tdgl2/scripts/run.jl tdgl2/examples/wedge_k25.toml
+[material]
+file = "mgb2_model_II.toml"
+
+[mesh]
+nx = 40
+ny = 24
+nz = 6
+dx = 0.5
+buf = 1
+
+[geometry]
+GEOM_MODE = "WEDGE"
+
+[scheme]
+dt_scale = 0.5            # the production scheme is the default; listed for clarity
+
+[protocol]
+t_min_GL = 400.0
+t_min_GL_res = 1584.0
+
+[run]
+J = [0.30, 0.34, 0.38, 0.42]
+H = 0.03
+out_dir = "tdgl2/runs/wedge_k25"

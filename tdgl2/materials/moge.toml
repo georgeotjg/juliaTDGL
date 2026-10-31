@@ -1,0 +1,22 @@
+# Amorphous MoGe film (a-Mo_xGe_1-x, x ~ 0.75-0.8): one-band GL in the units of the code (g = Gamma = a = beta = 1; lengths xi,
+# times xi^2/D, H in Hc2).  An extreme dirty-limit, weakly pinning superconductor, common in vortex and diode experiments:
+# lambda(0) ~ 0.5 um against xi(0) ~ 5 nm, kappa of order 100.  As for NbN, a box of a few tens of xi barely screens the field.
+name = "a-MoGe, dirty film, one band"
+regime = "extreme dirty one-band GL near Tc; kappa of order 100 (lambda ~ 0.46-0.5 um, xi ~ 4.4-5 nm); weak pinning"
+kappa = 100.0         # replace with the sample's
+sigma_n = "dirty"     # u = Gamma/sigma_n = 5.79
+T = 0.0
+
+[[band]]
+name = "MoGe"
+g = 1.0
+Gamma = 1.0
+a = 1.0
+beta = 1.0
+gamma_kwt = 0.0       # KWT: 2 tau_E Delta/hbar = 3.04 tau_E[ps] Delta[meV]; no tau_E fixed here
+
+[sources]
+lambda_xi = "Mo_0.75Ge_0.25: xi(0) ~ 5 nm, lambda(0) ~ 0.5 um (dirty-limit estimates), arXiv:1905.01045; Mo_0.8Ge_0.2 rings: lambda(0) ~ 0.46 um, xi(0) ~ 4.4 nm, arXiv:1905.10753"
+kappa = "lambda/xi from the line above: ~100 (an estimate)"
+Tc_thickness = "Tc against thickness: Graybeal and Beasley, PRB 29, 4167 (1984)"
+sigma_n = "dirty BCS: sigma_n = sum g Gamma/beta / 5.79 (model.jl, sigma_dirty)"

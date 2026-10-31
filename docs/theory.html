@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The model · juliaTDGL</title>
+<meta name="description" content="juliaTDGL: three-dimensional multiband time-dependent Ginzburg-Landau solvers in Julia for the geometric superconducting diode effect.">
+<link rel="icon" href="img/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="style.css">
+<script>try { const t = localStorage.getItem('theme'); if (t) document.documentElement.dataset.theme = t; } catch (e) {}</script>
+<script>window.MathJax = { tex: { inlineMath: [['\\(', '\\)']], displayMath: [['\\[', '\\]']] }, chtml: { displayAlign: 'left' } };</script>
+<script defer src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="top">
+<a class="name" href="index.html"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 566 140" role="img" class="wm" aria-labelledby="wm-t"><title id="wm-t">juliaTDGL: the four dots of the Julia logo as vortices over the j and the i</title><path class="k" d="M28.0625 47.5H44.84375V99.0625Q44.84375 109.609375 39.78125 115.1640625Q34.71875 120.71875 25.109375 120.71875H16.8125V109.703125H19.71875Q24.5 109.703125 26.28125 107.546875Q28.0625 105.390625 28.0625 99.0625Z"/><path class="k" d="M61.40625 79.5625V47.5H78.28125V52.75Q78.28125 57.015625 78.234375 63.4609375Q78.1875 69.90625 78.1875 72.0625Q78.1875 78.390625 78.515625 81.1796875Q78.84375 83.96875 79.640625 85.234375Q80.671875 86.875 82.3359375 87.765625Q84.0 88.65625 86.15625 88.65625Q91.40625 88.65625 94.40625 84.625Q97.40625 80.59375 97.40625 73.421875V47.5H114.1875V100.0H97.40625V92.40625Q93.609375 97.0 89.3671875 99.1796875Q85.125 101.359375 80.015625 101.359375Q70.921875 101.359375 66.1640625 95.78125Q61.40625 90.203125 61.40625 79.5625Z"/><path class="k" d="M131.3125 27.0625H148.09375V100.0H131.3125Z"/><path class="k" d="M165.21875 47.5H182.0V100.0H165.21875Z"/><path class="k" d="M222.65625 76.375Q217.40625 76.375 214.7578125 78.15625Q212.109375 79.9375 212.109375 83.40625Q212.109375 86.59375 214.2421875 88.3984375Q216.375 90.203125 220.171875 90.203125Q224.90625 90.203125 228.140625 86.8046875Q231.375 83.40625 231.375 78.296875V76.375ZM248.296875 70.046875V100.0H231.375V92.21875Q228.0 97.0 223.78125 99.1796875Q219.5625 101.359375 213.515625 101.359375Q205.359375 101.359375 200.2734375 96.6015625Q195.1875 91.84375 195.1875 84.25Q195.1875 75.015625 201.5390625 70.703125Q207.890625 66.390625 221.484375 66.390625H231.375V65.078125Q231.375 61.09375 228.234375 59.2421875Q225.09375 57.390625 218.4375 57.390625Q213.046875 57.390625 208.40625 58.46875Q203.765625 59.546875 199.78125 61.703125V48.90625Q205.171875 47.59375 210.609375 46.9140625Q216.046875 46.234375 221.484375 46.234375Q235.6875 46.234375 241.9921875 51.8359375Q248.296875 57.4375 248.296875 70.046875Z"/><path class="b" d="M257.3125 30.015625H321.8125V43.65625H298.609375V100.0H280.5625V43.65625H257.3125Z"/><path class="b" d="M350.1875 43.65625V86.359375H356.65625Q367.71875 86.359375 373.5546875 80.875Q379.390625 75.390625 379.390625 64.9375Q379.390625 54.53125 373.578125 49.09375Q367.765625 43.65625 356.65625 43.65625ZM332.140625 30.015625H351.171875Q367.109375 30.015625 374.9140625 32.2890625Q382.71875 34.5625 388.296875 40.0Q393.21875 44.734375 395.609375 50.921875Q398.0 57.109375 398.0 64.9375Q398.0 72.859375 395.609375 79.0703125Q393.21875 85.28125 388.296875 90.015625Q382.671875 95.453125 374.796875 97.7265625Q366.921875 100.0 351.171875 100.0H332.140625Z"/><path class="b" d="M475.734375 94.796875Q468.984375 98.078125 461.71875 99.71875Q454.453125 101.359375 446.71875 101.359375Q429.234375 101.359375 419.015625 91.5859375Q408.796875 81.8125 408.796875 65.078125Q408.796875 48.15625 419.203125 38.453125Q429.609375 28.75 447.703125 28.75Q454.6875 28.75 461.0859375 30.0625Q467.484375 31.375 473.15625 33.953125V48.4375Q467.296875 45.109375 461.5078125 43.46875Q455.71875 41.828125 449.90625 41.828125Q439.125 41.828125 433.2890625 47.8515625Q427.453125 53.875 427.453125 65.078125Q427.453125 76.1875 433.078125 82.234375Q438.703125 88.28125 449.0625 88.28125Q451.875 88.28125 454.2890625 87.9296875Q456.703125 87.578125 458.625 86.828125V73.234375H447.609375V61.140625H475.734375Z"/><path class="b" d="M492.625 30.015625H510.671875V86.359375H542.359375V100.0H492.625Z"/><g fill="none" stroke="#4063D8" stroke-linecap="round"><path d="M36.5 21.0 a9.0 9.0 0 1 1 -8.50 6.20" stroke-width="3.0"/><path d="M36.5 15.0 a15.0 15.0 0 1 1 -14.29 10.39" stroke-width="2.6" opacity="0.5"/></g><circle cx="36.5" cy="30" r="5.2" fill="#4063D8"/><g fill="none" stroke="#389826" stroke-linecap="round"><path d="M173.6 6.4 a5.6 5.6 0 1 1 -5.27 3.84" stroke-width="2.1"/><path d="M173.6 2.7 a9.3 9.3 0 1 1 -8.86 6.44" stroke-width="1.8" opacity="0.5"/></g><circle cx="173.6" cy="12" r="3.2" fill="#389826"/><g fill="none" stroke="#CB3C33" stroke-linecap="round"><path d="M163.6 23.4 a5.6 5.6 0 1 1 -5.27 3.84" stroke-width="2.1"/><path d="M163.6 19.7 a9.3 9.3 0 1 1 -8.86 6.44" stroke-width="1.8" opacity="0.5"/></g><circle cx="163.6" cy="29" r="3.2" fill="#CB3C33"/><g fill="none" stroke="#9558B2" stroke-linecap="round"><path d="M183.6 23.4 a5.6 5.6 0 1 1 -5.27 3.84" stroke-width="2.1"/><path d="M183.6 19.7 a9.3 9.3 0 1 1 -8.86 6.44" stroke-width="1.8" opacity="0.5"/></g><circle cx="183.6" cy="29" r="3.2" fill="#9558B2"/></svg></a><span class="ver">v2.0.0</span>
+<button class="theme" id="theme" type="button" title="Theme: system, light or dark">◐</button>
+<a class="gh" href="https://github.com/georgeotjg/juliaTDGL">GitHub</a>
+</header>
+<details class="menu"><summary>Contents</summary>
+<ul>
+<li><a href="index.html">Home</a>
+</li>
+<li><a href="getting-started.html">Start</a>
+</li>
+<li class="here"><a href="theory.html">Model</a>
+<ul class="sub"><li><a href="#diode">The diode</a></li><li><a href="#two">Two formalisms</a></li><li><a href="#r12">Release 1.2, two bands</a></li><li><a href="#r20">Release 2.0, N bands</a></li><li><a href="#kwt">Relaxation (KWT)</a></li><li><a href="#fluids">Normal fluids per band</a></li><li><a href="#noise">Thermal noise</a></li><li><a href="#terms">Heat, drag, anisotropy</a></li><li><a href="#materials">Materials per region</a></li><li><a href="#shapes">Shapes and vacuum</a></li><li><a href="#field">The self-field</a></li><li><a href="#regime">Units, regime, validity</a></li><li><a href="#notin">Not in the model</a></li></ul>
+</li>
+<li><a href="numerics.html">Numerics</a>
+</li>
+<li><a href="protocol.html">Protocol</a>
+</li>
+<li><a href="examples.html">Examples</a>
+</li>
+<li><a href="tools.html">Tools</a>
+</li>
+<li><a href="validation.html">Validation</a>
+</li>
+<li><a href="performance.html">Performance</a>
+</li>
+<li><a href="reference.html">Reference</a>
+</li>
+<li><a href="publications.html">Publications</a>
+</li>
+</ul>
+</details>
+<div class="wrap">
+<nav class="side" aria-label="Contents">
+<ul>
+<li><a href="index.html">Home</a>
+</li>
+<li><a href="getting-started.html">Start</a>
+</li>
+<li class="here"><a href="theory.html">Model</a>
+</li>
+<li><a href="numerics.html">Numerics</a>
+</li>
+<li><a href="protocol.html">Protocol</a>
+</li>
+<li><a href="examples.html">Examples</a>
+</li>
+<li><a href="tools.html">Tools</a>
+</li>
+<li><a href="validation.html">Validation</a>
+</li>
+<li><a href="performance.html">Performance</a>
+</li>
+<li><a href="reference.html">Reference</a>
+</li>
+<li><a href="publications.html">Publications</a>
+</li>
+</ul>
+</nav>
+<main><article>
+<h1>The model</h1>
+<p class="lead">The equations each release integrates, term by term, in the units of the code.</p>
+
+<h2 id="diode">The diode</h2>
+<p>A transport current J along x and a field H along z push vortices along y (the Lorentz force J × B). A sample whose shape is not
+mirror-symmetric in y, a notch on one face for instance, presents different barriers to vortex entry for +J and −J: the onsets of
+dissipation differ, and the efficiency</p>
+\[ \eta = \frac{I_c^{+} - |I_c^{-}|}{I_c^{+} + |I_c^{-}|} \]
+<p>is non-zero. If the sample is symmetric under y → −y the two polarities are the same run mirrored and η = 0 exactly; the solver
+reproduces that to machine precision, which makes it a control of every asymmetric result.</p>
+<figure class="svg"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 300" role="img" aria-labelledby="st" font-family="system-ui, sans-serif" font-size="15">
+  <title id="st">The simulated box seen from above: the sample with a notch on its face y1, the buffer around it, the contacts at x1 and x2, the current along x and the field along z</title>
+  <rect x="40" y="30" width="560" height="220" fill="none" stroke="currentColor" stroke-dasharray="6 5" opacity="0.55"/>
+  <text x="50" y="50" fill="currentColor" opacity="0.7">buffer (normal metal or insulator)</text>
+  <path d="M90 70 H550 V210 H344 L320 168 L296 210 H90 Z" fill="currentColor" fill-opacity="0.12" stroke="currentColor" stroke-width="2.5"/>
+  <rect x="90" y="70" width="36" height="140" fill="currentColor" fill-opacity="0.28"/>
+  <rect x="514" y="70" width="36" height="140" fill="currentColor" fill-opacity="0.28"/>
+  <text x="108" y="235" text-anchor="middle" fill="currentColor">contact x1</text>
+  <text x="532" y="235" text-anchor="middle" fill="currentColor">contact x2</text>
+  <text x="320" y="268" text-anchor="middle" fill="currentColor">notch on the face y1 (f = 0 inside)</text>
+  <path d="M320 205 V255" stroke="currentColor" stroke-width="1" opacity="0.6"/>
+  <g stroke="#4063D8" stroke-width="3" fill="#4063D8">
+    <path d="M170 110 H440"/><path d="M440 110 l-14 -7 v14 z"/>
+  </g>
+  <text x="300" y="100" text-anchor="middle" fill="#4063D8">J (transport current, x)</text>
+  <circle cx="470" cy="150" r="12" fill="none" stroke="#CB3C33" stroke-width="2.5"/><circle cx="470" cy="150" r="3" fill="#CB3C33"/>
+  <text x="490" y="155" fill="#CB3C33">H (z)</text>
+  <g stroke="currentColor" stroke-width="2" fill="currentColor">
+    <path d="M14 286 H54"/><path d="M54 286 l-8 -4 v8 z"/><path d="M14 286 V250"/><path d="M14 250 l-4 8 h8 z"/>
+  </g>
+  <text x="58" y="291" fill="currentColor">x</text><text x="20" y="252" fill="currentColor">y</text>
+  <text x="140" y="165" fill="currentColor" opacity="0.8">+J: vortices enter at y1, from the tip</text>
+</svg>
+<figcaption>The box: the sample, its contacts at x1 and x2 (where the current enters as normal current), the buffer around it, and a
+notch on the face y1, where vortices enter for +J.</figcaption></figure>
+
+<h2 id="two">Two formalisms</h2>
+<p>Both releases integrate relaxational Ginzburg–Landau dynamics on the same lattice, in the same units, with the same measuring
+protocol. They differ in what the order parameters are coupled to.</p>
+<table>
+<tr><th></th><th>release 1.2</th><th>release 2.0</th></tr>
+<tr><td>order parameters</td><td>two (σ and π), Josephson-coupled</td><td>N, coupled by a symmetric Josephson matrix; passive bands allowed</td></tr>
+<tr><td>relaxation</td><td>TDGL, one rate per band</td><td>generalised TDGL: Kramer–Watts-Tobin per band</td></tr>
+<tr><td>gauge and potential</td><td>Φ = 0, or a scalar potential by Coulomb projection, with Thomas–Fermi screening</td><td>Φ = 0; the charge imbalance enters through KWT and the normal fluids</td></tr>
+<tr><td>normal current</td><td>one fluid, σ<sub>n</sub> = 1</td><td>one fluid, or one per band with a finite interband exchange</td></tr>
+<tr><td>beyond the bands</td><td>heat, drag, bath temperature</td><td>the same, plus thermal noise, anisotropy, materials per region, vacuum</td></tr>
+</table>
+
+<h2 id="r12">Release 1.2: two-band TDGL</h2>
+<p>The free energy is the two-component Ginzburg–Landau functional with an interband Josephson coupling,</p>
+\[ \mathcal F = \sum_{a=\sigma,\pi}\Big[\frac{1}{m_a}\big|(\nabla-i\mathbf A)\Psi_a\big|^2 - f\alpha_a|\Psi_a|^2 + \frac12|\Psi_a|^4\Big]
+   - \gamma_{12}\big(\Psi_\sigma^*\Psi_\pi + \mathrm{c.c.}\big) + \kappa^2|\nabla\times\mathbf A|^2 , \]
+<p>with m<sub>σ</sub> = 1 and m<sub>π</sub> = m<sub>r</sub> (the functional of release 2.0 below with two bands and β = 1). Lengths are in
+the σ coherence length ξ<sub>σ</sub>, fields in H<sub>c2</sub> of σ, time in t<sub>GL</sub>. In the gauge Φ = 0 the dynamics is
+relaxational:</p>
+\[ \partial_t\Psi_\sigma = (\nabla-i\mathbf A)^2\Psi_\sigma + \big(f\alpha_\sigma - |\Psi_\sigma|^2\big)\Psi_\sigma + \gamma_{12}\Psi_\pi , \]
+\[ \Gamma_r\,\partial_t\Psi_\pi = \frac{1}{m_r}(\nabla-i\mathbf A)^2\Psi_\pi + \big(f\alpha_\pi - |\Psi_\pi|^2\big)\Psi_\pi + \gamma_{12}\Psi_\sigma , \]
+\[ \partial_t\mathbf A = \mathbf J_s - \kappa^2\nabla\times\nabla\times\mathbf A, \qquad
+   \mathbf J_s = \mathrm{Im}\big[\Psi_\sigma^*(\nabla-i\mathbf A)\Psi_\sigma\big] + \frac{1}{m_r}\mathrm{Im}\big[\Psi_\pi^*(\nabla-i\mathbf A)\Psi_\pi\big], \]
+<p>with α<sub>σ</sub> = 1 − T, α<sub>π</sub> = a<sub>2n</sub> − T and f(r) the condensation mask of the geometry. The coherence-length
+ratio fixes the mass ratio, \( R = \xi_\pi/\xi_\sigma = 1/\sqrt{m_r a_{2n}} \), and the π band's upper critical field is
+H<sub>c2</sub>/R²: a π band with a long coherence length is normal at the fields where vortices enter.</p>
+<p><strong>The scalar potential.</strong> With <code>use_phi = true</code> each step projects the link increment onto its divergence-free
+part, \( D(G\Phi) = D\delta \) with G the lattice gradient and D its adjoint: the Coulomb gauge. Φ alone is a choice of gauge (the
+same |Ψ|, field and voltage as Φ = 0). Two extensions change the physics. Thomas–Fermi screening replaces DG by DG − λ<sub>TF</sub><sup>−2</sup>.
+A relaxing charge-imbalance field Q follows the projection residual, \( \tau_Q\,dQ/dt + Q = D\delta' \), and rotates the
+order parameters with μ = Φ + Q.</p>
+
+<h2 id="r20">Release 2.0: N-band generalised TDGL</h2>
+<p>Lengths are in ξ<sub>1</sub>, the coherence length of band 1, time in t<sub>GL</sub> = ξ<sub>1</sub>²/D<sub>1</sub>, fields in
+H<sub>c2</sub> of band 1; band 1 has unit stiffness and relaxation. The functional is</p>
+\[ F = \sum_\mu\Big[g_\mu|\mathbf D\Psi_\mu|^2 - f\varepsilon_\mu|\Psi_\mu|^2 + \frac{\beta_\mu}{2}|\Psi_\mu|^4\Big]
+   - \sum_{\mu<\nu}\gamma_{\mu\nu}\big(\Psi_\mu^*\Psi_\nu + \mathrm{c.c.}\big) + \kappa^2|\nabla\times\mathbf A|^2, \]
+<p>with D = ∇ − iA, ε<sub>μ</sub> = a<sub>μ</sub> − T and g<sub>μ</sub> = 1/m<sub>μ</sub>. The sign of γ<sub>μν</sub> picks the interband
+phase (s<sub>++</sub> for γ &gt; 0, s<sub>±</sub> for γ &lt; 0); with three or more bands and repulsive couplings the phases frustrate
+and the ground state can break time reversal. For each band, in the gauge Φ = 0,</p>
+\[ \frac{\Gamma_\mu}{\sqrt{1+\tilde\gamma_\mu^2|\Psi_\mu|^2}}\Big[\partial_t\Psi_\mu + \tilde\gamma_\mu^2\,\Psi_\mu\,\mathrm{Re}\big(\Psi_\mu^*\partial_t\Psi_\mu\big)\Big]
+   = g_\mu\mathbf D^2\Psi_\mu + \big(f\varepsilon_\mu - \beta_\mu|\Psi_\mu|^2\big)\Psi_\mu + \sum_{\nu\neq\mu}\gamma_{\mu\nu}\Psi_\nu , \]
+<p>and for the field</p>
+\[ \sigma_n\,\partial_t\mathbf A = \sum_\mu \mathbf J_\mu - \kappa^2\nabla\times\nabla\times\mathbf A, \qquad
+   \mathbf J_\mu = g_\mu\,\mathrm{Im}\big(\Psi_\mu^*\mathbf D\Psi_\mu\big), \qquad \mathbf E = -\partial_t\mathbf A . \]
+<p>The divergence of the field equation gives ∇·(J<sub>s</sub> + σ<sub>n</sub>E) = 0 in the continuum and on the lattice, so no
+Poisson problem is solved. With γ̃<sub>μ</sub> = 0 the band equation is the TDGL of release 1.2, and the regression tests compare the
+two releases state by state.</p>
+
+<h2 id="kwt">Relaxation and charge imbalance</h2>
+<p>The Kramer–Watts-Tobin factor slows the amplitude of a band by \( \sqrt{1+\tilde\gamma^2|\Psi|^2} \) relative to its phase: the
+form of Kramer and Watts-Tobin for one band, applied band by band. In the gauge Φ = 0 the electrochemical potential of the
+condensate is the rate at which its phase turns. The current enters as normal current, and in the layers next to the contacts it
+converts into supercurrent; there the phase of a stationary state turns, and KWT lengthens these conversion layers. That is the
+charge imbalance of Gurevich and Vinokur, slaved to the condensate. Its length is</p>
+\[ \lambda_c^2 = \frac{\sigma_n}{\sum_\mu \tilde\Gamma_\mu|\Psi_\mu|^2}, \qquad \tilde\Gamma_\mu = \frac{\Gamma_\mu}{\sqrt{1+\tilde\gamma_\mu^2|\Psi_\mu|^2}} , \]
+<p>from 0.80 ξ<sub>1</sub> to 2.39 ξ<sub>1</sub> with γ̃ = 10 in the two-band notched-box model at κ = 2. A sample shorter than about ten
+λ<sub>c</sub> still carries unconverted normal current in its middle, which moves an onset by itself; every run reports L/λ<sub>c</sub>.</p>
+
+<h2 id="fluids">Normal fluids per band</h2>
+<p>With one normal current σ<sub>n</sub>E the quasiparticles of every band share one potential: their interband exchange is infinitely
+fast. With a finite rate ν (<code>qp_exchange</code>) each band has its own normal current
+\( s_\mu\sigma_n(-\nabla\mu_\mu - \partial_t\mathbf A) \), s<sub>μ</sub> its share of σ<sub>n</sub>, and the bands exchange with a
+conductance G = χ<sub>σ</sub>ν. In the gauge Σ s<sub>μ</sub>μ<sub>μ</sub> = 0 Ampère's law is unchanged and one field is new,
+δ = μ<sub>π</sub> − μ<sub>σ</sub>:</p>
+\[ \sigma_n\nabla^2\delta - G\Big(\frac{1}{s_\sigma}+\frac{1}{s_\pi}\Big)\delta = \frac{C_\pi}{s_\pi} - \frac{C_\sigma}{s_\sigma}, \qquad C_\mu = \mathrm{Im}\big(\Psi_\mu^* R_\mu\big), \]
+<p>with C<sub>μ</sub> the conversion of band μ, δ = 0 at the contacts and zero flux elsewhere. Each band then turns by
+e<sup>−iμ<sub>μ</sub>dt</sup>. With N bands the rates form a matrix with detailed balance and the problem splits into N Helmholtz problems
+of the same kind. In a long strip the σ share of the converted current follows the one-dimensional two-fluid law.</p>
+
+<h2 id="noise">Thermal noise</h2>
+<p>A Langevin term on every band, \( \langle\eta_\mu\eta_\mu^*\rangle = 2\Gamma_\mu\tilde T\,\delta(\mathbf r-\mathbf r')\delta(t-t') \), so that
+the discrete system is distributed as e<sup>−F/T̃</sup>; T̃ = k<sub>B</sub>T/(μ<sub>0</sub>H<sub>c</sub>²ξ³) in the units of the functional.
+With KWT the mobility depends on Ψ,</p>
+\[ M = \frac{s}{\Gamma}\,I - \frac{\tilde\gamma^2}{\Gamma s}\,\psi\psi^{\mathsf T}, \qquad s = \sqrt{1+\tilde\gamma^2|\Psi|^2}, \]
+<p>with the Itô drift that keeps the same equilibrium. The same bath can act on the field (<code>noise_field</code>): each link takes a
+kick of variance T̃dt/(σ<sub>l</sub>dV) before the implicit solve. The stream is seeded, saved in the checkpoints, and a resumed run
+gives the same bits. How the noise enters the stiff KWT phase modes is a question of the integrator, not of the model:
+<a href="numerics.html#noise">The numerics</a>.</p>
+
+<h2 id="terms">Heat, drag, anisotropy</h2>
+<ul>
+<li><strong>Heat.</strong> A temperature field above the bath, ε<sub>μ</sub> = a<sub>μ</sub> − θ(r, t), with
+\( \partial_t\theta = D_T\nabla^2\theta + \eta\big[\sum_\mu\frac{\Gamma_\mu}{s_\mu}\big(|\partial_t\Psi_\mu|^2 + \tilde\gamma_\mu^2(\mathrm{Re}\,\Psi_\mu^*\partial_t\Psi_\mu)^2\big) + \sigma_n|\mathbf E|^2\big] - \gamma(\theta - T) \),
+s<sub>μ</sub> = √(1 + γ̃<sub>μ</sub>²|Ψ<sub>μ</sub>|²) (Γ<sub>μ</sub>|∂<sub>t</sub>Ψ<sub>μ</sub>|² without KWT). The source is the dissipation of the
+functional, the band equation times ∂<sub>t</sub>Ψ<sub>μ</sub>*, so a Meissner state does not heat; a point above the cut closes as 'T'.</li>
+<li><strong>Drag.</strong> The mixed-gradient term \( \nu_{\mu\nu}\,\mathrm{Re}\big[(\mathbf D\Psi_\mu)^*\cdot\mathbf D\Psi_\nu\big] \) of the
+functional; it changes the stiffnesses and the supercurrent carries the cross terms.</li>
+<li><strong>Anisotropic bands.</strong> A mass per axis and band in the band update, the supercurrent and the step bound: the σ band of
+MgB<sub>2</sub>, with its ab/c anisotropy.</li>
+</ul>
+
+<h2 id="materials">Materials per region</h2>
+<p>A region of the shape can be another material: its own coherence length, relaxation, condensation, KWT parameter, interband
+coupling and normal conductivity, or a band absent (a one-band metal next to a two-band superconductor). Per node the band update
+reads its material's coefficients; per link the stiffness is the harmonic mean of the two nodes, times the transparency
+t<sub>ab</sub> ∈ (0, 1] of the barrier between the two materials,</p>
+\[ \rho_{ab} = t_{ab}\,\frac{m_{\mathrm{ref}}}{(m_a+m_b)/2}\,\tau , \]
+<p>so that the current crosses an interface as a series resistance. The supercurrent, the free energy and the dissipation take the same
+weights, so the band equations and Ampère's law come from one functional. On the lattice the discrete continuity holds across an
+interface to 10<sup>−15</sup>, and the proximity length into a normal or weaker region matches the lattice solution
+\( \cosh(dx/\xi_d) = 1 + \lambda dx^2/2g \) to 4 × 10<sup>−5</sup>. κ and the bath temperature are the sample's; band μ of one material
+meets band μ of the other.</p>
+<figure><img src="img/run_psi_bilayer.png" alt="Cuts of the squared order parameter of the two bands of a tunnel-coupled bilayer: the lower slab is one material, the upper slab a weaker one, and the interface is visible in the x-z and y-z cuts">
+<figcaption>The bilayer of <code>examples/bicapa_tunel.toml</code> at J = 0: |Ψ|² of each band on the three mid cuts. The upper slab
+is a weaker material with a quarter of the diffusivity, joined through a barrier of transparency 0.2; the interface is the step in
+the x–z and y–z cuts.</figcaption></figure>
+
+<h2 id="shapes">Shapes and vacuum</h2>
+<p>The geometry enters as a condensation mask f(r) on the nodes: f = 1 in the bulk, 0 &lt; f &lt; 1 weakened, f &gt; 1 strengthened,
+f = 0 a normal metal (not a vacuum). A shape element with <code>vacuum = true</code> removes the material: its nodes leave the block,
+and the links that touch them carry no supercurrent. A node next to the vacuum reads no neighbour across that link, which is the
+zero-flux condition of a free surface. With an insulating buffer around the sample the current crosses only the sample, and a sample
+can be carved in vacuum: a nanowire, a film with a hole, slabs stacked with gaps.</p>
+
+<h2 id="field">The self-field</h2>
+<p>The transport current enters as normal current through the two contact faces, and its own Ampère field is imposed on the outer
+faces:</p>
+<ul>
+<li><code>:bar</code> (default) imposes the field of the nominal current spread over the section of the sample, so the sample carries
+J·W·d.</li>
+<li><code>:open</code> adds the free-space field of every other current of the box, from the Green function of the lattice Laplacian
+by FFT. This is the field of the screening currents that a mirror face suppresses at small κ.</li>
+<li><code>:slab</code> is the boundary of release 1.x, kept to reproduce it.</li>
+</ul>
+
+<h2 id="regime">Units, regime, validity</h2>
+<p>Every run reports the numbers that place the model:</p>
+<ul>
+<li>the ratio of band diffusivities;</li>
+<li>the interband Josephson length over the sample length, ℓ<sub>J</sub>/L;</li>
+<li>the invariant γ²/(α<sub>1</sub>α<sub>2</sub>);</li>
+<li>σ<sub>n</sub> against the dirty BCS value;</li>
+<li>L/λ<sub>c</sub>.</li>
+</ul>
+<p>Ginzburg–Landau theory holds near T<sub>c</sub> and on scales of ξ. With dx ≤ ξ/2 a vortex core is resolved, and for a box with
+flat faces a finer mesh only checks the mesh. A sample carved in vacuum with a curved surface is another matter: its surface is a
+staircase of cells, and the onset converges with the mesh, as dx². A cylinder of radius 2.75 ξ at κ = 2 switches at 0.875, 0.725
+and 0.675 J<sub>0</sub> at dx = ξ/2, ξ/3 and ξ/4, which extrapolates to 0.61: dx = ξ/2 puts its onset about 40 % high. Check a
+carved shape at two meshes before quoting an absolute onset. Below ξ the right theory is microscopic (Bogoliubov–de Gennes in the
+clean limit, Usadel in the dirty one), not a finer Ginzburg–Landau.</p>
+<p>The material files carry each parameter with its source and say which numbers are model choices. A literature KWT parameter
+γ = 2τ<sub>E</sub>Δ<sub>0</sub>/ħ becomes γ̃ = γ/|Ψ<sub>eq</sub>| in the units of the code.</p>
+
+<h2 id="notin">What the model does not include</h2>
+<ul>
+<li>The memory of the band-resolved (Schmid–Schön) charge imbalance: here it is slaved (KWT per band) with a finite interband
+exchange.</li>
+<li>A scalar potential in release 2.0. Release 1.2 keeps it.</li>
+<li>A split of σ<sub>n</sub> between the bands that changes from one material to another: it needs the scalar potential.</li>
+<li>Noise together with the heat model. The heat source would count the Langevin kicks as dissipation, so a fluctuating heat model
+consistent with T̃ is another model.</li>
+<li>Drag together with materials, and heat in a sample carved in vacuum. Both are explicit errors.</li>
+<li>An order parameter of d symmetry. All bands are s-wave; the s<sub>±</sub> state and time-reversal breaking come from the
+couplings.</li>
+</ul>
+<div class="pn"><a href="getting-started.html">← Start</a><a href="numerics.html">Numerics →</a></div>
+</article></main>
+<aside class="toc" aria-label="On this page"><p>On this page</p><ul><li><a href="#diode">The diode</a></li><li><a href="#two">Two formalisms</a></li><li><a href="#r12">Release 1.2, two bands</a></li><li><a href="#r20">Release 2.0, N bands</a></li><li><a href="#kwt">Relaxation (KWT)</a></li><li><a href="#fluids">Normal fluids per band</a></li><li><a href="#noise">Thermal noise</a></li><li><a href="#terms">Heat, drag, anisotropy</a></li><li><a href="#materials">Materials per region</a></li><li><a href="#shapes">Shapes and vacuum</a></li><li><a href="#field">The self-field</a></li><li><a href="#regime">Units, regime, validity</a></li><li><a href="#notin">Not in the model</a></li></ul></aside>
+</div>
+<footer>© 2026 Jorge Alfredo Robles Calderón · Universidad Nacional de Colombia · MIT License · <a href="https://github.com/georgeotjg/juliaTDGL">github.com/georgeotjg/juliaTDGL</a></footer>
+<script>
+(() => {
+  const b = document.getElementById('theme'), root = document.documentElement, order = ['', 'light', 'dark'];
+  const show = () => { const t = root.dataset.theme || ''; b.textContent = t === 'light' ? '☀' : t === 'dark' ? '☾' : '◐';
+                       b.title = 'Theme: ' + (t || 'system') + ' (click to change)'; };
+  b.addEventListener('click', () => {
+    const t = order[(order.indexOf(root.dataset.theme || '') + 1) % order.length];
+    if (t) root.dataset.theme = t; else delete root.dataset.theme;
+    try { t ? localStorage.setItem('theme', t) : localStorage.removeItem('theme'); } catch (e) {}
+    show();
+  });
+  show();
+})();
+</script>
+<script>
+(() => {
+  const links = [...document.querySelectorAll('aside.toc a')]; if (!links.length) return;
+  const heads = links.map(a => document.getElementById(a.hash.slice(1))).filter(Boolean);
+  const lit = () => {
+    let cur = heads[0];
+    for (const h of heads) if (h.getBoundingClientRect().top < 120) cur = h;
+    if (innerHeight + scrollY >= document.body.scrollHeight - 4) cur = heads[heads.length - 1];
+    links.forEach(a => a.classList.toggle('on', a.hash === '#' + cur.id));
+  };
+  addEventListener('scroll', lit, { passive: true }); addEventListener('resize', lit); lit();
+})();
+</script>
+</body>
+</html>

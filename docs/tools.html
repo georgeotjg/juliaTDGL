@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tools · juliaTDGL</title>
+<meta name="description" content="juliaTDGL: three-dimensional multiband time-dependent Ginzburg-Landau solvers in Julia for the geometric superconducting diode effect.">
+<link rel="icon" href="img/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="style.css">
+<script>try { const t = localStorage.getItem('theme'); if (t) document.documentElement.dataset.theme = t; } catch (e) {}</script>
+<script>window.MathJax = { tex: { inlineMath: [['\\(', '\\)']], displayMath: [['\\[', '\\]']] }, chtml: { displayAlign: 'left' } };</script>
+<script defer src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="top">
+<a class="name" href="index.html"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 566 140" role="img" class="wm" aria-labelledby="wm-t"><title id="wm-t">juliaTDGL: the four dots of the Julia logo as vortices over the j and the i</title><path class="k" d="M28.0625 47.5H44.84375V99.0625Q44.84375 109.609375 39.78125 115.1640625Q34.71875 120.71875 25.109375 120.71875H16.8125V109.703125H19.71875Q24.5 109.703125 26.28125 107.546875Q28.0625 105.390625 28.0625 99.0625Z"/><path class="k" d="M61.40625 79.5625V47.5H78.28125V52.75Q78.28125 57.015625 78.234375 63.4609375Q78.1875 69.90625 78.1875 72.0625Q78.1875 78.390625 78.515625 81.1796875Q78.84375 83.96875 79.640625 85.234375Q80.671875 86.875 82.3359375 87.765625Q84.0 88.65625 86.15625 88.65625Q91.40625 88.65625 94.40625 84.625Q97.40625 80.59375 97.40625 73.421875V47.5H114.1875V100.0H97.40625V92.40625Q93.609375 97.0 89.3671875 99.1796875Q85.125 101.359375 80.015625 101.359375Q70.921875 101.359375 66.1640625 95.78125Q61.40625 90.203125 61.40625 79.5625Z"/><path class="k" d="M131.3125 27.0625H148.09375V100.0H131.3125Z"/><path class="k" d="M165.21875 47.5H182.0V100.0H165.21875Z"/><path class="k" d="M222.65625 76.375Q217.40625 76.375 214.7578125 78.15625Q212.109375 79.9375 212.109375 83.40625Q212.109375 86.59375 214.2421875 88.3984375Q216.375 90.203125 220.171875 90.203125Q224.90625 90.203125 228.140625 86.8046875Q231.375 83.40625 231.375 78.296875V76.375ZM248.296875 70.046875V100.0H231.375V92.21875Q228.0 97.0 223.78125 99.1796875Q219.5625 101.359375 213.515625 101.359375Q205.359375 101.359375 200.2734375 96.6015625Q195.1875 91.84375 195.1875 84.25Q195.1875 75.015625 201.5390625 70.703125Q207.890625 66.390625 221.484375 66.390625H231.375V65.078125Q231.375 61.09375 228.234375 59.2421875Q225.09375 57.390625 218.4375 57.390625Q213.046875 57.390625 208.40625 58.46875Q203.765625 59.546875 199.78125 61.703125V48.90625Q205.171875 47.59375 210.609375 46.9140625Q216.046875 46.234375 221.484375 46.234375Q235.6875 46.234375 241.9921875 51.8359375Q248.296875 57.4375 248.296875 70.046875Z"/><path class="b" d="M257.3125 30.015625H321.8125V43.65625H298.609375V100.0H280.5625V43.65625H257.3125Z"/><path class="b" d="M350.1875 43.65625V86.359375H356.65625Q367.71875 86.359375 373.5546875 80.875Q379.390625 75.390625 379.390625 64.9375Q379.390625 54.53125 373.578125 49.09375Q367.765625 43.65625 356.65625 43.65625ZM332.140625 30.015625H351.171875Q367.109375 30.015625 374.9140625 32.2890625Q382.71875 34.5625 388.296875 40.0Q393.21875 44.734375 395.609375 50.921875Q398.0 57.109375 398.0 64.9375Q398.0 72.859375 395.609375 79.0703125Q393.21875 85.28125 388.296875 90.015625Q382.671875 95.453125 374.796875 97.7265625Q366.921875 100.0 351.171875 100.0H332.140625Z"/><path class="b" d="M475.734375 94.796875Q468.984375 98.078125 461.71875 99.71875Q454.453125 101.359375 446.71875 101.359375Q429.234375 101.359375 419.015625 91.5859375Q408.796875 81.8125 408.796875 65.078125Q408.796875 48.15625 419.203125 38.453125Q429.609375 28.75 447.703125 28.75Q454.6875 28.75 461.0859375 30.0625Q467.484375 31.375 473.15625 33.953125V48.4375Q467.296875 45.109375 461.5078125 43.46875Q455.71875 41.828125 449.90625 41.828125Q439.125 41.828125 433.2890625 47.8515625Q427.453125 53.875 427.453125 65.078125Q427.453125 76.1875 433.078125 82.234375Q438.703125 88.28125 449.0625 88.28125Q451.875 88.28125 454.2890625 87.9296875Q456.703125 87.578125 458.625 86.828125V73.234375H447.609375V61.140625H475.734375Z"/><path class="b" d="M492.625 30.015625H510.671875V86.359375H542.359375V100.0H492.625Z"/><g fill="none" stroke="#4063D8" stroke-linecap="round"><path d="M36.5 21.0 a9.0 9.0 0 1 1 -8.50 6.20" stroke-width="3.0"/><path d="M36.5 15.0 a15.0 15.0 0 1 1 -14.29 10.39" stroke-width="2.6" opacity="0.5"/></g><circle cx="36.5" cy="30" r="5.2" fill="#4063D8"/><g fill="none" stroke="#389826" stroke-linecap="round"><path d="M173.6 6.4 a5.6 5.6 0 1 1 -5.27 3.84" stroke-width="2.1"/><path d="M173.6 2.7 a9.3 9.3 0 1 1 -8.86 6.44" stroke-width="1.8" opacity="0.5"/></g><circle cx="173.6" cy="12" r="3.2" fill="#389826"/><g fill="none" stroke="#CB3C33" stroke-linecap="round"><path d="M163.6 23.4 a5.6 5.6 0 1 1 -5.27 3.84" stroke-width="2.1"/><path d="M163.6 19.7 a9.3 9.3 0 1 1 -8.86 6.44" stroke-width="1.8" opacity="0.5"/></g><circle cx="163.6" cy="29" r="3.2" fill="#CB3C33"/><g fill="none" stroke="#9558B2" stroke-linecap="round"><path d="M183.6 23.4 a5.6 5.6 0 1 1 -5.27 3.84" stroke-width="2.1"/><path d="M183.6 19.7 a9.3 9.3 0 1 1 -8.86 6.44" stroke-width="1.8" opacity="0.5"/></g><circle cx="183.6" cy="29" r="3.2" fill="#9558B2"/></svg></a><span class="ver">v2.0.0</span>
+<button class="theme" id="theme" type="button" title="Theme: system, light or dark">◐</button>
+<a class="gh" href="https://github.com/georgeotjg/juliaTDGL">GitHub</a>
+</header>
+<details class="menu"><summary>Contents</summary>
+<ul>
+<li><a href="index.html">Home</a>
+</li>
+<li><a href="getting-started.html">Start</a>
+</li>
+<li><a href="theory.html">Model</a>
+</li>
+<li><a href="numerics.html">Numerics</a>
+</li>
+<li><a href="protocol.html">Protocol</a>
+</li>
+<li><a href="examples.html">Examples</a>
+</li>
+<li class="here"><a href="tools.html">Tools</a>
+<ul class="sub"><li><a href="#menu">The terminal menu</a></li><li><a href="#editor">The shape editor</a></li><li><a href="#figures">The figures of a run</a></li><li><a href="#films">3D films</a></li><li><a href="#scripts">Scripts and tools</a></li></ul>
+</li>
+<li><a href="validation.html">Validation</a>
+</li>
+<li><a href="performance.html">Performance</a>
+</li>
+<li><a href="reference.html">Reference</a>
+</li>
+<li><a href="publications.html">Publications</a>
+</li>
+</ul>
+</details>
+<div class="wrap">
+<nav class="side" aria-label="Contents">
+<ul>
+<li><a href="index.html">Home</a>
+</li>
+<li><a href="getting-started.html">Start</a>
+</li>
+<li><a href="theory.html">Model</a>
+</li>
+<li><a href="numerics.html">Numerics</a>
+</li>
+<li><a href="protocol.html">Protocol</a>
+</li>
+<li><a href="examples.html">Examples</a>
+</li>
+<li class="here"><a href="tools.html">Tools</a>
+</li>
+<li><a href="validation.html">Validation</a>
+</li>
+<li><a href="performance.html">Performance</a>
+</li>
+<li><a href="reference.html">Reference</a>
+</li>
+<li><a href="publications.html">Publications</a>
+</li>
+</ul>
+</nav>
+<main><article>
+<h1>Tools</h1>
+<p class="lead">What a user touches: a terminal menu, a browser editor for shapes, the standard figures of a run, and 3D films of the
+vortex events.</p>
+
+<h2 id="menu">The terminal menu</h2>
+<pre><code>julia julia/scripts/tdgl_tui.jl</code></pre>
+<ul>
+<li>It lists the runs of both releases, live and archived, with their state, points, last current and verdict.</li>
+<li><code>n</code> launches a run of release 2.0 from any run file; two CPUs run the polarities in parallel.</li>
+<li><code>s</code> stops a run after its current point, and <code>u</code> resumes it to the bit.</li>
+<li><code>l</code> is a launch wizard (starting point, geometry, parameters, optional term) for release 1.2 or for the two-band model in
+2.0.</li>
+<li><code>g</code> opens the shape editor, and <code>w</code> the films of a run; in the details of a release-2 run, <code>h</code> walks its down branch and <code>l</code> runs its M(H) loop, in the background.</li>
+</ul>
+<p>Closing the menu does not stop a run.</p>
+<figure><img src="img/tui_parameters.svg" alt="The parameter screen of the launch wizard of the terminal menu" loading="lazy"><figcaption>The launch wizard.</figcaption></figure>
+
+<h2 id="editor">The shape editor</h2>
+<p>A browser editor for three-dimensional shapes (<code>julia julia/editor/server.jl</code>, or key <code>g</code> of the menu). It saves
+the TOML file that a run reads with <code>GEOM_MODE = "CUSTOM"</code>. Each voxel is a mesh node.</p>
+<ul>
+<li>Figures (circle, rectangle, triangle, polygon, sphere, n-gon) can be drawn on any of the three views and go through the sample along
+that view's axis.</li>
+<li>A figure can be kept, which writes the material outside it: a cable.</li>
+<li>A figure can write an f, which makes a normal metal or a weak link; vacuum, which carves the sample; or another material.</li>
+<li>A pencil paints any 3D pattern.</li>
+<li>The checks show the mirror and rotation symmetries (a symmetric shape gives η = 0 exactly) and the faces where vortices enter.</li>
+<li>Material names suggest the catalogue of release 2, and "Run file" drafts the run file of the shape: a <code>[materials.<em>name</em>]</code>
+table for each material (the catalogue file when the name is one), the mesh of the box, the shape, the insulating buffer when it has
+vacuum, and a ladder to edit.</li>
+</ul>
+<p>What it draws is what the solver reads: the two were compared node by node, in a headless browser with real mouse events.</p>
+<figure><img src="img/editor.png" alt="The shape editor with a notched box, its three views, its mirror and the vortex entry faces" loading="lazy"><figcaption>A notched box,
+with the current, the field and the faces where vortices enter.</figcaption></figure>
+<div class="two">
+<figure><img src="img/editor_cable.png" alt="3D view of the editor: a cable along x with a V groove, vacuum around it" loading="lazy"><figcaption>A cable along the current with a
+V groove, carved in vacuum.</figcaption></figure>
+<figure><img src="img/editor_slabs.png" alt="3D view of the editor: three slabs stacked along z with vacuum between them" loading="lazy"><figcaption>Three slabs stacked along z,
+coupled only through the field.</figcaption></figure>
+</div>
+
+<h2 id="figures">The figures of a run</h2>
+<pre><code>julia --project=tdgl2 tdgl2/scripts/figures.jl RUNDIR</code></pre>
+<p>From the folder of any run (it can still be running) this draws:</p>
+<ul>
+<li>the sheet of the ladders: crossings per line, |V|, the rung times and the current through the mid plane, with the brackets;</li>
+<li>|Ψ<sub>μ</sub>|² of every band on the three mid cuts, with the vortices and the supercurrent lines;</li>
+<li>the share of the supercurrent each band carries, plane by plane along the sample;</li>
+<li><code>REPORT.md</code>, one page with what was run (the materials per region and the integrator included), every rung, the brackets
+and η.</li>
+</ul>
+<div class="two">
+<figure><img src="img/run_psi_cable.png" alt="Cuts of the squared order parameter of the two bands of the nanowire example; the vacuum around the disc is grey" loading="lazy"><figcaption>The
+nanowire example: |Ψ|² of each band on the mid cuts. The disc and its vacuum are seen across x.</figcaption></figure>
+<figure><img src="img/run_share_cable.png" alt="The share of the supercurrent carried by each band along the nanowire, set within a few coherence lengths of the contacts and flat between them" loading="lazy"><figcaption>The
+share of the supercurrent of each band along the same wire. It is set within a few ξ of the contacts, where the normal current
+converts.</figcaption></figure>
+</div>
+
+<h2 id="films">3D films</h2>
+<pre><code>julia --project=tdgl2 tdgl2/scripts/film.jl RUNDIR [+|-] [--J J] [--every DT] [--state FILE]</code></pre>
+<p>From the kept state of a rung, or from any state file, the film steps the state at its current. It records only around the moments
+that matter: the entry, the crossing and the exit of each vortex. It writes:</p>
+<ul>
+<li>VTK files of every frame: |Ψ<sub>μ</sub>|², the supercurrent, the field, the masks and the material of each node, for ParaView or
+any VTK reader;</li>
+<li>a browser viewer (<code>film.html</code>) that turns and zooms with the mouse;</li>
+<li>a GIF and a still frame.</li>
+</ul>
+<p>Each material of the sample is tinted. A film of a continuous flow must be sampled well below its period 2π/V; the script warns when
+it is not, because a stroboscope can make a vortex appear to go back and forth.</p>
+
+<h2 id="scripts">Scripts and tools</h2>
+<table>
+<tr><th>tool</th><th>what it does</th></tr>
+<tr><td><code>scripts/run.jl FILE</code></td><td>one run from a file; <code>--polarity ±</code>, <code>--resume</code>, <code>--dir</code></td></tr>
+<tr><td><code>scripts/refine.jl RUNDIR ±</code></td><td>a finer ladder inside the bracket of a coarse one; <code>--confirm T</code> by the delay</td></tr>
+<tr><td><code>scripts/hysteresis.jl RUNDIR ±</code></td><td>the down branch: from the state the ladder ended in, the currents walked back down; the retrapping bracket and the width of the hysteresis I<sub>c</sub> − I<sub>r</sub></td></tr>
+<tr><td><code>scripts/mh.jl FILE --Hmax H --dH h</code></td><td>the magnetisation loop M(H) at a fixed current (0 by default), up and back down, with the vortex count of each band; <code>tools/mh_plot.py</code> draws it</td></tr>
+<tr><td><code>scripts/figures.jl RUNDIR</code></td><td>the standard figures and <code>REPORT.md</code></td></tr>
+<tr><td><code>scripts/film.jl RUNDIR</code></td><td>the 3D film of the vortex events</td></tr>
+<tr><td><code>tools/collect_runs.py</code></td><td>one table of a whole campaign</td></tr>
+<tr><td><code>tools/delay_fit.py</code></td><td>the fit of the delay law to measured delays</td></tr>
+</table>
+<div class="pn"><a href="examples.html">← Examples</a><a href="validation.html">Validation →</a></div>
+</article></main>
+<aside class="toc" aria-label="On this page"><p>On this page</p><ul><li><a href="#menu">The terminal menu</a></li><li><a href="#editor">The shape editor</a></li><li><a href="#figures">The figures of a run</a></li><li><a href="#films">3D films</a></li><li><a href="#scripts">Scripts and tools</a></li></ul></aside>
+</div>
+<footer>© 2026 Jorge Alfredo Robles Calderón · Universidad Nacional de Colombia · MIT License · <a href="https://github.com/georgeotjg/juliaTDGL">github.com/georgeotjg/juliaTDGL</a></footer>
+<script>
+(() => {
+  const b = document.getElementById('theme'), root = document.documentElement, order = ['', 'light', 'dark'];
+  const show = () => { const t = root.dataset.theme || ''; b.textContent = t === 'light' ? '☀' : t === 'dark' ? '☾' : '◐';
+                       b.title = 'Theme: ' + (t || 'system') + ' (click to change)'; };
+  b.addEventListener('click', () => {
+    const t = order[(order.indexOf(root.dataset.theme || '') + 1) % order.length];
+    if (t) root.dataset.theme = t; else delete root.dataset.theme;
+    try { t ? localStorage.setItem('theme', t) : localStorage.removeItem('theme'); } catch (e) {}
+    show();
+  });
+  show();
+})();
+</script>
+<script>
+(() => {
+  const links = [...document.querySelectorAll('aside.toc a')]; if (!links.length) return;
+  const heads = links.map(a => document.getElementById(a.hash.slice(1))).filter(Boolean);
+  const lit = () => {
+    let cur = heads[0];
+    for (const h of heads) if (h.getBoundingClientRect().top < 120) cur = h;
+    if (innerHeight + scrollY >= document.body.scrollHeight - 4) cur = heads[heads.length - 1];
+    links.forEach(a => a.classList.toggle('on', a.hash === '#' + cur.id));
+  };
+  addEventListener('scroll', lit, { passive: true }); addEventListener('resize', lit); lit();
+})();
+</script>
+</body>
+</html>
