@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Examples · juliaTDGL</title>
+<meta name="description" content="juliaTDGL: three-dimensional multiband time-dependent Ginzburg-Landau solvers in Julia for the geometric superconducting diode effect.">
+<link rel="icon" href="img/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="style.css">
+<script>try { const t = localStorage.getItem('theme'); if (t) document.documentElement.dataset.theme = t; } catch (e) {}</script>
+<script>window.MathJax = { tex: { inlineMath: [['\\(', '\\)']], displayMath: [['\\[', '\\]']] }, chtml: { displayAlign: 'left' } };</script>
+<script defer src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="top">
+<a class="name" href="index.html"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 566 140" role="img" class="wm" aria-labelledby="wm-t"><title id="wm-t">juliaTDGL: the four dots of the Julia logo as vortices over the j and the i</title><path class="k" d="M28.0625 47.5H44.84375V99.0625Q44.84375 109.609375 39.78125 115.1640625Q34.71875 120.71875 25.109375 120.71875H16.8125V109.703125H19.71875Q24.5 109.703125 26.28125 107.546875Q28.0625 105.390625 28.0625 99.0625Z"/><path class="k" d="M61.40625 79.5625V47.5H78.28125V52.75Q78.28125 57.015625 78.234375 63.4609375Q78.1875 69.90625 78.1875 72.0625Q78.1875 78.390625 78.515625 81.1796875Q78.84375 83.96875 79.640625 85.234375Q80.671875 86.875 82.3359375 87.765625Q84.0 88.65625 86.15625 88.65625Q91.40625 88.65625 94.40625 84.625Q97.40625 80.59375 97.40625 73.421875V47.5H114.1875V100.0H97.40625V92.40625Q93.609375 97.0 89.3671875 99.1796875Q85.125 101.359375 80.015625 101.359375Q70.921875 101.359375 66.1640625 95.78125Q61.40625 90.203125 61.40625 79.5625Z"/><path class="k" d="M131.3125 27.0625H148.09375V100.0H131.3125Z"/><path class="k" d="M165.21875 47.5H182.0V100.0H165.21875Z"/><path class="k" d="M222.65625 76.375Q217.40625 76.375 214.7578125 78.15625Q212.109375 79.9375 212.109375 83.40625Q212.109375 86.59375 214.2421875 88.3984375Q216.375 90.203125 220.171875 90.203125Q224.90625 90.203125 228.140625 86.8046875Q231.375 83.40625 231.375 78.296875V76.375ZM248.296875 70.046875V100.0H231.375V92.21875Q228.0 97.0 223.78125 99.1796875Q219.5625 101.359375 213.515625 101.359375Q205.359375 101.359375 200.2734375 96.6015625Q195.1875 91.84375 195.1875 84.25Q195.1875 75.015625 201.5390625 70.703125Q207.890625 66.390625 221.484375 66.390625H231.375V65.078125Q231.375 61.09375 228.234375 59.2421875Q225.09375 57.390625 218.4375 57.390625Q213.046875 57.390625 208.40625 58.46875Q203.765625 59.546875 199.78125 61.703125V48.90625Q205.171875 47.59375 210.609375 46.9140625Q216.046875 46.234375 221.484375 46.234375Q235.6875 46.234375 241.9921875 51.8359375Q248.296875 57.4375 248.296875 70.046875Z"/><path class="b" d="M257.3125 30.015625H321.8125V43.65625H298.609375V100.0H280.5625V43.65625H257.3125Z"/><path class="b" d="M350.1875 43.65625V86.359375H356.65625Q367.71875 86.359375 373.5546875 80.875Q379.390625 75.390625 379.390625 64.9375Q379.390625 54.53125 373.578125 49.09375Q367.765625 43.65625 356.65625 43.65625ZM332.140625 30.015625H351.171875Q367.109375 30.015625 374.9140625 32.2890625Q382.71875 34.5625 388.296875 40.0Q393.21875 44.734375 395.609375 50.921875Q398.0 57.109375 398.0 64.9375Q398.0 72.859375 395.609375 79.0703125Q393.21875 85.28125 388.296875 90.015625Q382.671875 95.453125 374.796875 97.7265625Q366.921875 100.0 351.171875 100.0H332.140625Z"/><path class="b" d="M475.734375 94.796875Q468.984375 98.078125 461.71875 99.71875Q454.453125 101.359375 446.71875 101.359375Q429.234375 101.359375 419.015625 91.5859375Q408.796875 81.8125 408.796875 65.078125Q408.796875 48.15625 419.203125 38.453125Q429.609375 28.75 447.703125 28.75Q454.6875 28.75 461.0859375 30.0625Q467.484375 31.375 473.15625 33.953125V48.4375Q467.296875 45.109375 461.5078125 43.46875Q455.71875 41.828125 449.90625 41.828125Q439.125 41.828125 433.2890625 47.8515625Q427.453125 53.875 427.453125 65.078125Q427.453125 76.1875 433.078125 82.234375Q438.703125 88.28125 449.0625 88.28125Q451.875 88.28125 454.2890625 87.9296875Q456.703125 87.578125 458.625 86.828125V73.234375H447.609375V61.140625H475.734375Z"/><path class="b" d="M492.625 30.015625H510.671875V86.359375H542.359375V100.0H492.625Z"/><g fill="none" stroke="#4063D8" stroke-linecap="round"><path d="M36.5 21.0 a9.0 9.0 0 1 1 -8.50 6.20" stroke-width="3.0"/><path d="M36.5 15.0 a15.0 15.0 0 1 1 -14.29 10.39" stroke-width="2.6" opacity="0.5"/></g><circle cx="36.5" cy="30" r="5.2" fill="#4063D8"/><g fill="none" stroke="#389826" stroke-linecap="round"><path d="M173.6 6.4 a5.6 5.6 0 1 1 -5.27 3.84" stroke-width="2.1"/><path d="M173.6 2.7 a9.3 9.3 0 1 1 -8.86 6.44" stroke-width="1.8" opacity="0.5"/></g><circle cx="173.6" cy="12" r="3.2" fill="#389826"/><g fill="none" stroke="#CB3C33" stroke-linecap="round"><path d="M163.6 23.4 a5.6 5.6 0 1 1 -5.27 3.84" stroke-width="2.1"/><path d="M163.6 19.7 a9.3 9.3 0 1 1 -8.86 6.44" stroke-width="1.8" opacity="0.5"/></g><circle cx="163.6" cy="29" r="3.2" fill="#CB3C33"/><g fill="none" stroke="#9558B2" stroke-linecap="round"><path d="M183.6 23.4 a5.6 5.6 0 1 1 -5.27 3.84" stroke-width="2.1"/><path d="M183.6 19.7 a9.3 9.3 0 1 1 -8.86 6.44" stroke-width="1.8" opacity="0.5"/></g><circle cx="183.6" cy="29" r="3.2" fill="#9558B2"/></svg></a><span class="ver">v2.0.0</span>
+<button class="theme" id="theme" type="button" title="Theme: system, light or dark">◐</button>
+<a class="gh" href="https://github.com/georgeotjg/juliaTDGL">GitHub</a>
+</header>
+<details class="menu"><summary>Contents</summary>
+<ul>
+<li><a href="index.html">Home</a>
+</li>
+<li><a href="getting-started.html">Start</a>
+</li>
+<li><a href="theory.html">Model</a>
+</li>
+<li><a href="numerics.html">Numerics</a>
+</li>
+<li><a href="protocol.html">Protocol</a>
+</li>
+<li class="here"><a href="examples.html">Examples</a>
+<ul class="sub"><li><a href="#table">The run files</a></li><li><a href="#wedge">The notched box</a></li><li><a href="#cable">A sculpted nanowire</a></li><li><a href="#materials">Materials per region</a></li><li><a href="#more">KWT, heat, three bands</a></li></ul>
+</li>
+<li><a href="tools.html">Tools</a>
+</li>
+<li><a href="validation.html">Validation</a>
+</li>
+<li><a href="performance.html">Performance</a>
+</li>
+<li><a href="reference.html">Reference</a>
+</li>
+<li><a href="publications.html">Publications</a>
+</li>
+</ul>
+</details>
+<div class="wrap">
+<nav class="side" aria-label="Contents">
+<ul>
+<li><a href="index.html">Home</a>
+</li>
+<li><a href="getting-started.html">Start</a>
+</li>
+<li><a href="theory.html">Model</a>
+</li>
+<li><a href="numerics.html">Numerics</a>
+</li>
+<li><a href="protocol.html">Protocol</a>
+</li>
+<li class="here"><a href="examples.html">Examples</a>
+</li>
+<li><a href="tools.html">Tools</a>
+</li>
+<li><a href="validation.html">Validation</a>
+</li>
+<li><a href="performance.html">Performance</a>
+</li>
+<li><a href="reference.html">Reference</a>
+</li>
+<li><a href="publications.html">Publications</a>
+</li>
+</ul>
+</nav>
+<main><article>
+<h1>Examples</h1>
+<p class="lead">One run file per option in <code>tdgl2/examples/</code>, each run by one command. Times are on one core of a laptop. The
+short ones are demonstrations of an option, not measurements.</p>
+<pre><code>OPENBLAS_NUM_THREADS=1 julia --project=tdgl2 tdgl2/scripts/run.jl tdgl2/examples/&lt;file&gt;.toml</code></pre>
+
+<h2 id="table">The run files</h2>
+<table>
+<tr><th>file</th><th>what it shows</th><th>time</th></tr>
+<tr><td><code>wedge_k25.toml</code></td><td>the two-band notched box at κ = 25 and H = 0.03 H<sub>c2</sub></td><td>minutes</td></tr>
+<tr><td><code>kwt_k2.toml</code></td><td>KWT with γ̃ = 10 at κ = 2 and the onset by the delay: (0.73, 0.74] and (0.75, 0.76], η = −1.3 %</td><td>~1 h (35 min in two processes)</td></tr>
+<tr><td><code>open_k2.toml</code></td><td>the open boundary of the self-field</td><td>13 min</td></tr>
+<tr><td><code>insulating_k2.toml</code></td><td>the insulating buffer (<code>sigma_vac</code>): all of the current crosses the sample</td><td>35 min</td></tr>
+<tr><td><code>heat_k25.toml</code></td><td>heat with Joule and a contact margin, and drag: (0.3, 0.4] and (0.5, 0.6]</td><td>16 min</td></tr>
+<tr><td><code>three_bands.toml</code></td><td>three bands with frustrated couplings: the time-reversal-breaking state</td><td>6 min</td></tr>
+<tr><td><code>cable_k2.toml</code></td><td>a sculpted sample: a nanowire in vacuum along the current</td><td>10 min</td></tr>
+<tr><td><code>bicapa_tunel.toml</code></td><td>a material per region: a tunnel-coupled bilayer (t = 0.2)</td><td>2 min per polarity</td></tr>
+<tr><td><code>metal_una_banda.toml</code></td><td>a two-band superconductor with a one-band normal-metal lead; the σ condensate enters the metal by proximity</td><td>minutes</td></tr>
+</table>
+
+<h2 id="wedge">The notched box</h2>
+<p>A box of two bands with a wedge cut into its face y1. With the field along z and the current along x, vortices enter through y1 for
++J and through y2 for −J. The notch lowers the barrier on one side only, so the two onsets differ.</p>
+<figure><img src="img/vortex.gif" alt="Vortices born at the tip of the notch cross the box for positive current; for negative current of the same magnitude almost none cross" loading="lazy">
+<figcaption><code>wedge_k25.toml</code> at |J| = 0.44: +J on top, −J below. For +J the vortices are born at the tip and cross; for −J at the
+same |J| almost none do.</figcaption></figure>
+
+<h2 id="cable">A sculpted nanowire</h2>
+<p>A disc of radius 2.75 ξ along the current, with vacuum around it and leads of its own section. The vacuum needs the insulating
+buffer. J is the current density, so the cable carries J times its meshed section.</p>
+<figure><img src="img/film_nanowire.png" alt="A frame of a 3D film: a vortex of the sigma band crossing a notched nanowire carved in vacuum, with the mid plane coloured by the order parameter and the supercurrent lines" loading="lazy">
+<figcaption>A frame of <code>scripts/film.jl</code>: a vortex of the σ band crossing a notched nanowire carved in vacuum. On the left, in
+3D, the outline of the cylinder, the mid plane coloured by |Ψ<sub>σ</sub>|² and the supercurrent in white; on the right, the mid
+plane from above and the vortex plaquettes against time.</figcaption></figure>
+
+<h2 id="materials">Materials per region</h2>
+<p><code>bicapa_tunel.toml</code> stacks two slabs of 3 ξ along z: the two-band model at κ = 2 below, and above it a slower material
+with a quarter of the diffusivity in both bands and a weaker σ band. A barrier of transparency 0.2 joins them. The shape file names
+the upper region <code>material = "lenta"</code>, and the run file defines it in a <code>[materials.lenta]</code> table: inline bands,
+or a material file of the catalogue (<code>file = "mgb2_dirty.toml"</code>).</p>
+<figure><img src="img/editor_bilayer_iso.png" alt="The 3D view of the shape editor: a box whose upper half is another material, drawn in orange over the blue superconductor, with a notch on its lower front face" loading="lazy">
+<figcaption>The same idea in the shape editor: the upper half of the box is another material (orange), with a notch on its face y1.
+Each material has its colour in the views, the 3D model and the legend.</figcaption></figure>
+
+<h2 id="more">KWT, boundaries, heat, three bands</h2>
+<ul>
+<li><code>kwt_k2.toml</code>: KWT in both bands raises the onset by the conversion partition. The stepper turns on the rotating frame
+and the stabilised stages by itself.</li>
+<li><code>open_k2.toml</code>: the faces see the free-space field of the screening currents, which a mirror face suppresses at small κ.
+The two polarities separate more.</li>
+<li><code>heat_k25.toml</code>: a temperature field with the Joule term and the contact layers left out of the source, and interband
+drag. A rung whose temperature passes the cut closes <code>T</code> and ends the ladder.</li>
+<li><code>three_bands.toml</code>: three identical bands with equal repulsive couplings. The phases settle at 0 and ±2π/3, and
+|Ψ|² = 1 + |γ| per band.</li>
+</ul>
+<div class="pn"><a href="protocol.html">← Protocol</a><a href="tools.html">Tools →</a></div>
+</article></main>
+<aside class="toc" aria-label="On this page"><p>On this page</p><ul><li><a href="#table">The run files</a></li><li><a href="#wedge">The notched box</a></li><li><a href="#cable">A sculpted nanowire</a></li><li><a href="#materials">Materials per region</a></li><li><a href="#more">KWT, heat, three bands</a></li></ul></aside>
+</div>
+<footer>© 2026 Jorge Alfredo Robles Calderón · Universidad Nacional de Colombia · MIT License · <a href="https://github.com/georgeotjg/juliaTDGL">github.com/georgeotjg/juliaTDGL</a></footer>
+<script>
+(() => {
+  const b = document.getElementById('theme'), root = document.documentElement, order = ['', 'light', 'dark'];
+  const show = () => { const t = root.dataset.theme || ''; b.textContent = t === 'light' ? '☀' : t === 'dark' ? '☾' : '◐';
+                       b.title = 'Theme: ' + (t || 'system') + ' (click to change)'; };
+  b.addEventListener('click', () => {
+    const t = order[(order.indexOf(root.dataset.theme || '') + 1) % order.length];
+    if (t) root.dataset.theme = t; else delete root.dataset.theme;
+    try { t ? localStorage.setItem('theme', t) : localStorage.removeItem('theme'); } catch (e) {}
+    show();
+  });
+  show();
+})();
+</script>
+<script>
+(() => {
+  const links = [...document.querySelectorAll('aside.toc a')]; if (!links.length) return;
+  const heads = links.map(a => document.getElementById(a.hash.slice(1))).filter(Boolean);
+  const lit = () => {
+    let cur = heads[0];
+    for (const h of heads) if (h.getBoundingClientRect().top < 120) cur = h;
+    if (innerHeight + scrollY >= document.body.scrollHeight - 4) cur = heads[heads.length - 1];
+    links.forEach(a => a.classList.toggle('on', a.hash === '#' + cur.id));
+  };
+  addEventListener('scroll', lit, { passive: true }); addEventListener('resize', lit); lit();
+})();
+</script>
+</body>
+</html>

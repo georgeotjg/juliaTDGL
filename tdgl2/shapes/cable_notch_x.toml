@@ -1,0 +1,23 @@
+# A notched cable: the cable of cable_x.toml (a disc of radius 2.75 ξσ on the y–z plane, through x, vacuum around it)
+# with a V groove cut from the y1 side halfway along x, through z: a triangle of base 4 ξσ on the face y = 0 and apex at
+# y = 1.75 ξσ, so 1.5 ξσ into the wire (27 % of its diameter).  The groove breaks y → −y, the field along z breaks time
+# reversal: a nanowire diode.  CUSTOM_REF puts the groove on the y2 side (the control: η changes sign).
+# For a box of 40 × 12 × 12 cells at dx = 0.5 (release 2: needs sigma_vac).
+[[shape]]
+type = "circle"
+axis = "x"
+u = 3.0
+v = 3.0
+r = 2.75
+along = "all"
+outside = true
+vacuum = true
+
+[[shape]]
+type = "triangle"
+x = 9.75
+y = 0.0
+w = 4.0
+h = 1.75
+z = "all"
+vacuum = true

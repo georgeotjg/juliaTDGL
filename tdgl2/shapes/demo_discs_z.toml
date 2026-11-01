@@ -1,0 +1,16 @@
+# Two discs that do not cross the thickness (40x24x6 box, dz = 0.5, planes at z = 0 ... 2.5 ξσ):
+# one 3 planes deep from the top face, one buried in planes 2-3. Written to test the z ranges.
+[[shape]]
+type = "circle"
+x = 10.0
+y = 6.0
+r = 2.0
+z = [1.5, 2.5]
+f = 0.0
+[[shape]]
+type = "circle"
+x = 4.0
+y = 6.0
+r = 1.5
+z = [1.0, 1.5]
+f = 0.0

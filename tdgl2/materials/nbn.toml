@@ -1,0 +1,25 @@
+# NbN film: one-band GL in the units of the code (g = Gamma = a = beta = 1; lengths xi, times xi^2/D, H in Hc2).  A dirty,
+# strongly type-II film: lambda(0) of 200-300 nm (up to ~500 nm in the thinnest films) against xi(0) of 2-5 nm, so kappa is of
+# order 50-100.  With kappa this large the field of a box a few tens of xi wide is barely screened (the Pearl length of a thin
+# film is longer still): the self-field boundary matters less than the applied field.  The KWT gamma is large: the inelastic
+# time is long (12-17 ps at 10 K), so the voltage branch of a NbN strip is the KWT one.
+name = "NbN, dirty film, one band"
+regime = "dirty one-band GL near Tc; kappa of order 50-100 (lambda 200-500 nm, xi 2-5 nm, sample dependent); KWT gamma of order 40-100"
+kappa = 50.0          # replace with the sample's: kappa = lambda/xi from its lambda(0) and Hc2 (xi = sqrt(Phi0 / 2 pi mu0 Hc2))
+sigma_n = "dirty"     # u = Gamma/sigma_n = 5.79
+T = 0.0
+
+[[band]]
+name = "NbN"
+g = 1.0
+Gamma = 1.0
+a = 1.0
+beta = 1.0
+gamma_kwt = 0.0       # KWT: 2 tau_E Delta/hbar = 3.04 tau_E[ps] Delta[meV]: 12-17 ps and Delta of 1-2 meV at 0.7 Tc give 40-100; sweep it
+
+[sources]
+lambda = "200-300 nm in epitaxial films at 4 K, up to ~500 nm in very thin films: Kamlapure et al., APL 96, 072509 (2010), arXiv:0911.4181; Belogolovskii et al., Sci. Rep. (2023), doi:10.1038/s41598-023-46579-x"
+xi = "dirty-limit xi(0) ~ 5 nm (Kamlapure et al.); 2.0-2.5 nm in epitaxial films on AlN/sapphire (Belogolovskii et al.)"
+kappa = "lambda/xi from the two lines above: of order 50-100 (an estimate, not a measured kappa)"
+tau_E = "electron-phonon time 11.9-17.5 ps at 10 K: Sidorova et al., PRB 102, 054501 (2020), arXiv:1907.05039; disorder independent: Lomakin et al., PRB 107, 054205 (2023), arXiv:2207.05012"
+sigma_n = "dirty BCS: sigma_n = sum g Gamma/beta / 5.79 (model.jl, sigma_dirty)"

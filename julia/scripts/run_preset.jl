@@ -351,7 +351,7 @@ catch err
     println("geometry preview skipped: ", sprint(showerror, err))
 end
 t1 = time()
-sde = run_case(cfg; mode=Strict())
+sde = run_case(cfg)                     # Fast, the default (mode=Strict() gives the digits of 1.0.0)
 open(logf, "a") do io
     println(io, "# TUI $geom $(isempty(forma) ? "" : basename(forma)) k=$kappa γ12=$g12 J=$Jlist drag=$drag ",
             calor ? "calor γ=$(opt["calor"]) η=$(opt["eta"]) joule=$(opt["joule"]) margen=$(opt["margen"]) " : "",

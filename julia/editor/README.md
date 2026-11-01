@@ -17,9 +17,9 @@ name exists, the previous version is moved to `trash_/shapes/`.
   x1, right x2) on the unfolded cube of the left panel or by clicking it on the
   3D model; the 3D turns to it and its view is outlined (the views never move). The pencil
   and the eraser then fill, at each clicked cell, `depth` cells inward from that
-  face, starting `from` cells deep ("through" = the whole sample). `from` > 0
-  gives cuts inside the sample, not only on its surface. Counts are in cells of
-  the mesh you set in Box.
+  face, starting `from` cells deep ("through" = the whole sample; picking a face
+  sets depth to the whole sample along its normal). `from` > 0 gives cuts inside
+  the sample, not only on its surface. Counts are in cells of the mesh you set in Box.
 - Pencil and eraser (legacy mode, "pencil fills: the character's z extent"):
   free or straight stroke, any width in cells, on any view. On the
   top view a click fills the z extent of the palette character under the
@@ -35,15 +35,55 @@ name exists, the previous version is moved to `trash_/shapes/`.
   pencil's z extent. "depth" modes: a staircase of n steps, from one plane
   removed (where the drag starts) to the whole thickness, from the top or from
   the bottom, with f = f1 in the removed part. Each step is a palette character.
-- Figures (circle, rectangle, triangle, n-gon, polygon) are drawn on the top
-  view. Their z extent is, by default, "from the work face": the `from` and
-  `depth` cells of the top or bottom face, as for the pencil, so a disc three
-  cells deep from the top or a buried one from 2 to 3 cells needs no
-  arithmetic. The other choices are all (through), bottom, top or buried half,
-  and a range [z0, z1] in ξσ, where plane k sits at z = k dz and the top plane at
-  (Nz − 1) dz (2.5 ξσ for Nz = 6, dz = 0.5). The list of figures shows the
-  planes each one covers and edits its z0, z1; "z ← work face" gives a
-  figure the current from/depth.
+- Figures (circle, rectangle, triangle, n-gon, polygon, sphere) are drawn on any
+  of the three views, and go through the sample along the axis of that view: the
+  Top view along z (top and bottom faces), the Front view along y (front and
+  back), the Side view along x (left and right). Their extent along that axis is,
+  by default, "from the work face": the `from` and `depth` cells of the face, as
+  for the pencil, so a disc three cells deep from the top or a channel from the
+  left face halfway along x needs no arithmetic. The other choices are all
+  (through), the first, second or middle half, and a range [a0, a1] in ξσ, where
+  plane n sits at n·d. The list of figures shows the planes each one covers and
+  edits them; "← work face" gives a figure the current from/depth, "through" the
+  whole length.
+- A sphere is drawn on any view too: centred where the drag starts, and along the
+  axis of the view at the middle of its extent (with "from the work face" and a
+  face picked, the middle of the sample). Every view outlines it (dotted) and shows,
+  solid, its section on that view's cut; select/move works on any view. The cut of
+  the work face's view is its "from", so drawing does not move it: the message says
+  where the centre went.
+- "snap to ½ cell" rounds the points of a figure to the nodes and half-way between
+  them, so the same drag always gives the same nodes. It moves a figure by less than
+  half a cell, never changes what it writes.
+- Polygon: a click adds a vertex, Backspace or Ctrl+Z removes the last, Enter or a
+  double click closes it (one undo step for the whole polygon), Esc cancels.
+  Shift while dragging a rectangle gives a square; an n-gon with n = 6 is a hexagon.
+- What a figure writes: an f (f = 0 is a normal metal, 0 < f < 1 weakens, f > 1
+  strengthens) or, with "vacuum", no material at all (release 2). "keep the
+  figure" writes it outside the figure instead of inside: the figure is what
+  stays. "cable along x" makes a disc on the y–z plane, through x, kept, with
+  vacuum around it. "slabs along z: n, gap, stack" makes n slabs of the same
+  material with gaps of that many planes written as the figure says: vacuum (only
+  the field couples them), f = 0 (a normal metal between them) or a small f (a weak
+  link). A palette character can be vacuum too.
+- Another material (release 2): type a name in "material" (Draw panel, the list of
+  figures, or a palette character) and the figure is that material, a
+  `[materials.<name>]` table of the run file (f becomes 1: the material itself; a
+  smaller f weakens it). A figure without a material leaves the material of its
+  nodes as it was, as `src/shapes.jl` of release 2 does. Each material has its colour in the
+  three views, the 3D model and the legend; the checks count its nodes, and a
+  material region breaks the mirror and the rotation as an f does. The run file
+  needs a table for each name with every key its `[material]` gives (an error
+  otherwise). Checked against release 2 node by node, in node and in a headless
+  browser with real mouse events.
+- The material names suggest the catalogue of release 2 (its `materials/*.toml`,
+  listed by the server). "Run file" drafts the run file of the shape
+  (`shapes/<name>_run.toml`, an existing one moved to `trash_/shapes/`; without
+  the server it is downloaded): `[material]` is the two-band model II at κ = 2,
+  each material of the shape a `[materials.<name>]` table (`file = "<name>.toml"`
+  when the name is a catalogue file, otherwise a copy of `[material]` marked to
+  edit), the mesh of the box, `geom_file` the shape, `sigma_vac` when it has
+  vacuum, and a ladder to edit in `[run]`. It loads and steps in release 2 as it is.
 - select/move moves a figure, or, clicking on a pencil voxel, the whole pencil
   layer (all strokes together, by whole cells).
 - ◐ (top right) switches the theme: system, light or dark; "cells" picks the colour of the
@@ -61,7 +101,8 @@ name exists, the previous version is moved to `trash_/shapes/`.
   red, because a defect on a contact injects through it (mode M2). "mirror
   (_REF)" outlines the shape reflected in y, the control that must invert η.
 - Live checks: My and Rz (a symmetric shape gives η = 0 exactly), injection
-  strips, normal path across the sample, where π or σ become normal.
+  strips (not flagged when the cut is the same at every x: a cable or slabs, whose
+  section the contacts carry), normal path across the sample, where π or σ become normal.
 
 Starting from the catalogue: under "load…", group "catalogue", are WEDGE,
 TRI_Y1, ESFERA, … as pixel layers (`shapes/cat_*.toml`, written by
@@ -69,8 +110,18 @@ TRI_Y1, ESFERA, … as pixel layers (`shapes/cat_*.toml`, written by
 mask to the bit; when one is opened the proposed name is `<mode>_mod`, so the
 template is not overwritten. `http://127.0.0.1:8765/?load=<name>` opens a shape.
 
-Colours: blue = superconductor; hatched = removed (f = 0); blend = 0 < f < 1;
-green = f > 1 (stronger condensation). Translucent red = strips next to x1 and
+Colours: blue = superconductor; grey hatched = normal metal (f = 0); pale = vacuum;
+blend = 0 < f < 1; green = f > 1 (stronger condensation). The 3D view draws the
+material (the normal metal in grey) and never the vacuum. Another material: its own colour (orange, green, purple, …, in the order the
+shape first uses them).
+
+Vacuum vs f = 0: f = 0 is a normal metal that conducts (the current can go
+through it and Ψ leaks into it by proximity); vacuum is no material, with a free
+surface (zero flux). A shape with vacuum is a sculpted sample: release 2 only,
+with the insulating padding (`sigma_vac` in `[scheme]`) and `selffield_bc =
+"bar"` or `"open"`; its leads take the section of the faces x1 and x2, so keep
+the same section at both ends (the checks say whether they match). Release 1.2
+refuses a vacuum element. Translucent red = strips next to x1 and
 x2, where the current enters. The checks warn, they do not block.
 
 Running a shape: terminal menu → l → geometry `e` or `f`, or
@@ -84,7 +135,10 @@ The run keeps its own copy in `<run>/forma.toml`.
 The file is in units of ξσ: Julia rasterises it with the dx of the run
 (`src/shapes.jl`). Checked:
 - the editor preview and Julia give the same nodes, also with voxels painted
-  on the three views;
+  on the three views, and with figures drawn on the side and front views, kept
+  figures and vacuum (driven by real mouse events in a headless browser: 0 nodes
+  of 5760 differ in f or vacuum), and with a sphere drawn on the side view, slabs
+  with vacuum gaps and with f gaps (0 of 15000 on a 40×25×15 box);
 - every catalogue template passed through the editor (load → save) gives the
   catalogue mask to the bit, and its `CUSTOM_REF` is the exact nodal mirror
   (`test/test_shapes.jl`);

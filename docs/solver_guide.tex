@@ -15,9 +15,9 @@
 
 \title{juliaTDGL: a guide to the three-dimensional two-band\\
 time-dependent Ginzburg--Landau solver}
-\author{J.~A.~Robles-Calder\'on\\
+\author{J.~A.~Robles Calder\'on\\
 \small Departamento de F\'isica, Universidad Nacional de Colombia, Bogot\'a}
-\date{\today}
+\date{Release 1.2, as in juliaTDGL 2.0}
 
 \begin{document}
 \sloppy
@@ -223,9 +223,11 @@ so a run at $\kappa=25$ takes about $160$ times more steps per unit of
 physical time than one at $\kappa=2$. Optional diffusive terms add the
 condition $\mathrm dt\le0.15\,\mathrm dx^2/D$. A \emph{cycle} is
 \code{lMax}$=40$ substeps; convergence is tested once per cycle. This is the
-scheme of release 1.0.0 and the library default, \code{Config(:legacy)}.
+scheme of release 1.0.0 and of the published runs, \code{Config(:legacy)} (the library default up to
+release 1.2). The scalar potential runs only in it; a run with \code{use\_phi} switches to it by itself.
 
-\paragraph{The production scheme.} \code{Config(:prod)} (release 1.1) removes
+\paragraph{The production scheme.} The library default since juliaTDGL 2.0 (\code{Config(...)}, the same as
+\code{Config(:prod; ...)}; release 1.1) removes
 the three bounds that do not belong to the equations integrated here:
 \begin{itemize}
 \item the term $\kappa^2\nabla\times\nabla\times\theta$ of block [C] is taken
@@ -505,11 +507,11 @@ sample heat.
 % ======================================================================
 \section{Numerical modes and reproducibility}
 
-\code{Strict()} routes $|z|$, $e^{-i\phi}$ and the complex product through
-the C library functions (\code{hypot}, \code{sincos}, a fused multiply--add
-product); it is the mode of the regression tests, which compare against
-stored states. \code{Fast()} uses Julia's native arithmetic, vectorises,
-is about 1.3 times faster and agrees to machine precision. With
+\code{Fast()}, the default of \code{run\_case} since juliaTDGL 2.0, uses Julia's native arithmetic and
+vectorises. \code{Strict()} routes $|z|$, $e^{-i\phi}$ and the complex product through the C library
+functions (\code{hypot}, \code{sincos}, a fused multiply--add product); it is about 1.3 times slower, gives
+the digits of the earlier releases and is the mode of the regression tests, which compare against stored
+states. The two agree to machine precision. With
 \code{use\_threads=true} the planes in $z$ are updated in parallel; each
 plane writes distinct cells, so the result does not depend on the number of
 threads. At the start of each run a self-test

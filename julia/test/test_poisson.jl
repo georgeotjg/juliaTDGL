@@ -45,7 +45,7 @@ end
 @testset "phi: div(curl curl A) = 0 EXACTLY, and what follows" begin
 # With the staggered operators of the kernel the identity is exact; a
 # ratio like 0.993 is an artefact of mixing two different divergences.
-    cfg = Config(GEOM_MODE="WEDGE", Nx_sc=20, Ny_sc=14, Nz_sc=4,
+    cfg = Config(:legacy; GEOM_MODE="WEDGE", Nx_sc=20, Ny_sc=14, Nz_sc=4,
                  dx=0.5, dy=0.5, dz=0.5, kappa_s=2.0, kappa_p=2.0,
                  xi_ratio=1.30, gamma12=0.001, gamma_ratio=1.3, H_const=0.50,
                  J_list=[0.10], delta_v=6, selftest=false, out_dir="",

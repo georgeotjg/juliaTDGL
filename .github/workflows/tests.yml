@@ -1,0 +1,41 @@
+# The test suite of the N-band package (tdgl2/) on GitHub's machines, on every push to main, on pull requests and by hand.
+name: tests
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+jobs:
+  # The golden states were written with OpenBLAS's Haswell kernels and Julia code for that CPU; pinned to both (and to one
+  # Julia release, since a patch release may bring another OpenBLAS or LLVM), any x86 machine with AVX2 gives the same bits.
+  bits:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+      - uses: julia-actions/setup-julia@v3
+        with:
+          version: '1.13.2'
+      - uses: julia-actions/cache@v3
+      - run: julia --project=tdgl2 -e 'using Pkg; Pkg.instantiate()'
+      - name: Suite, to the bit
+        env:
+          OPENBLAS_NUM_THREADS: '1'
+          OPENBLAS_CORETYPE: Haswell
+          TDGL_TEST_BITS: '1'
+        run: julia -C haswell --project=tdgl2 tdgl2/test/run.jl
+  # As a user runs it: the machine's own kernels, states to 1e-10, verdicts and counts exact.
+  native:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+      - uses: julia-actions/setup-julia@v3
+        with:
+          version: '1.13'
+      - uses: julia-actions/cache@v3
+      - run: julia --project=tdgl2 -e 'using Pkg; Pkg.instantiate()'
+      - name: Suite
+        env:
+          OPENBLAS_NUM_THREADS: '1'
+        run: julia --project=tdgl2 tdgl2/test/run.jl

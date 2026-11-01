@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-labelledby="t">
+  <title id="t">juliaTDGL: three vortices above the tip of a notch</title>
+  <!-- the sample, with a V notch cut into its lower face -->
+  <path d="M36 48 H220 a24 24 0 0 1 24 24 V184 a24 24 0 0 1 -24 24 H148 L128 176 L108 208 H36 a24 24 0 0 1 -24 -24 V72 a24 24 0 0 1 24 -24 Z"
+        fill="none" stroke="#4063D8" stroke-width="9" stroke-linejoin="round"/>
+  <!-- three vortices in the colours of Julia: a core and two circulation arcs each -->
+  <g fill="none" stroke-width="4.5" stroke-linecap="round">
+    <g stroke="#389826"><path d="M128 82 a14 14 0 1 1 -13.3 9.7"/><path d="M128 74 a22 22 0 1 1 -20.9 15.2" opacity="0.5"/></g>
+    <g stroke="#CB3C33"><path d="M104 122 a14 14 0 1 1 -13.3 9.7"/><path d="M104 114 a22 22 0 1 1 -20.9 15.2" opacity="0.5"/></g>
+    <g stroke="#9558B2"><path d="M152 122 a14 14 0 1 1 -13.3 9.7"/><path d="M152 114 a22 22 0 1 1 -20.9 15.2" opacity="0.5"/></g>
+  </g>
+  <circle cx="128" cy="96" r="7.5" fill="#389826"/>
+  <circle cx="104" cy="136" r="7.5" fill="#CB3C33"/>
+  <circle cx="152" cy="136" r="7.5" fill="#9558B2"/>
+</svg>

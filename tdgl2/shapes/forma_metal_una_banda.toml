@@ -1,0 +1,9 @@
+# A one-band normal-metal lead: the last 5 ξ of the sample along x are the material "metal" of the run file
+# (tdgl2/examples/metal_una_banda.toml), the rest the run's [material].
+[[shape]]
+type = "rect"
+x = 17.5
+y = 0.0
+w = 5.0
+h = 1000.0
+material = "metal"

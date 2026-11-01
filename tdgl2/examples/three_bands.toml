@@ -1,0 +1,36 @@
+# Three identical bands with equal repulsive Josephson couplings (gamma < 0): the phases are frustrated and the ground
+# state breaks time reversal (phases 0 and +-2 pi/3, |Psi|^2 = 1 + |gamma| per band).  The notched box at kappa = 2.
+# A model, not a material.  Short windows: a demonstration of N bands.
+#   OPENBLAS_NUM_THREADS=1 julia --project=tdgl2 tdgl2/scripts/run.jl tdgl2/examples/three_bands.toml
+[material]
+name = "three frustrated bands"
+kappa = 2.0
+sigma_n = 1.0
+gamma = [[0.0, -0.1, -0.1], [-0.1, 0.0, -0.1], [-0.1, -0.1, 0.0]]
+
+[[material.band]]
+name = "1"
+
+[[material.band]]
+name = "2"
+
+[[material.band]]
+name = "3"
+
+[mesh]
+nx = 40
+ny = 24
+nz = 6
+dx = 0.5
+
+[geometry]
+GEOM_MODE = "WEDGE"
+
+[protocol]
+t_min_GL = 200.0
+t_min_GL_res = 400.0
+
+[run]
+J = [0.20, 0.30, 0.40, 0.50, 0.60]
+H = 0.03
+out_dir = "tdgl2/runs/three_bands"
