@@ -4,7 +4,7 @@
 #  `dt`, or a one-substep offset between the two halves of the gauge
 #  transformation).
 # ---------------------------------------------------------------------------
-base_v14(; kw...) = Config(; GEOM_MODE="WEDGE", Nx_sc=16, Ny_sc=10, Nz_sc=4,
+base_v14(; kw...) = Config(:legacy; GEOM_MODE="WEDGE", Nx_sc=16, Ny_sc=10, Nz_sc=4,
     dx=0.5, dy=0.5, dz=0.5, kappa_s=2.0, kappa_p=2.0, xi_ratio=1.30,
     gamma12=0.001, gamma_ratio=1.0, H_const=0.50, J_list=[0.08], delta_v=4,
     t_min_GL=0.0, t_min_GL_res=0.0, iter_min=120, mMax=120, use_Vconv=false,

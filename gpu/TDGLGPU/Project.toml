@@ -1,0 +1,29 @@
+name = "TDGLGPU"
+uuid = "bdb30251-a2f1-48e8-9fae-33af49314eab"
+version = "0.1.0"
+
+[deps]
+Adapt = "79e6a3ab-5dfb-504d-930d-738a2a938a0e"
+KernelAbstractions = "63c18a36-062a-441e-b654-da1e3ab1ce7c"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+TDGL = "7c1d4a6e-0b3f-4b2e-9a11-5d2c8e4f0a13"
+
+[sources]
+TDGL = {path = "../../tdgl2"}
+
+[compat]
+Adapt = "4"
+KernelAbstractions = "0.10"
+TDGL = "2.0"
+julia = "1.13"
+
+[extras]
+Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
+Pkg = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
+Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
+SHA = "ea8e919c-243c-51af-8825-aaa63cd721ce"
+TOML = "fa267f1f-6049-4f14-aa54-33bafae1ed76"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Dates", "Pkg", "Printf", "SHA", "TOML", "Test"]

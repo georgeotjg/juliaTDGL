@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 300" role="img" aria-labelledby="st" font-family="system-ui, sans-serif" font-size="15">
+  <title id="st">The simulated box seen from above: the sample with a notch on its face y1, the buffer around it, the contacts at x1 and x2, the current along x and the field along z</title>
+  <rect x="40" y="30" width="560" height="220" fill="none" stroke="currentColor" stroke-dasharray="6 5" opacity="0.55"/>
+  <text x="50" y="50" fill="currentColor" opacity="0.7">buffer (normal metal or insulator)</text>
+  <path d="M90 70 H550 V210 H344 L320 168 L296 210 H90 Z" fill="currentColor" fill-opacity="0.12" stroke="currentColor" stroke-width="2.5"/>
+  <rect x="90" y="70" width="36" height="140" fill="currentColor" fill-opacity="0.28"/>
+  <rect x="514" y="70" width="36" height="140" fill="currentColor" fill-opacity="0.28"/>
+  <text x="108" y="235" text-anchor="middle" fill="currentColor">contact x1</text>
+  <text x="532" y="235" text-anchor="middle" fill="currentColor">contact x2</text>
+  <text x="320" y="268" text-anchor="middle" fill="currentColor">notch on the face y1 (f = 0 inside)</text>
+  <path d="M320 205 V255" stroke="currentColor" stroke-width="1" opacity="0.6"/>
+  <g stroke="#4063D8" stroke-width="3" fill="#4063D8">
+    <path d="M170 110 H440"/><path d="M440 110 l-14 -7 v14 z"/>
+  </g>
+  <text x="300" y="100" text-anchor="middle" fill="#4063D8">J (transport current, x)</text>
+  <circle cx="470" cy="150" r="12" fill="none" stroke="#CB3C33" stroke-width="2.5"/><circle cx="470" cy="150" r="3" fill="#CB3C33"/>
+  <text x="490" y="155" fill="#CB3C33">H (z)</text>
+  <g stroke="currentColor" stroke-width="2" fill="currentColor">
+    <path d="M14 286 H54"/><path d="M54 286 l-8 -4 v8 z"/><path d="M14 286 V250"/><path d="M14 250 l-4 8 h8 z"/>
+  </g>
+  <text x="58" y="291" fill="currentColor">x</text><text x="20" y="252" fill="currentColor">y</text>
+  <text x="140" y="165" fill="currentColor" opacity="0.8">+J: vortices enter at y1, from the tip</text>
+</svg>

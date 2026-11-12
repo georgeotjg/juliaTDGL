@@ -1,0 +1,13 @@
+{
+  "initial_job_exit": 1,
+  "validation_suite_passed": true,
+  "strict_cli_passed": true,
+  "initial_failure_stage": "optional CUDA loading in the new benchmark",
+  "first_benchmark_retry_exit": 0,
+  "final_benchmark_exit": 0,
+  "initial_complement_exit": 1,
+  "initial_complement_failure": "CPU CLI absent from uploaded subset; general scripts added to driver",
+  "wrapped_cli_retry_exit": 0,
+  "calibrated_resume_passed": true,
+  "retained_session_reused": true
+}

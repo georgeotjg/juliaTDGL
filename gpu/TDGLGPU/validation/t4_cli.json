@@ -1,0 +1,16 @@
+{
+  "strict": {
+    "numerical_files": 11,
+    "completed_resume_preserves_files": true,
+    "passed": true,
+    "backend": "CUDA/Tesla T4",
+    "cpu_fallback_steps": 0
+  },
+  "wrapped": {
+    "wrapped_cli_cuda": true,
+    "resume_test_sha256": "75d014c7009ec2045b5766806cd9f01663037e85e88538585181cdeb9e0faddd",
+    "backend_steps": 68,
+    "passed": true,
+    "cpu_fallback_steps": 0
+  }
+}

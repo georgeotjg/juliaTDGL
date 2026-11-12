@@ -1,0 +1,50 @@
+{
+  "units": "ms/step",
+  "workload": "warmed step batches; no installation, JIT or cycle transfers/protocol",
+  "laptop": "i5-1235U, P core 0, one Julia/BLAS thread",
+  "laptop_repetitions": 3,
+  "t4_batches": 1,
+  "colab_cpu_batches": 1,
+  "cases": [
+    {
+      "label": "$24\\times12\\times6$",
+      "laptop_ms_median": 0.25969685,
+      "colab_cpu_ms": 0.6929469500000001,
+      "t4_ms": 1.3713091499999999,
+      "laptop_speedup": 0.18937877720716734,
+      "colab_speedup": 0.5053178198366138
+    },
+    {
+      "label": "$48\\times24\\times12$",
+      "laptop_ms_median": 2.02665605,
+      "colab_cpu_ms": 4.5836532,
+      "t4_ms": 2.3364456,
+      "laptop_speedup": 0.867409902460387,
+      "colab_speedup": 1.9618060869895708
+    },
+    {
+      "label": "$96\\times48\\times24$",
+      "laptop_ms_median": 21.431811000000003,
+      "colab_cpu_ms": 66.283465,
+      "t4_ms": 7.2679521,
+      "laptop_speedup": 2.94881016070538,
+      "colab_speedup": 9.119964480778568
+    },
+    {
+      "label": "$96\\times48\\times24$, PCG",
+      "laptop_ms_median": 134.2930205,
+      "colab_cpu_ms": 487.1204097,
+      "t4_ms": 49.8174949,
+      "laptop_speedup": 2.695699989924624,
+      "colab_speedup": 9.778099253641917
+    },
+    {
+      "label": "$80\\times24\\times24$, cable",
+      "laptop_ms_median": 108.8362719,
+      "colab_cpu_ms": 314.7053695,
+      "t4_ms": 53.3924266,
+      "laptop_speedup": 2.0384215296182098,
+      "colab_speedup": 5.8941949175241275
+    }
+  ]
+}

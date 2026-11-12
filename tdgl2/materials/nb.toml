@@ -1,0 +1,22 @@
+# Niobium: one-band GL in the units of the code (g = Gamma = a = beta = 1; lengths xi, times xi^2/D, H in Hc2).  Pure Nb sits
+# at the type-I/type-II border (kappa of order 1); films and wires are dirtier and have a larger kappa (mean free path l:
+# kappa grows as lambda_L/l in the dirty limit).  The TDGL relaxation and sigma_n are those of a dirty BCS metal (u = 5.79),
+# which is where the equations are quantitative; for pure Nb they are an approximation.
+name = "Nb, one band"
+regime = "one-band GL near Tc; kappa ~ 1 for high-purity Nb, larger for films (replace with the sample's); dirty TDGL u = 5.79"
+kappa = 1.0           # high-purity Nb near Tc; replace with the sample's (films: 2-10 depending on l)
+sigma_n = "dirty"     # u = Gamma/sigma_n = 5.79
+T = 0.0
+
+[[band]]
+name = "Nb"
+g = 1.0
+Gamma = 1.0
+a = 1.0
+beta = 1.0
+gamma_kwt = 0.0       # KWT: gamma = 2 tau_E Delta/hbar = 3.04 tau_E[ps] Delta[meV]; no value fixed here
+
+[sources]
+kappa = "of order 1 for high-purity niobium, weakly dependent on T: Finnemore, Stromberg, Swenson, Phys. Rev. 149, 231 (1966), doi:10.1103/PhysRev.149.231"
+sigma_n = "dirty BCS: sigma_n = sum g Gamma/beta / 5.79 (model.jl, sigma_dirty)"
+gamma_kwt = "gamma = 2 tau_E Delta/hbar (Kramer and Watts-Tobin, PRL 40, 1041 (1978)); tau_E of the sample needed"

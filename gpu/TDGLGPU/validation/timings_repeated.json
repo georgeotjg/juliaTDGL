@@ -1,0 +1,231 @@
+{
+  "units": "ms/step",
+  "repeats": 3,
+  "steps_per_batch": 20,
+  "laptop": "i5-1235U, one P core (0), Julia/BLAS single-threaded",
+  "device": "Tesla T4",
+  "initialization": "fresh configured seed and cold PCG history per batch; one discarded warm-up batch",
+  "scope": "batches exclude JIT, construction, protocol, measurements and checkpoints; cycle adds upload/download; thermals not controlled",
+  "cases": [
+    {
+      "case": "plain24",
+      "sample_mesh": [
+        24,
+        12,
+        6
+      ],
+      "padded_mesh": [
+        26,
+        14,
+        8
+      ],
+      "config_sha256": "21aa3899be15b37eeab7a835f38bc47f7feadd671698245f8e8366d5aa72c361",
+      "laptop_ms": [
+        0.26126475,
+        0.2627691,
+        0.2573907
+      ],
+      "colab_cpu_ms": [
+        0.6271522,
+        0.5857197,
+        0.5827086
+      ],
+      "t4_batch_ms": [
+        1.35747815,
+        1.35548095,
+        1.3494213
+      ],
+      "t4_cycle_ms": [
+        1.3926120000000002,
+        1.3930804,
+        1.3904927500000002
+      ],
+      "max_state_error": 1.2212499520713141e-15,
+      "max_cycle_state_error": 1.2212499520713141e-15,
+      "medians": {
+        "laptop_ms": 0.26126475,
+        "colab_cpu_ms": 0.5857197,
+        "t4_batch_ms": 1.35548095,
+        "t4_cycle_ms": 1.3926120000000002
+      },
+      "laptop_over_t4_batch": 0.1927468991725778,
+      "laptop_over_t4_cycle": 0.18760771126487488
+    },
+    {
+      "case": "plain48",
+      "sample_mesh": [
+        48,
+        24,
+        12
+      ],
+      "padded_mesh": [
+        50,
+        26,
+        14
+      ],
+      "config_sha256": "2d6c189f998a845c1c24a1c16091ea69db22f8eedcec2ec0e6f74040542b1e2f",
+      "laptop_ms": [
+        2.2175304000000002,
+        2.11847515,
+        2.1421256
+      ],
+      "colab_cpu_ms": [
+        4.4092091,
+        4.3719383,
+        4.40795505
+      ],
+      "t4_batch_ms": [
+        2.26829215,
+        2.30979525,
+        2.26805275
+      ],
+      "t4_cycle_ms": [
+        2.40523825,
+        2.40162245,
+        2.4155625499999998
+      ],
+      "max_state_error": 1.2212626526386963e-15,
+      "max_cycle_state_error": 1.2212626526386963e-15,
+      "medians": {
+        "laptop_ms": 2.1421256,
+        "colab_cpu_ms": 4.40795505,
+        "t4_batch_ms": 2.26829215,
+        "t4_cycle_ms": 2.40523825
+      },
+      "laptop_over_t4_batch": 0.9443781745662699,
+      "laptop_over_t4_cycle": 0.8906084875375652
+    },
+    {
+      "case": "plain96",
+      "sample_mesh": [
+        96,
+        48,
+        24
+      ],
+      "padded_mesh": [
+        98,
+        50,
+        26
+      ],
+      "config_sha256": "db0c9a59913a4e0f0143e21469c3f065aa4a89bb4ffbb34736cf2d1f214b042b",
+      "laptop_ms": [
+        22.756476749999997,
+        22.485997899999997,
+        22.5738149
+      ],
+      "colab_cpu_ms": [
+        37.8184249,
+        37.93361665,
+        37.7756359
+      ],
+      "t4_batch_ms": [
+        7.294659200000001,
+        7.2945315,
+        7.29362465
+      ],
+      "t4_cycle_ms": [
+        4.8156816,
+        7.4881002,
+        4.8155294500000005
+      ],
+      "max_state_error": 1.336885555457667e-15,
+      "max_cycle_state_error": 1.336885555457667e-15,
+      "medians": {
+        "laptop_ms": 22.5738149,
+        "colab_cpu_ms": 37.8184249,
+        "t4_batch_ms": 7.2945315,
+        "t4_cycle_ms": 4.8156816
+      },
+      "laptop_over_t4_batch": 3.094621621690166,
+      "laptop_over_t4_cycle": 4.687563833123852
+    },
+    {
+      "case": "pcg96",
+      "sample_mesh": [
+        96,
+        48,
+        24
+      ],
+      "padded_mesh": [
+        100,
+        52,
+        28
+      ],
+      "config_sha256": "415e9c5545478bd3fba78024bdea3d5829c107a9b26a9872f96dde831d0597ee",
+      "laptop_ms": [
+        145.92014805,
+        147.3136061,
+        146.37041745
+      ],
+      "colab_cpu_ms": [
+        198.15334835000002,
+        196.25540485,
+        240.6898037
+      ],
+      "t4_batch_ms": [
+        77.65644645,
+        26.2386737,
+        26.902794649999997
+      ],
+      "t4_cycle_ms": [
+        26.25996015,
+        21.03970405,
+        20.892058650000003
+      ],
+      "max_state_error": 3.522383201781665e-08,
+      "max_cycle_state_error": 3.8121917178557396e-08,
+      "medians": {
+        "laptop_ms": 146.37041745,
+        "colab_cpu_ms": 198.15334835000002,
+        "t4_batch_ms": 26.902794649999997,
+        "t4_cycle_ms": 21.03970405
+      },
+      "laptop_over_t4_batch": 5.440714221487023,
+      "laptop_over_t4_cycle": 6.956866745946456
+    },
+    {
+      "case": "cable80",
+      "sample_mesh": [
+        80,
+        24,
+        24
+      ],
+      "padded_mesh": [
+        84,
+        28,
+        28
+      ],
+      "config_sha256": "b554911b0076dfdd64c59e3caddf68cec8f555b3a2b801402b33d79ccfdadc60",
+      "laptop_ms": [
+        170.95501310000003,
+        171.45417114999998,
+        172.7820497
+      ],
+      "colab_cpu_ms": [
+        255.08263595,
+        270.9276655,
+        302.1351443
+      ],
+      "t4_batch_ms": [
+        58.41213625,
+        57.715482050000006,
+        64.6027645
+      ],
+      "t4_cycle_ms": [
+        86.273187,
+        52.191261600000004,
+        52.0132606
+      ],
+      "max_state_error": 1.0471250255772446e-10,
+      "max_cycle_state_error": 9.6449431774559e-11,
+      "medians": {
+        "laptop_ms": 171.45417114999998,
+        "colab_cpu_ms": 270.9276655,
+        "t4_batch_ms": 58.41213625,
+        "t4_cycle_ms": 52.191261600000004
+      },
+      "laptop_over_t4_batch": 2.9352491135778305,
+      "laptop_over_t4_cycle": 3.2851126011102205
+    }
+  ]
+}

@@ -39,16 +39,27 @@ end
           kappa_p=2.0, xi_ratio=1.30, gamma12=0.001, gamma_ratio=1.0, H_const=0.5, J_list=[0.0],
           selftest=false, snap_every=0, out_dir="", verbose=false)
     dl = 2 / (3 / 0.5^2)
-    p0 = derive_params(Config(; kw...))
-    @test Config().cfl_legacy && p0.dt == 0.99 * 0.03 * dl          # dt3 binds at R = 1.3, kappa = 2
-    p1 = derive_params(Config(; kw..., cfl_legacy=false))
+    p0 = derive_params(Config(:legacy; kw...))
+    @test Config(:legacy).cfl_legacy && p0.dt == 0.99 * 0.03 * dl          # dt3 binds at R = 1.3, kappa = 2
+    p1 = derive_params(Config(:legacy; kw..., cfl_legacy=false))
     @test p1.dt ≈ 0.99 * dl / (4 * 2.0^2)                            # explicit Maxwell binds
     # without the explicit Maxwell bound: diffusion plus reaction of sigma or pi
     s1(p) = 2 / (8 / dl + 2)
     s2(p) = 2 * 1.0 / (8 / (dl * p.mr) + 2 * p.alpha2_n)
-    p2 = derive_params(Config(; kw..., cfl_legacy=false, maxwell_implicit=true))
+    p2 = derive_params(Config(:legacy; kw..., cfl_legacy=false, maxwell_implicit=true))
     @test p2.dt ≈ 0.99 * min(s1(p2), s2(p2))
     @test p2.dt < 0.99 * dl / 4 * min(1.0, p2.mr)                    # below the bound of pure diffusion
-    p3 = derive_params(Config(; kw..., xi_ratio=4.0, cfl_legacy=false))
+    p3 = derive_params(Config(:legacy; kw..., xi_ratio=4.0, cfl_legacy=false))
     @test p3.dt ≈ 0.99 * s2(p3)                                      # the light pi band binds
 end
+
+# Since juliaTDGL 2.0 the defaults are the production scheme of 1.1 and the Fast mode; Config(:legacy) is the explicit
+# scheme of 1.0.0, field by field what the library defaults were up to 1.2.
+@testset "defaults: the production scheme; :legacy the explicit one" begin
+    d = Config(); p = Config(:prod); l = Config(:legacy)
+    @test all(getfield(d, k) == getfield(p, k) for k in fieldnames(Config) if !(getfield(d, k) isa AbstractFloat && isnan(getfield(d, k))))
+    @test d.maxwell_implicit && !d.cfl_legacy && d.pi_substeps == 0 && d.dt_scale == 0.5 && d.conv_by_time && d.eps_conv_legacy
+    @test !l.maxwell_implicit && l.cfl_legacy && l.pi_substeps == 1 && l.dt_scale == 1.0 && !l.conv_by_time && !l.eps_conv_legacy && l.blas_threads == 0
+    @test first(methods(run_case)).sig !== nothing
+end
+

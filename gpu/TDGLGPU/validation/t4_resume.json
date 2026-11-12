@@ -1,0 +1,54 @@
+{
+  "cases": [
+    {
+      "physics": "plain",
+      "pcg": true,
+      "state_error": 1.7093336468487763e-09,
+      "fresh_stepper_resume_exact": false,
+      "passed": true,
+      "backend": "CUDABackend",
+      "boundary": "bar",
+      "state_tolerance": 1e-07
+    },
+    {
+      "physics": "plain",
+      "pcg": true,
+      "state_error": 6.02082070723686e-10,
+      "fresh_stepper_resume_exact": false,
+      "passed": true,
+      "backend": "CUDABackend",
+      "boundary": "slab",
+      "state_tolerance": 1e-07
+    },
+    {
+      "physics": "plain",
+      "pcg": true,
+      "state_error": 0.0,
+      "fresh_stepper_resume_exact": true,
+      "passed": true,
+      "backend": "CUDABackend",
+      "boundary": "open",
+      "state_tolerance": 1e-07
+    },
+    {
+      "physics": "noise_kwt",
+      "pcg": true,
+      "state_error": 0.0,
+      "fresh_stepper_resume_exact": true,
+      "passed": true,
+      "backend": "CUDABackend",
+      "boundary": "bar",
+      "state_tolerance": 1e-07
+    },
+    {
+      "physics": "heat",
+      "pcg": true,
+      "state_error": 0.0,
+      "fresh_stepper_resume_exact": true,
+      "passed": true,
+      "backend": "CUDABackend",
+      "boundary": "open",
+      "state_tolerance": 1e-07
+    }
+  ]
+}

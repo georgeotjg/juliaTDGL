@@ -1,0 +1,13 @@
+{
+  "same_verdicts_cycles": true,
+  "backend": "CUDA",
+  "backend_seconds": 1.193659878,
+  "state_relative": 1.0205131546971278e-14,
+  "passed": true,
+  "cpu_seconds": 12.452488957,
+  "state_tolerance": 1e-09,
+  "voltage_relative": 1.7372199853401795e-14,
+  "smoke": true,
+  "verdicts": "FFFF*",
+  "voltage_absolute": 4.107825191113079e-15
+}

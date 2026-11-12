@@ -1,0 +1,18 @@
+[material]
+file = "mgb2_model_II.toml"
+kappa = 2.0
+[mesh]
+nx = 80
+ny = 24
+nz = 24
+dx = 0.5
+buf = 2
+[geometry]
+GEOM_MODE = "CUSTOM"
+geom_file = "cable_x.toml"
+[scheme]
+threads = false
+sigma_vac = 0.01
+[run]
+J = [0.3]
+H = 0.03

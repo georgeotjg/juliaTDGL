@@ -4,26 +4,27 @@
           H_const=0.03, J_list=[0.0], selftest=false, snap_every=0, out_dir="",
           verbose=false, use_threads=false, cfl_legacy=false, maxwell_implicit=true)
     # (1) off by default; automatic: the pi bound no longer binds, each substep stays below it
-    @test Config().pi_substeps == 1
-    p1 = derive_params(Config(; kw...)); pa = derive_params(Config(; kw..., pi_substeps=0))
+    @test Config(:legacy).pi_substeps == 1
+    p1 = derive_params(Config(:legacy; kw...)); pa = derive_params(Config(:legacy; kw..., pi_substeps=0))
     @test p1.n_pi == 1 && isempty(p1.Wpi) && occursin("pi", p1.dt_limitante)
     @test pa.n_pi > 1 && occursin("sigma", pa.dt_limitante)
     @test pa.dt / pa.n_pi < p1.dt / 0.99
-    @test_throws ErrorException derive_params(Config(; kw..., pi_substeps=-1))
-    @test_throws ErrorException derive_params(Config(; kw..., pi_substeps=2, use_drag=true, nu_drag=0.1))
+    @test_throws ErrorException derive_params(Config(:legacy; kw..., pi_substeps=-1))
+    @test_throws ErrorException derive_params(Config(:legacy; kw..., pi_substeps=2, use_drag=true, nu_drag=0.1))
     # automatic substeps with a term: one substep, the implicit curl-curl stays; Phi is not implicit
     for t in ((; use_heat=true), (; T_red=0.3, T_physical=true), (; use_drag=true, nu_drag=0.05))
         q = derive_params(Config(:prod; kw..., t...))
         @test q.n_pi == 1 && q.maxwell_implicit
     end
-    @test_throws ErrorException derive_params(Config(:prod; kw..., use_phi=true))
+    cφ = Config(:prod; kw..., use_phi=true); derive_params(cφ)          # Φ: the explicit scheme, by itself
+    @test !cφ.maxwell_implicit && cφ.pi_substeps == 1
     # (2) one step with n substeps = n steps of the plain kernel at dt/n for pi, with sigma
     #     and the links frozen and the pi ghosts of block [H] refreshed in between
     n = 4
-    pn = derive_params(Config(; kw..., pi_substeps=n))
-    pd = derive_params(Config(; kw..., dt_scale=min(1.0, pn.dt / n / p1.dt)))
+    pn = derive_params(Config(:legacy; kw..., pi_substeps=n))
+    pd = derive_params(Config(:legacy; kw..., dt_scale=min(1.0, pn.dt / n / p1.dt)))
     @test pd.dt ≈ pn.dt / n
-    g = build_geometry(Config(; kw...), pn); s = initial_state(pn, g, 0.0, Strict())
+    g = build_geometry(Config(:legacy; kw...), pn); s = initial_state(pn, g, 0.0, Strict())
     for (k, f) in enumerate((s.Vx, s.Vy, s.Vz))
         f .= cis.(0.3 .* reshape(sin.(k .+ (1:length(f))), size(f)))
     end
@@ -35,7 +36,7 @@
     I = (x1+1:x2, y1+1:y2, z1+1:z2)
     # previous-step link rotation dtheta (theta - phi); zero = frozen links
     for (dth, extrap) in ((0.0, true), (0.01, true), (0.01, false), (0.3, true))   # 0.3: exact branch
-        q = derive_params(Config(; kw..., pi_substeps=n, pi_link_extrapolation=extrap))
+        q = derive_params(Config(:legacy; kw..., pi_substeps=n, pi_link_extrapolation=extrap))
         ss = deepcopy(s)
         D = [dth .* reshape(cos.((1:length(V)) .+ c), size(V)) for (c, V) in enumerate((ss.Vx, ss.Vy, ss.Vz))]
         for (U, V, d) in zip((ss.Ux, ss.Uy, ss.Uz), (ss.Vx, ss.Vy, ss.Vz), D)
@@ -56,9 +57,9 @@
         @test maximum(abs, ss.F2[I...] .- X[I...]) < (extrap && dth > 0 ? 1e-8 : 1e-13)   # series below |dth| = 0.05, O(dth^5)
     end
     # (2b) sigma substeps: the same for sigma, pi frozen in the coupling
-    ps = derive_params(Config(; kw..., sigma_substeps=n, pi_substeps=0, dt_scale=0.5))
+    ps = derive_params(Config(:legacy; kw..., sigma_substeps=n, pi_substeps=0, dt_scale=0.5))
     @test ps.n_sig == n && ps.n_pi > 1                       # pi follows the larger step
-    qd = derive_params(Config(; kw..., pi_substeps=0, dt_scale=0.5))   # sigma at dt/n, plain
+    qd = derive_params(Config(:legacy; kw..., pi_substeps=0, dt_scale=0.5))   # sigma at dt/n, plain
     @test qd.dt ≈ ps.dt / n
     ss = deepcopy(s)
     for (U, V) in zip((ss.Ux, ss.Uy, ss.Uz), (ss.Vx, ss.Vy, ss.Vz))
@@ -87,7 +88,7 @@
     end
     # (3) the same fixed point: the J = 0 seed relaxed with and without substeps
     estados = map((1, 0)) do ns
-        c = Config(; kw..., pi_substeps=ns, t_min_GL=0.0, iter_min=1, mMax=10^5,
+        c = Config(:legacy; kw..., pi_substeps=ns, t_min_GL=0.0, iter_min=1, mMax=10^5,
                    eps_conv_seed=1.0, tie_seed_tolerance=true, eps_conv_rate=1e-7)
         q = derive_params(c); gg = build_geometry(c, q)
         TDGL.sweep([0.0], [0.03], "J+", gg, q, Strict())

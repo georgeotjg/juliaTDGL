@@ -1,0 +1,47 @@
+# A tunnel-coupled bilayer (material per region): two slabs of 3 ξ each stacked along z, the bottom one the two-band model II
+# at κ = 2, the top one a slower material ("lenta": a quarter of the diffusivity in both bands, a weaker σ band), joined through a
+# barrier of transparency t = 0.2 on the links that cross the interface (tdgl2/shapes/forma_bicapa_tunel.toml).  κ, σn and T are the
+# sample's.  The units of [materials.lenta] are those of band 1 of [material] (m, Gamma, a as for band 2 of a material file).
+# A demonstration of the option: a short ladder.
+#   OPENBLAS_NUM_THREADS=1 julia --project=tdgl2 tdgl2/scripts/run.jl tdgl2/examples/bicapa_tunel.toml
+[material]
+file = "mgb2_model_II.toml"
+kappa = 2.0
+
+[materials.lenta]
+name = "slow material: D/4 in both bands, a_sigma = 0.8"
+gamma12 = 1e-3
+transparency = { material = 0.2 }
+
+[[materials.lenta.band]]
+name = "sigma"
+m = 2.0
+Gamma = 2.0
+a = 0.8
+
+[[materials.lenta.band]]
+name = "pi"
+m = 0.2119
+Gamma = 2.0
+a = 0.5
+
+[mesh]
+nx = 40
+ny = 16
+nz = 12
+dx = 0.5
+buf = 1
+
+[geometry]
+GEOM_MODE = "CUSTOM"
+geom_file = "forma_bicapa_tunel.toml"
+
+[protocol]
+t_min_GL = 200.0
+t_min_GL_res = 400.0
+stop_after_V = 1
+
+[run]
+J = [0.30, 0.50, 0.70]
+H = 0.03
+out_dir = "tdgl2/runs/bicapa_tunel"

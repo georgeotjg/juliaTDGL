@@ -59,3 +59,6 @@ values chosen to switch a term on, not material constants of MgB₂.
 diffusive time step, the size of the Joule term in a forced normal state, the contact margin, that
 the diffused residual departs from the local one, and that `T_physical` is bit-identical at T = 0 and
 gives the uniform equilibrium |Ψσ|² = 1 − T, |Ψπ|² ≈ a2n − T at T = 0.3.
+
+
+The stored Octave banks require the original `libm` rounding in `Strict` mode. CI pins the reference CachyOS x86-64-v3 library (and verifies its checksum) inside an isolated Arch container. A system libm with another build can differ in the last bits even with the same glibc version. The solver and archived states are unchanged; physical comparisons and exact archived-state reproduction are distinct checks. See `.github/workflows/tests.yml` for the fixed environment.

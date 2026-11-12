@@ -1,0 +1,12 @@
+# A cable along x (the current axis): a disc on the y–z plane, extruded along the whole sample and kept;
+# the rest of the box is vacuum (release 2: needs sigma_vac).  For a box of 12 × 12 cells at dx = 0.5
+# (6 × 6 ξσ in y and z); the contacts take the section of the disc.
+[[shape]]
+type = "circle"
+axis = "x"
+u = 3.0
+v = 3.0
+r = 2.75
+along = "all"
+outside = true
+vacuum = true

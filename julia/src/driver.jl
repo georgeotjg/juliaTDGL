@@ -30,7 +30,7 @@ struct SDE
 end
 
 """
-    run_case(cfg; mode=Strict()) -> SDE
+    run_case(cfg; mode=Fast()) -> SDE
 
 Full pipeline of ONE run.
 
@@ -38,7 +38,7 @@ Full pipeline of ONE run.
   * `Strict()` uses libm hypot/sincos; the mode of the regression tests.
   * `Fast()`   is the same scheme with Julia's native arithmetic, faster.
 """
-function run_case(cfg::Config; mode::NumMode=Strict())
+function run_case(cfg::Config; mode::NumMode=Fast())
     t0 = time()
     p = derive_params(cfg)
     if cfg.verbose

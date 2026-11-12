@@ -18,7 +18,7 @@
 @testset "Gamma_r does not move the statics (F21)" begin
     amp = Float64[]
     for gr in (0.25, 1.0, 4.0)
-        cfg = Config(GEOM_MODE="SIM", Nx_sc=16, Ny_sc=12, Nz_sc=4,
+        cfg = Config(:legacy; GEOM_MODE="SIM", Nx_sc=16, Ny_sc=12, Nz_sc=4,
                      dx=0.5, dy=0.5, dz=0.5, kappa_s=2.0, kappa_p=2.0,
                      xi_ratio=1.30, gamma12=0.001, gamma_ratio=gr,
                      H_const=0.90, J_list=[0.0], t_min_GL=0.0, mMax=4000,

@@ -33,3 +33,18 @@ __pycache__/
 *~
 *.swp
 .DS_Store
+
+# Personal study notes and local agent/cloud configuration never belong here.
+ESTUDIO/
+GPT/
+AGENTS/
+cloud/
+.aws/
+.codex/
+.agents/
+**/guia_juliaTDGL*
+
+# Optional-backend output and local development environments
+out/
+gpu/TDGLGPU/Manifest.toml
+.tdgl-tui-run

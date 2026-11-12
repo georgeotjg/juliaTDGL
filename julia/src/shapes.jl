@@ -32,6 +32,17 @@
 #  voxels: dx, dz, layers = one block of rows per z plane (first block = z = 0),
 #  rows as in pixels; palette = { "#" = { f = 0.0 }, ... }. Any 3D pattern.
 #
+#  A figure on another face: axis = "x" (drawn on the y–z plane, extruded along x) or "y"
+#  (on the x–z plane, along y); "z" is the default and the keys above.  With axis x or y the
+#  centre is u, v (axis x: u = y, v = z; axis y: u = x, v = z), the polygon points are (u, v),
+#  rot turns about the axis, and along = "all" | "bottom" | "top" | "buried" | [a0, a1] is
+#  the extent along the axis (ξσ, from the face x1 or y1), as z is for axis z.
+#  outside = true writes the value outside the figure instead of inside: the figure is
+#  what is kept (a cable: a circle with axis = "x", outside = true).
+#  vacuum = true (instead of f) removes the material: no superconductor and no normal metal,
+#  the insulating outside of the sample (release 2 only: the scheme needs sigma_vac).  A voxel
+#  palette entry takes it too: { vacuum = true }.  f = 0 is a normal metal, not vacuum.
+#
 #  Files written before the format was in English ([[forma]], tipo = "circulo",
 #  z = "todo", ...) are still read: _normalise maps the old names.
 # ============================================================================
@@ -91,6 +102,7 @@ function _rango_z(spec, Lz)
 end
 
 const _TOL = 1e-9
+const _AXES = ("x", "y", "z")
 
 # point (u, v) in the shape's local frame (centre at origin, rotation undone)
 function _local(e, X, Y)
@@ -125,14 +137,25 @@ function _en_poligono(px, py, vx, vy)
 end
 
 """Is the physical point (X, Y, Z) inside element `e`? (not for pixel layers)"""
-function _dentro(e, X, Y, Z, Lz)
+function _dentro(e, X, Y, Z, L::NTuple{3,Float64})
     t = e["type"]
     if t == "sphere"
         cx = Float64(e["x"]); cy = Float64(e["y"]); cz = Float64(e["zc"])
         r = Float64(e["r"])
         return (X - cx)^2 + (Y - cy)^2 + (Z - cz)^2 <= r^2 + _TOL
     end
-    z0, z1 = _rango_z(get(e, "z", "all"), Lz)
+    ax = get(e, "axis", "z")
+    ax in _AXES || error("axis = '$ax' is not one of $(_AXES)")
+    if ax != "z"
+        # the figure in its own plane: (u, v, along) = (y, z, x) or (x, z, y), with the centre (u, v)
+        A, la, U, V = ax == "x" ? (X, L[1], Y, Z) : (Y, L[2], X, Z)
+        a0, a1 = _rango_z(get(e, "along", "all"), la)
+        (a0 - _TOL <= A <= a1 + _TOL) || return false
+        q = Dict{String,Any}(k => v for (k, v) in e if !(k in ("x", "y", "z", "u", "v", "axis", "along")))
+        q["x"] = get(e, "u", 0.0); q["y"] = get(e, "v", 0.0)
+        return _dentro(q, U, V, 0.0, L)
+    end
+    z0, z1 = _rango_z(get(e, "z", "all"), L[3])
     (z0 - _TOL <= Z <= z1 + _TOL) || return false
     if t == "circle"
         cx = Float64(e["x"]); cy = Float64(e["y"]); r = Float64(e["r"])
@@ -177,8 +200,11 @@ function _pixel(e, X, Y, Z, Lz)
     q = pal[ch]
     z0, z1 = _rango_z(get(q, "z", "all"), Lz)
     (z0 - _TOL <= Z <= z1 + _TOL) || return nothing
-    Float64(get(q, "f", 0.0))
+    _valor(q)
 end
+
+# what an element (or a palette entry) writes: its f, or NaN for vacuum
+_valor(q) = get(q, "vacuum", false) === true ? NaN : Float64(get(q, "f", 0.0))
 
 _filas(t) = t isa AbstractString ? split(chomp(t), '\n') : t
 
@@ -199,17 +225,20 @@ function _voxel(e, X, Y, Z)
     (ch == "." || ch == " ") && return nothing
     pal = e["palette"]
     haskey(pal, ch) || error("voxels: character '$ch' is not in the palette")
-    Float64(get(pal[ch], "f", 0.0))
+    _valor(pal[ch])
 end
 
 """
-    rasterize_shape!(fmask, elems, p; espejo=false) -> fmask
+    rasterize_shape!(fmask, elems, p; espejo=false, vac=nothing) -> fmask
 
-Writes the f of each element, in order, on the nodes x1:x2, y1:y2, z1:z2.
+Writes the f of each element, in order, on the nodes x1:x2, y1:y2, z1:z2.  A vacuum element
+(`vacuum = true`) marks its nodes in `vac` (and f = 0 there); a later element that writes an
+f gives the material back.  Without `vac` a vacuum element is an error.
 """
-function rasterize_shape!(fmask, elems, p::Params; espejo::Bool=false)
+function rasterize_shape!(fmask, elems, p::Params; espejo::Bool=false, vac=nothing)
     (; x1, x2, y1, y2, z1, z2, dx, dy, dz) = p
-    Lz = (z2 - z1) * dz
+    L = ((x2 - x1) * dx, (y2 - y1) * dy, (z2 - z1) * dz)
+    Lz = L[3]
     for k in z1:z2, j in y1:y2, i in x1:x2
         X = (i - x1) * dx
         jj = espejo ? (y1 + y2 + 1) - j : j
@@ -218,12 +247,18 @@ function rasterize_shape!(fmask, elems, p::Params; espejo::Bool=false)
         for e in elems
             if e["type"] == "pixels"
                 v = _pixel(e, X, Y, Z, Lz)
-                v === nothing || (fmask[i, j, k] = v)
             elseif e["type"] == "voxels"
                 v = _voxel(e, X, Y, Z)
-                v === nothing || (fmask[i, j, k] = v)
-            elseif _dentro(e, X, Y, Z, Lz)
-                fmask[i, j, k] = Float64(get(e, "f", 0.0))
+            else
+                v = _dentro(e, X, Y, Z, L) != (get(e, "outside", false) === true) ? _valor(e) : nothing
+            end
+            v === nothing && continue
+            if isnan(v)
+                vac === nothing && error("vacuum = true needs release 2 and an insulating padding (sigma_vac)")
+                vac[i, j, k] = true; fmask[i, j, k] = 0.0
+            else
+                vac === nothing || (vac[i, j, k] = false)
+                fmask[i, j, k] = v
             end
         end
     end

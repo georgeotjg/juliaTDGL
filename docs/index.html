@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>juliaTDGL</title>
+<meta name="description" content="juliaTDGL: three-dimensional multiband time-dependent Ginzburg-Landau solvers in Julia for the geometric superconducting diode effect.">
+<link rel="icon" href="img/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="style.css">
+<script>try { const t = localStorage.getItem('theme'); if (t) document.documentElement.dataset.theme = t; } catch (e) {}</script>
+<script>window.MathJax = { tex: { inlineMath: [['\\(', '\\)']], displayMath: [['\\[', '\\]']] }, chtml: { displayAlign: 'left' } };</script>
+<script defer src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-chtml.js"></script>
+</head>
+<body>
+<header class="top">
+<a class="name" href="index.html"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 566 140" role="img" class="wm" aria-labelledby="wm-t"><title id="wm-t">juliaTDGL: the four dots of the Julia logo as vortices over the j and the i</title><path class="k" d="M28.0625 47.5H44.84375V99.0625Q44.84375 109.609375 39.78125 115.1640625Q34.71875 120.71875 25.109375 120.71875H16.8125V109.703125H19.71875Q24.5 109.703125 26.28125 107.546875Q28.0625 105.390625 28.0625 99.0625Z"/><path class="k" d="M61.40625 79.5625V47.5H78.28125V52.75Q78.28125 57.015625 78.234375 63.4609375Q78.1875 69.90625 78.1875 72.0625Q78.1875 78.390625 78.515625 81.1796875Q78.84375 83.96875 79.640625 85.234375Q80.671875 86.875 82.3359375 87.765625Q84.0 88.65625 86.15625 88.65625Q91.40625 88.65625 94.40625 84.625Q97.40625 80.59375 97.40625 73.421875V47.5H114.1875V100.0H97.40625V92.40625Q93.609375 97.0 89.3671875 99.1796875Q85.125 101.359375 80.015625 101.359375Q70.921875 101.359375 66.1640625 95.78125Q61.40625 90.203125 61.40625 79.5625Z"/><path class="k" d="M131.3125 27.0625H148.09375V100.0H131.3125Z"/><path class="k" d="M165.21875 47.5H182.0V100.0H165.21875Z"/><path class="k" d="M222.65625 76.375Q217.40625 76.375 214.7578125 78.15625Q212.109375 79.9375 212.109375 83.40625Q212.109375 86.59375 214.2421875 88.3984375Q216.375 90.203125 220.171875 90.203125Q224.90625 90.203125 228.140625 86.8046875Q231.375 83.40625 231.375 78.296875V76.375ZM248.296875 70.046875V100.0H231.375V92.21875Q228.0 97.0 223.78125 99.1796875Q219.5625 101.359375 213.515625 101.359375Q205.359375 101.359375 200.2734375 96.6015625Q195.1875 91.84375 195.1875 84.25Q195.1875 75.015625 201.5390625 70.703125Q207.890625 66.390625 221.484375 66.390625H231.375V65.078125Q231.375 61.09375 228.234375 59.2421875Q225.09375 57.390625 218.4375 57.390625Q213.046875 57.390625 208.40625 58.46875Q203.765625 59.546875 199.78125 61.703125V48.90625Q205.171875 47.59375 210.609375 46.9140625Q216.046875 46.234375 221.484375 46.234375Q235.6875 46.234375 241.9921875 51.8359375Q248.296875 57.4375 248.296875 70.046875Z"/><path class="b" d="M257.3125 30.015625H321.8125V43.65625H298.609375V100.0H280.5625V43.65625H257.3125Z"/><path class="b" d="M350.1875 43.65625V86.359375H356.65625Q367.71875 86.359375 373.5546875 80.875Q379.390625 75.390625 379.390625 64.9375Q379.390625 54.53125 373.578125 49.09375Q367.765625 43.65625 356.65625 43.65625ZM332.140625 30.015625H351.171875Q367.109375 30.015625 374.9140625 32.2890625Q382.71875 34.5625 388.296875 40.0Q393.21875 44.734375 395.609375 50.921875Q398.0 57.109375 398.0 64.9375Q398.0 72.859375 395.609375 79.0703125Q393.21875 85.28125 388.296875 90.015625Q382.671875 95.453125 374.796875 97.7265625Q366.921875 100.0 351.171875 100.0H332.140625Z"/><path class="b" d="M475.734375 94.796875Q468.984375 98.078125 461.71875 99.71875Q454.453125 101.359375 446.71875 101.359375Q429.234375 101.359375 419.015625 91.5859375Q408.796875 81.8125 408.796875 65.078125Q408.796875 48.15625 419.203125 38.453125Q429.609375 28.75 447.703125 28.75Q454.6875 28.75 461.0859375 30.0625Q467.484375 31.375 473.15625 33.953125V48.4375Q467.296875 45.109375 461.5078125 43.46875Q455.71875 41.828125 449.90625 41.828125Q439.125 41.828125 433.2890625 47.8515625Q427.453125 53.875 427.453125 65.078125Q427.453125 76.1875 433.078125 82.234375Q438.703125 88.28125 449.0625 88.28125Q451.875 88.28125 454.2890625 87.9296875Q456.703125 87.578125 458.625 86.828125V73.234375H447.609375V61.140625H475.734375Z"/><path class="b" d="M492.625 30.015625H510.671875V86.359375H542.359375V100.0H492.625Z"/><g fill="none" stroke="#4063D8" stroke-linecap="round"><path d="M36.5 21.0 a9.0 9.0 0 1 1 -8.50 6.20" stroke-width="3.0"/><path d="M36.5 15.0 a15.0 15.0 0 1 1 -14.29 10.39" stroke-width="2.6" opacity="0.5"/></g><circle cx="36.5" cy="30" r="5.2" fill="#4063D8"/><g fill="none" stroke="#389826" stroke-linecap="round"><path d="M173.6 6.4 a5.6 5.6 0 1 1 -5.27 3.84" stroke-width="2.1"/><path d="M173.6 2.7 a9.3 9.3 0 1 1 -8.86 6.44" stroke-width="1.8" opacity="0.5"/></g><circle cx="173.6" cy="12" r="3.2" fill="#389826"/><g fill="none" stroke="#CB3C33" stroke-linecap="round"><path d="M163.6 23.4 a5.6 5.6 0 1 1 -5.27 3.84" stroke-width="2.1"/><path d="M163.6 19.7 a9.3 9.3 0 1 1 -8.86 6.44" stroke-width="1.8" opacity="0.5"/></g><circle cx="163.6" cy="29" r="3.2" fill="#CB3C33"/><g fill="none" stroke="#9558B2" stroke-linecap="round"><path d="M183.6 23.4 a5.6 5.6 0 1 1 -5.27 3.84" stroke-width="2.1"/><path d="M183.6 19.7 a9.3 9.3 0 1 1 -8.86 6.44" stroke-width="1.8" opacity="0.5"/></g><circle cx="183.6" cy="29" r="3.2" fill="#9558B2"/></svg></a><span class="ver">v2.0.0</span>
+<button class="theme" id="theme" type="button" title="Theme: system, light or dark">◐</button>
+<a class="gh" href="https://github.com/georgeotjg/juliaTDGL">GitHub</a>
+</header>
+<details class="menu"><summary>Contents</summary>
+<ul>
+<li class="here"><a href="index.html">Home</a>
+<ul class="sub"><li><a href="#what">What it solves</a></li><li><a href="#releases">Two releases</a></li><li><a href="#start">Quick start</a></li><li><a href="#paper">The paper</a></li></ul>
+</li>
+<li><a href="getting-started.html">Start</a>
+</li>
+<li><a href="theory.html">Model</a>
+</li>
+<li><a href="numerics.html">Numerics</a>
+</li>
+<li><a href="protocol.html">Protocol</a>
+</li>
+<li><a href="examples.html">Examples</a>
+</li>
+<li><a href="tools.html">Tools</a>
+</li>
+<li><a href="validation.html">Validation</a>
+</li>
+<li><a href="performance.html">Performance</a>
+</li>
+<li><a href="reference.html">Reference</a>
+</li>
+<li><a href="publications.html">Publications</a>
+</li>
+</ul>
+</details>
+<div class="wrap">
+<nav class="side" aria-label="Contents">
+<ul>
+<li class="here"><a href="index.html">Home</a>
+</li>
+<li><a href="getting-started.html">Start</a>
+</li>
+<li><a href="theory.html">Model</a>
+</li>
+<li><a href="numerics.html">Numerics</a>
+</li>
+<li><a href="protocol.html">Protocol</a>
+</li>
+<li><a href="examples.html">Examples</a>
+</li>
+<li><a href="tools.html">Tools</a>
+</li>
+<li><a href="validation.html">Validation</a>
+</li>
+<li><a href="performance.html">Performance</a>
+</li>
+<li><a href="reference.html">Reference</a>
+</li>
+<li><a href="publications.html">Publications</a>
+</li>
+</ul>
+</nav>
+<main><article>
+<div class="hero">
+<div>
+<h1>juliaTDGL</h1>
+<p class="lead">Three-dimensional multiband time-dependent Ginzburg–Landau solvers in Julia, written for the geometric superconducting diode
+effect.</p>
+<p>N order parameters coupled by a Josephson matrix, a self-consistent vector potential, an applied field and a transport current, on
+mesoscopic samples of any shape. A run is a current ladder in each direction; its result is the onset of dissipation in each
+polarity and the diode efficiency, with the vortex dynamics that sets them.</p>
+<p class="buttons"><a class="primary" href="getting-started.html">Get started</a><a href="theory.html">The model</a><a href="solver_guide_2.pdf">Solver guide (PDF)</a><a href="https://doi.org/10.5281/zenodo.23163207">The paper</a></p>
+</div>
+<figure><img src="img/vortex.gif" alt="A vortex of the sigma band is born at the tip of a notch and crosses a two-band superconducting box; the top panel is the positive current, the bottom panel the negative current, of the same magnitude">
+<figcaption>The two-band notched box of the example <code>wedge_k25.toml</code> at |J| = 0.44: with +J (top) vortices are born at the tip
+of the notch and cross the sample; with −J (bottom), at the same magnitude, almost none do. That asymmetry is the diode.</figcaption></figure>
+</div>
+
+<h2 id="what">What it solves</h2>
+<p>A sample whose shape breaks the mirror symmetry along the direction of vortex motion carries different critical currents
+I<sub>c</sub><sup>+</sup> and |I<sub>c</sub><sup>−</sup>| in the two directions: a superconducting diode, with efficiency
+\( \eta = (I_c^+ - |I_c^-|)/(I_c^+ + |I_c^-|) \). The solvers compute that onset from the time-dependent Ginzburg–Landau equations in
+three dimensions: where vortices nucleate, how they cross, and how the current is shared between the bands of a multiband
+superconductor. Two-gap MgB<sub>2</sub> motivated them; a material is a file of parameters, so another multiband material is a new
+file, not new code.</p>
+<div class="cards">
+<div class="card"><h3><a href="theory.html">The model</a></h3><p>Two formalisms: the two-band TDGL of release 1.2, and the N-band generalised TDGL of release 2.0, term by term.</p></div>
+<div class="card"><h3><a href="numerics.html">The numerics</a></h3><p>Link variables, the implicit curl-curl, stabilised stages for the stiff bands, the rotating frame, the noise.</p></div>
+<div class="card"><h3><a href="examples.html">Examples</a></h3><p>One run file per option, each a single command, with the time it takes on a laptop core.</p></div>
+<div class="card"><h3><a href="tools.html">Tools</a></h3><p>A terminal menu, a browser editor for 3D shapes, the standard figures of a run, 3D films of the vortices.</p></div>
+</div>
+
+<h2 id="releases">Two releases</h2>
+<div class="two">
+<div class="card"><h3>Release 2.0 (<code>tdgl2/</code>), for new work</h3>
+<p>N bands, each with its own Kramer–Watts-Tobin relaxation (the charge imbalance at the contacts); normal fluids per band with a
+finite interband exchange; thermal noise; anisotropic bands; regions of different materials; samples carved in vacuum; open or
+bar boundaries for the self-field; the onset by the delay of the first phase slip. With its new terms off it reproduces release 1.2.</p></div>
+<div class="card"><h3>Release 1.2 (<code>julia/</code>), the published work</h3>
+<p>The two-band TDGL of the methods paper, with the scalar potential (Coulomb projection, Thomas–Fermi screening), a strict mode
+that reproduces release 1.0.0 to the digit, the terminal menu and the shape editor. Use it to reproduce the published results.</p></div>
+</div>
+
+<h2 id="start">Quick start</h2>
+<p>Julia 1.13 or later; everything else is installed by the first command of each release.</p>
+<pre><code>git clone https://github.com/georgeotjg/juliaTDGL.git &amp;&amp; cd juliaTDGL
+julia --project=tdgl2 -e 'using Pkg; Pkg.instantiate()'
+OPENBLAS_NUM_THREADS=1 julia --project=tdgl2 tdgl2/scripts/run.jl tdgl2/examples/wedge_k25.toml   # minutes</code></pre>
+<p>The first hour, from a run to its figures, a finer onset and a 3D film: <a href="https://github.com/georgeotjg/juliaTDGL/blob/main/tdgl2/TUTORIAL.md">tdgl2/TUTORIAL.md</a>.
+More in <a href="getting-started.html">Getting started</a>.</p>
+
+<h2 id="paper">The paper</h2>
+<p>The solver, its measurement protocol and the failure modes it guards against are described in
+J. A. Robles Calderón, <em>Silent failure modes in three-dimensional two-band time-dependent Ginzburg–Landau simulations of
+geometric superconducting diodes</em>, Zenodo (2026), <a href="https://doi.org/10.5281/zenodo.23163207">doi:10.5281/zenodo.23163207</a>.
+How to cite the software: <a href="publications.html">Publications</a>.</p>
+<div class="pn"><span></span><a href="getting-started.html">Start →</a></div>
+</article></main>
+<aside class="toc" aria-label="On this page"><p>On this page</p><ul><li><a href="#what">What it solves</a></li><li><a href="#releases">Two releases</a></li><li><a href="#start">Quick start</a></li><li><a href="#paper">The paper</a></li></ul></aside>
+</div>
+<footer>© 2026 Jorge Alfredo Robles Calderón · Universidad Nacional de Colombia · MIT License · <a href="https://github.com/georgeotjg/juliaTDGL">github.com/georgeotjg/juliaTDGL</a></footer>
+<script>
+(() => {
+  const b = document.getElementById('theme'), root = document.documentElement, order = ['', 'light', 'dark'];
+  const show = () => { const t = root.dataset.theme || ''; b.textContent = t === 'light' ? '☀' : t === 'dark' ? '☾' : '◐';
+                       b.title = 'Theme: ' + (t || 'system') + ' (click to change)'; };
+  b.addEventListener('click', () => {
+    const t = order[(order.indexOf(root.dataset.theme || '') + 1) % order.length];
+    if (t) root.dataset.theme = t; else delete root.dataset.theme;
+    try { t ? localStorage.setItem('theme', t) : localStorage.removeItem('theme'); } catch (e) {}
+    show();
+  });
+  show();
+})();
+</script>
+<script>
+(() => {
+  const links = [...document.querySelectorAll('aside.toc a')]; if (!links.length) return;
+  const heads = links.map(a => document.getElementById(a.hash.slice(1))).filter(Boolean);
+  const lit = () => {
+    let cur = heads[0];
+    for (const h of heads) if (h.getBoundingClientRect().top < 120) cur = h;
+    if (innerHeight + scrollY >= document.body.scrollHeight - 4) cur = heads[heads.length - 1];
+    links.forEach(a => a.classList.toggle('on', a.hash === '#' + cur.id));
+  };
+  addEventListener('scroll', lit, { passive: true }); addEventListener('resize', lit); lit();
+})();
+</script>
+</body>
+</html>

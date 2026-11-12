@@ -1,0 +1,99 @@
+# The test suite of the N-band package (tdgl2/) on GitHub's machines, on every push to main, on pull requests and by hand.
+name: tests
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+jobs:
+  # The golden states were written with OpenBLAS's Haswell kernels and Julia code for that CPU; pinned to both (and to one
+  # Julia release, since a patch release may bring another OpenBLAS or LLVM), any x86 machine with AVX2 gives the same bits.
+  bits:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+      - uses: julia-actions/setup-julia@v3
+        with:
+          version: '1.13.2'
+      - uses: julia-actions/cache@v3
+      - run: julia --project=tdgl2 -e 'using Pkg; Pkg.instantiate()'
+      - name: Suite, to the bit
+        env:
+          OPENBLAS_NUM_THREADS: '1'
+          OPENBLAS_CORETYPE: Haswell
+          TDGL_TEST_BITS: '1'
+        run: julia -C haswell --project=tdgl2 tdgl2/test/run.jl
+  # As a user runs it: the machine's own kernels, states to 1e-10, verdicts and counts exact.
+  native:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+      - uses: julia-actions/setup-julia@v3
+        with:
+          version: '1.13'
+      - uses: julia-actions/cache@v3
+      - run: julia --project=tdgl2 -e 'using Pkg; Pkg.instantiate()'
+      - name: Suite
+        env:
+          OPENBLAS_NUM_THREADS: '1'
+        run: julia --project=tdgl2 tdgl2/test/run.jl
+      - name: Menu and incomplete-run reports
+        run: |
+          julia --project=julia/tui julia/tui/test/runtests.jl
+          python3 tdgl2/test/test_postprocessing.py
+  gpu-cpu-backend:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      OPENBLAS_NUM_THREADS: '1'
+      TDGLGPU_TEST_WORKDIR: ${{ github.workspace }}/out/gpu_validation
+    steps:
+      - uses: actions/checkout@v7
+      - uses: julia-actions/setup-julia@v3
+        with:
+          version: '1.13.2'
+      - uses: julia-actions/cache@v3
+      - run: julia --project=gpu/TDGLGPU -e 'using Pkg; Pkg.instantiate(); Pkg.test()'
+
+  # Strict uses the libm of the archived Octave runs, including its rounding.
+  # Keep the original bit assertions; pin the library instead of loosening them.
+  classic:
+    runs-on: ubuntu-24.04
+    container:
+      image: docker.io/library/archlinux@sha256:fcee73ea1b96e236248f53a213f71276cc9072d9025b58bce9915e32f19963ae
+    timeout-minutes: 30
+    env:
+      OPENBLAS_NUM_THREADS: '1'
+      OPENBLAS_CORETYPE: Haswell
+    steps:
+      - uses: actions/checkout@v7
+      - uses: julia-actions/setup-julia@v3
+        with:
+          version: '1.13.2'
+      - uses: julia-actions/cache@v3
+      - name: Reference libm for the archived Strict states
+        run: |
+          mkdir -p out/reference_libm
+          package='glibc-2.44%2Br50%2Bg1848099f063e-3-x86_64_v3.pkg.tar.zst'
+          downloaded=0
+          for base in https://build.cachyos.org/repo/x86_64_v3/cachyos-v3 https://archive.cachyos.org/archive/cachyos-v3; do
+            if curl -fsSL --retry 2 "$base/$package" -o out/reference_libm/glibc.pkg.tar.zst; then
+              downloaded=1
+              break
+            fi
+          done
+          test "$downloaded" = 1
+          echo '071d807f4d3bf6b921f86b9a91e83a47ecc026c5821634efa46b09d890e06785  out/reference_libm/glibc.pkg.tar.zst' | sha256sum -c -
+          tar --zstd -xOf out/reference_libm/glibc.pkg.tar.zst usr/lib/libm.so.6 > out/reference_libm/libm.so.6
+          echo '58b6b82e39d59d7810d402ba4ec34359fde058204fdb7cd5a269fda256a35421  out/reference_libm/libm.so.6' | sha256sum -c -
+      - run: julia --project=julia -e 'using Pkg; Pkg.instantiate()'
+        env:
+          LD_LIBRARY_PATH: ${{ github.workspace }}/out/reference_libm
+      - name: Classic suite with the reference rounding
+        env:
+          LD_LIBRARY_PATH: ${{ github.workspace }}/out/reference_libm
+        run: |
+          mkdir -p out/classic_tmp
+          TMPDIR="$PWD/out/classic_tmp" julia -C haswell --project=julia julia/test/run.jl

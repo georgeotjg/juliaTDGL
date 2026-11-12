@@ -1,0 +1,34 @@
+# An iron-based superconductor of the Ba(Fe1-xCox)2As2 kind as a two-band s± model, in the units of the code (band 1: g = Gamma
+# = a = beta = 1).  The pairing is interband and repulsive, so the two order parameters take opposite signs (s±): in this
+# functional a NEGATIVE Josephson coupling gamma12 picks the relative phase π.  A MODEL: the GL coefficients of the hole and
+# electron pockets are not known to the precision of a material file; what is measured is kappa (strongly type II, of order
+# 50–130), and the sign of the coupling.  The second band here is a placeholder of a pocket with a 20 % longer coherence length
+# and a weaker condensation; replace both with the sample's.
+name = "Fe-based s± model (Ba(Fe,Co)2As2-like): two bands, repulsive interband coupling"
+regime = "a model: s± by gamma12 < 0; kappa ~ 100 from measured lambda and xi (strongly type II); band 2 a placeholder pocket"
+kappa = 100.0         # lambda_ab/xi_ab: 660 nm / 5 nm = 130 overdoped (x = 0.14); lambda 120–300 nm near optimal doping
+sigma_n = "dirty"
+T = 0.0
+gamma12 = -0.2        # repulsive interband pairing: the s± sign; its size is a model choice
+
+[[band]]
+name = "hole"
+g = 1.0
+Gamma = 1.0
+a = 1.0
+beta = 1.0
+gamma_kwt = 0.0
+
+[[band]]
+name = "electron"
+xi_ratio = 1.2
+Gamma = 1.0
+a = 0.8
+beta = 1.0
+gamma_kwt = 0.0
+
+[sources]
+pairing = "s± (sign reversal between hole and electron pockets, repulsive interband interaction): Mazin, Singh, Johannes and Du, PRL 101, 057003 (2008), arXiv:0803.2740"
+lambda = "lambda_ab(0) 120–300 nm for x >~ 0.047 in Ba(Fe1-xCox)2As2: Gordon et al., PRB 82, 054507 (2010), arXiv:1006.2068"
+xi = "lambda_ab(0) = 660 nm, xi_ab(0) = 5 nm in overdoped Ba(Fe0.86Co0.14)2As2 single crystals (kappa ~ 130)"
+bands = "band 2 (xi_ratio, a) and |gamma12|: model choices, not fitted"

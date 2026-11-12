@@ -1,0 +1,12 @@
+# Catalogue template: GEOM_MODE="SIM" written as pixels.
+# Box 40x24x6, dx = 0.5. On that mesh it gives the catalogue mask to the bit;
+# on another mesh the pixels are resampled to the nearest node.
+
+[[shape]]
+type = "rect"
+x = 0.0
+y = 0.0
+w = 0.0
+h = 0.0
+z = "all"
+f = 1.0

@@ -1,0 +1,10 @@
+# Catalogue TRI_Y1: n=3, R=6 cells, apex towards +y (rot 90°).
+[[shape]]
+type = "ngon"
+x = 10.0
+y = 1.5
+n = 3
+r = 3.0
+rot = 90.0
+z = "all"
+f = 0.0

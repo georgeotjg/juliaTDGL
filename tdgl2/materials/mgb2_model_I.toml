@@ -1,0 +1,25 @@
+# Two-band model of the methods preprint (Robles Calderón 2026, doi:10.5281/zenodo.23163207): MgB2-like
+# band labels, model parameters.  Not quantitative MgB2 (see regime).
+name = "MgB2-like two-band model of the methods preprint"
+regime = "GL near Tc, dirty limit; |gamma| << |alpha_mu| is a model regime (invariant gamma^2/(alpha_s alpha_p) = 1.7e-6); u = Gamma_1/sigma_n = 1"
+kappa = 2.0
+sigma_n = 1.0
+T = 0.0
+gamma12 = 1e-3
+
+[[band]]
+name = "sigma"
+m = 1.0
+Gamma = 1.0
+a = 1.0
+
+[[band]]
+name = "pi"
+xi_ratio = 1.30          # xi_pi/xi_sigma; sets m = 1/(R^2 a)
+Gamma = 1.0
+a = 0.59                 # uncoupled |Psi_pi|^2 at T = 0 (Tc_pi/Tc_sigma = 23/39 in the model)
+
+[sources]
+a = "model choice: ratio of the uncoupled critical temperatures of the methods preprint"
+xi_ratio = "model choice (methods preprint, §II.B)"
+gamma12 = "model choice (methods preprint)"

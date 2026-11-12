@@ -61,20 +61,20 @@ Base.@kwdef mutable struct Config
     # curl-curl) and turned into a rate, so a larger step keeps the fixed-point
     # criterion of the explicit scheme in physical time.  Ignored if
     # eps_conv_rate > 0.  Config(:prod) sets it.
-    eps_conv_legacy::Bool = false
+    eps_conv_legacy::Bool = true
     # Curl-curl term of the field equation at the new time level (see
     # src/maxwell_implicit.jl).  Removes the Maxwell bound dl/(4 kappa^2) from
     # the step; the other bounds stay.  Off = the explicit scheme, to the bit.
-    maxwell_implicit::Bool = false
+    maxwell_implicit::Bool = true
     # Multiplies the time step chosen by the stability bounds (0 < dt_scale <= 1),
     # for convergence tests in dt.  1 = the step as always.
-    dt_scale::Float64 = 1.0
+    dt_scale::Float64 = 0.5
     # true: the historical step (dt1 with the gama factor, dt3 = 0.03 dl); both
     # come from the generalised TDGL the code descends from and bound no
     # equation integrated here.  false: only the stability bounds of the
     # equations this code integrates (diffusion of sigma and pi, Maxwell when
     # explicit, heat or Q when on).  Accuracy is then a matter of dt_scale.
-    cfl_legacy::Bool = true
+    cfl_legacy::Bool = false
     # Substeps of the pi band per step (multirate).  pi is advanced pi_substeps
     # times with dt/pi_substeps, with sigma frozen in the coupling and the links
     # rotated at the previous step's rate (pi_link_extrapolation), and the pi
@@ -83,14 +83,14 @@ Base.@kwdef mutable struct Config
     # 0 = automatic: as many as the other bounds need.  1 = the scheme as
     # always, to the bit.  Substeps need the plain kernel: with heat, T_physical
     # or drag, 0 means one substep, and n > 1 is an error.
-    pi_substeps::Int = 1
+    pi_substeps::Int = 0
     # With pi substeps: rotate the links inside the step at the rate of the
     # previous step (see pi_substeps! in src/kernel.jl) instead of freezing them.
     pi_link_extrapolation::Bool = true
     # BLAS threads set when a sweep starts (0 = leave as is).  The separable
     # field solve is the only BLAS user; with many processes, one thread each
     # avoids oversubscribing the cores.  Results do not depend on it.
-    blas_threads::Int = 0
+    blas_threads::Int = 1
     # Substeps of the sigma band per step, same scheme (1 = off, to the bit).
     # The sigma bound is relaxed by that factor; with dt_scale = 0.5 each sigma
     # substep stays at half its bound.  For accuracy studies of larger steps.
@@ -113,7 +113,7 @@ Base.@kwdef mutable struct Config
     # On: a resistive point closes after t_min_GL_res once it has ten or more
     # phase crossings per line (the verdict rule), and a fixed point ('F') is not
     # accepted while the second half carries one or more crossings per line.
-    conv_by_time::Bool = false
+    conv_by_time::Bool = true
     eps_relax::Float64 = 1e-3
     floor_k::Float64 = 160.0
     floor_mult::Float64 = 5.0
@@ -297,7 +297,8 @@ library defaults are not changed.
 
     Config(:prod; kwargs...)
 
-The production scheme of release 1.1, recommended for new work: implicit
+The production scheme of release 1.1, the library default since juliaTDGL 2.0 (so `Config(:prod; ...)` is
+`Config(; ...)`): implicit
 curl-curl, pi substeps, half the sigma bound, closing by the verdict rule in
 physical time, one BLAS thread, and the fixed-point criterion of the explicit
 scheme in physical time.  Same onset brackets as 1.0.0; x3 per t_GL at
@@ -307,9 +308,14 @@ Phi.  Combine with :paper by passing its keywords.
 
     Config(:legacy; kwargs...)
 
-The explicit scheme of release 1.0.0 and of the published runs: the library
-defaults, named.
+The explicit scheme of release 1.0.0 and of the published runs (the library defaults up to release 1.2;
+with `run_case(cfg; mode=Strict())` it gives their digits).  The scalar potential and the diffused residual
+run only in it: a run with `use_phi` switches to it by itself, with a note.
 """
+# The explicit scheme of release 1.0.0: what Config(:legacy) sets over the defaults (the production scheme).
+const _LEGACY = (maxwell_implicit=false, cfl_legacy=true, pi_substeps=1, dt_scale=1.0, conv_by_time=false,
+                 blas_threads=0, eps_conv_legacy=false)
+
 function Config(preset::Symbol; kw...)
     if preset === :paper
         return Config(; eps_conv=1e-5, eps_conv_seed=5e-4, t_min_GL=1500.0,
@@ -323,12 +329,10 @@ function Config(preset::Symbol; kw...)
         # the 1.0.0 step: 40 x 6.6e-5 t_GL at kappa = 25, 40 x 2.518e-3 at kappa = 2
         # in the production box).  Validated against the explicit scheme: same onset
         # brackets at kappa = 2 and 25, flowing voltages within 0.16 % (CHANGELOG 1.1).
-        return Config(; maxwell_implicit=true, cfl_legacy=false, pi_substeps=0,
-                      dt_scale=0.5, conv_by_time=true, blas_threads=1,
-                      eps_conv_legacy=true, kw...)
+        return Config(; kw...)                 # the library defaults since juliaTDGL 2.0
     elseif preset === :legacy
-        # the explicit scheme of release 1.0.0 and of the published runs: the library defaults
-        return Config(; kw...)
+        # the explicit scheme of release 1.0.0 and of the published runs (the library defaults up to 1.2)
+        return Config(; _LEGACY..., kw...)
     end
     error("unknown preset: $preset (use :paper, :prod or :legacy)")
 end

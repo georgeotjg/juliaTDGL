@@ -31,9 +31,9 @@ end
           J_list=[0.0], t_min_GL=0.0, mMax=2, selftest=false,
           snap_every=0, vtk_every=0, verbose=false, use_threads=false,
           out_dir="")
-    p0 = derive_params(Config(; use_drag=false, nu_drag=0.0, kw...))
-    p1 = derive_params(Config(; use_drag=true,  nu_drag=0.05, kw...))
-    g  = build_geometry(Config(; use_drag=false, nu_drag=0.0, kw...), p0)
+    p0 = derive_params(Config(:legacy; use_drag=false, nu_drag=0.0, kw...))
+    p1 = derive_params(Config(:legacy; use_drag=true,  nu_drag=0.05, kw...))
+    g  = build_geometry(Config(:legacy; use_drag=false, nu_drag=0.0, kw...), p0)
     @test p0.mr < 0.2
     Nx, Ny, Nz = p0.Nx, p0.Ny, p0.Nz
     ii = Float64.(reshape(0:Nx, :, 1, 1))
@@ -97,13 +97,13 @@ end
 # (a) The divergence guard must FIRE.  A real divergence is provoked: a dt
 # legal for kappa=2 is used at kappa=25, the most common failure (raising
 # kappa without recomputing dt: dt2s = dl/(4 kappa^2)).
-    cfg = Config(GEOM_MODE="SIM", Nx_sc=8, Ny_sc=6, Nz_sc=4,
+    cfg = Config(:legacy; GEOM_MODE="SIM", Nx_sc=8, Ny_sc=6, Nz_sc=4,
                  dx=0.5, dy=0.5, dz=0.5, kappa_s=2.0, kappa_p=2.0,
                  H_const=0.5, J_list=[0.0], t_min_GL=0.0, iter_min=5,
                  mMax=500, delta_v=1, selftest=false, out_dir="", verbose=false)
     p2 = derive_params(cfg)
     # same dt but kappa=25 => the Maxwell term is 156x larger
-    malo = Config(GEOM_MODE="SIM", Nx_sc=8, Ny_sc=6, Nz_sc=4,
+    malo = Config(:legacy; GEOM_MODE="SIM", Nx_sc=8, Ny_sc=6, Nz_sc=4,
                   dx=0.5, dy=0.5, dz=0.5, kappa_s=25.0, kappa_p=2.0,
                   H_const=0.5, J_list=[0.0], t_min_GL=0.0, iter_min=5,
                   mMax=500, delta_v=1, selftest=false, out_dir="", verbose=false)

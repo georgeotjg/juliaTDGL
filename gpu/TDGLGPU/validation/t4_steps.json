@@ -1,0 +1,415 @@
+{
+  "backend": "CUDA",
+  "cases": [
+    {
+      "name": "production: RKC, extrapolated links, implicit, bar",
+      "max_relative": 2.7226903730470072e-15,
+      "cpu_ms": 0.5880658000000001,
+      "bands": 2,
+      "backend_ms": 1.3502747000000002,
+      "steps": 20,
+      "passed": true,
+      "tolerance": 1e-10
+    },
+    {
+      "name": "Euler substeps (rkl = false)",
+      "max_relative": 1.4452486125947162e-15,
+      "cpu_ms": 0.9185027,
+      "bands": 2,
+      "backend_ms": 1.41939775,
+      "steps": 20,
+      "passed": true,
+      "tolerance": 1e-10
+    },
+    {
+      "name": "links not extrapolated",
+      "max_relative": 2.484125780113597e-15,
+      "cpu_ms": 0.5995196500000001,
+      "bands": 2,
+      "backend_ms": 1.38405465,
+      "steps": 20,
+      "passed": true,
+      "tolerance": 1e-10
+    },
+    {
+      "name": "slab boundary",
+      "max_relative": 3.323290915660949e-15,
+      "cpu_ms": 0.6055327,
+      "bands": 2,
+      "backend_ms": 1.35013855,
+      "steps": 20,
+      "passed": true,
+      "tolerance": 1e-10
+    },
+    {
+      "name": "RKL stages (rkl = true)",
+      "max_relative": 2.7226903730470072e-15,
+      "cpu_ms": 0.58040445,
+      "bands": 2,
+      "backend_ms": 1.3479955000000001,
+      "steps": 20,
+      "passed": true,
+      "tolerance": 1e-10
+    },
+    {
+      "name": "insulating padding: PCG, pcg_fast + Float32 (defaults)",
+      "max_relative": 1.9112348946715516e-09,
+      "cpu_ms": 3.9046664499999997,
+      "bands": 2,
+      "backend_ms": 13.998747349999999,
+      "steps": 20,
+      "passed": true,
+      "tolerance": 1e-07
+    },
+    {
+      "name": "insulating padding: PCG exact (pcg_fast = false)",
+      "max_relative": 4.4059492769840434e-14,
+      "cpu_ms": 4.181689,
+      "bands": 2,
+      "backend_ms": 19.66189805,
+      "steps": 20,
+      "passed": true,
+      "tolerance": 1e-10
+    },
+    {
+      "name": "insulating padding, explicit field step",
+      "max_relative": 1.1600277288461652e-14,
+      "cpu_ms": 0.3684437,
+      "bands": 2,
+      "backend_ms": 0.23912820000000004,
+      "steps": 20,
+      "passed": true,
+      "tolerance": 1e-10
+    },
+    {
+      "name": "a cable carved in vacuum (cable_x.toml, PCG)",
+      "max_relative": 4.3324368217006796e-10,
+      "cpu_ms": 13.419582199999999,
+      "bands": 2,
+      "backend_ms": 23.28600675,
+      "steps": 20,
+      "passed": true,
+      "tolerance": 1e-07
+    },
+    {
+      "name": "three frustrated bands",
+      "max_relative": 1.0693937564903148e-15,
+      "cpu_ms": 0.61994885,
+      "bands": 3,
+      "backend_ms": 1.24943665,
+      "steps": 20,
+      "passed": true,
+      "tolerance": 1e-10
+    },
+    {
+      "name": "three bands with three normal fluids (a matrix of rates)",
+      "max_relative": 1.0244482676722971e-15,
+      "cpu_ms": 1.58598205,
+      "bands": 3,
+      "backend_ms": 2.7872835,
+      "steps": 20,
+      "passed": true,
+      "tolerance": 1e-10
+    },
+    {
+      "name": "heat (Joule, margin) and drag: heat_k25.toml",
+      "max_relative": 8.274415094990873e-15,
+      "cpu_ms": 6.144575850000001,
+      "bands": 2,
+      "backend_ms": 3.3838713999999994,
+      "steps": 20,
+      "passed": true,
+      "tolerance": 1e-10
+    },
+    {
+      "name": "heat without drag",
+      "max_relative": 8.254794747547524e-15,
+      "cpu_ms": 3.5106946,
+      "bands": 2,
+      "backend_ms": 3.3102557,
+      "steps": 20,
+      "passed": true,
+      "tolerance": 1e-10
+    },
+    {
+      "name": "open boundary (selffield_bc = open), 150 steps: ramps and recomputations",
+      "max_relative": 1.2031008163452302e-14,
+      "cpu_ms": 0.6526629,
+      "bands": 2,
+      "backend_ms": 1.3709886866666667,
+      "steps": 150,
+      "passed": true,
+      "tolerance": 1e-10
+    },
+    {
+      "name": "open boundary with the insulating padding, 150 steps",
+      "max_relative": 1.6758093376627e-11,
+      "cpu_ms": 4.07048396,
+      "bands": 2,
+      "backend_ms": 12.04644106,
+      "steps": 150,
+      "passed": true,
+      "tolerance": 1e-07
+    },
+    {
+      "name": "normal fluids: qp_exchange = 1",
+      "max_relative": 3.1242399494971285e-15,
+      "cpu_ms": 0.7402775,
+      "bands": 2,
+      "backend_ms": 1.8747443999999998,
+      "steps": 20,
+      "passed": true,
+      "tolerance": 1e-10
+    },
+    {
+      "name": "normal fluids: qp_exchange = 0.1, insulating padding",
+      "max_relative": 1.8531714222465986e-09,
+      "cpu_ms": 3.78900435,
+      "bands": 2,
+      "backend_ms": 20.54759275,
+      "steps": 20,
+      "passed": true,
+      "tolerance": 1e-07
+    },
+    {
+      "name": "normal fluids in a cable carved in vacuum (their CG)",
+      "max_relative": 3.43572972362209e-10,
+      "cpu_ms": 18.1342521,
+      "bands": 2,
+      "backend_ms": 33.13098915,
+      "steps": 20,
+      "passed": true,
+      "tolerance": 1e-07
+    },
+    {
+      "name": "normal fluids with heat (their Joule heat in the source)",
+      "max_relative": 2.5837866259923515e-15,
+      "cpu_ms": 1.2182529500000001,
+      "bands": 2,
+      "backend_ms": 3.0731241000000002,
+      "steps": 20,
+      "passed": true,
+      "tolerance": 1e-10
+    },
+    {
+      "name": "noise T\u0303 = 1e-2 on the bands",
+      "max_relative": 1.5366724015084456e-15,
+      "cpu_ms": 1.03138545,
+      "bands": 2,
+      "backend_ms": 1.3820760499999998,
+      "steps": 20,
+      "passed": true,
+      "tolerance": 1e-10
+    },
+    {
+      "name": "noise T\u0303 = 1e-2 on the bands and the field",
+      "max_relative": 1.3648420846267837e-15,
+      "cpu_ms": 0.9326971000000001,
+      "bands": 2,
+      "backend_ms": 1.4251866,
+      "steps": 20,
+      "passed": true,
+      "tolerance": 1e-10
+    },
+    {
+      "name": "noise on the field with the insulating padding",
+      "max_relative": 7.136362057498992e-08,
+      "cpu_ms": 6.01730785,
+      "bands": 2,
+      "backend_ms": 26.576024949999997,
+      "steps": 20,
+      "passed": true,
+      "tolerance": 1e-07
+    },
+    {
+      "name": "materials: bicapa_tunel.toml",
+      "max_relative": 1.593439798309944e-15,
+      "cpu_ms": 3.3282599500000005,
+      "bands": 2,
+      "backend_ms": 2.028089,
+      "steps": 20,
+      "passed": true,
+      "tolerance": 1e-10
+    },
+    {
+      "name": "materials: metal_una_banda.toml",
+      "max_relative": 6.4669564713278404e-12,
+      "cpu_ms": 3.4343277,
+      "bands": 2,
+      "backend_ms": 8.25169555,
+      "steps": 20,
+      "passed": true,
+      "tolerance": 1e-07
+    },
+    {
+      "name": "normal fluids with materials: metal_una_banda.toml (QPVar)",
+      "max_relative": 5.786359860613256e-12,
+      "cpu_ms": 6.368042,
+      "bands": 2,
+      "backend_ms": 18.24389135,
+      "steps": 20,
+      "passed": true,
+      "tolerance": 1e-07
+    },
+    {
+      "name": "normal fluids with materials: bilayer, qp_exchange = 0.5",
+      "max_relative": 1.8831452068001028e-15,
+      "cpu_ms": 27.3657114,
+      "bands": 2,
+      "backend_ms": 15.421910150000002,
+      "steps": 20,
+      "passed": true,
+      "tolerance": 1e-10
+    },
+    {
+      "name": "heat with materials, one D_T (bilayer)",
+      "max_relative": 3.0917407931418502e-15,
+      "cpu_ms": 5.38741405,
+      "bands": 2,
+      "backend_ms": 3.16498515,
+      "steps": 20,
+      "passed": true,
+      "tolerance": 1e-10
+    },
+    {
+      "name": "noise with materials (bilayer, T\u0303 = 1e-2)",
+      "max_relative": 1.3338965297360719e-15,
+      "cpu_ms": 3.65627815,
+      "bands": 2,
+      "backend_ms": 2.12438495,
+      "steps": 20,
+      "passed": true,
+      "tolerance": 1e-10
+    },
+    {
+      "name": "noise with materials and KWT (bilayer, \u03b3\u0303 = 10, RKC)",
+      "max_relative": 6.936068268923827e-15,
+      "cpu_ms": 9.3901303,
+      "bands": 2,
+      "backend_ms": 3.29089685,
+      "steps": 20,
+      "passed": true,
+      "tolerance": 1e-10
+    },
+    {
+      "name": "heat with materials, D_T per material (bilayer)",
+      "max_relative": 3.59310175757283e-15,
+      "cpu_ms": 5.7939577,
+      "bands": 2,
+      "backend_ms": 2.08767105,
+      "steps": 20,
+      "passed": true,
+      "tolerance": 1e-10
+    },
+    {
+      "name": "KWT \u03b3\u0303 = 10: rotating frame, RKC",
+      "max_relative": 5.4541085327454976e-14,
+      "cpu_ms": 1.3302336000000001,
+      "bands": 2,
+      "backend_ms": 2.02501305,
+      "steps": 20,
+      "passed": true,
+      "tolerance": 1e-10
+    },
+    {
+      "name": "KWT \u03b3\u0303 = 10: rotating frame, Euler substeps",
+      "max_relative": 1.9983941414699703e-15,
+      "cpu_ms": 0.7661795499999999,
+      "bands": 2,
+      "backend_ms": 1.56945905,
+      "steps": 20,
+      "passed": true,
+      "tolerance": 1e-10
+    },
+    {
+      "name": "KWT \u03b3\u0303 = 30: rotating frame, RKC",
+      "max_relative": 3.792926267944653e-13,
+      "cpu_ms": 2.0488699,
+      "bands": 2,
+      "backend_ms": 2.5872628000000004,
+      "steps": 20,
+      "passed": true,
+      "tolerance": 1e-10
+    },
+    {
+      "name": "KWT \u03b3\u0303 = 10 with heat (the KWT dissipation as its source)",
+      "max_relative": 6.060976310009117e-14,
+      "cpu_ms": 1.8140652,
+      "bands": 2,
+      "backend_ms": 2.9881051,
+      "steps": 20,
+      "passed": true,
+      "tolerance": 1e-10
+    },
+    {
+      "name": "normal fluids with KWT \u03b3\u0303 = 10 (qp_exchange = 0.3)",
+      "max_relative": 6.514732588537187e-14,
+      "cpu_ms": 1.468874,
+      "bands": 2,
+      "backend_ms": 2.3880007,
+      "steps": 20,
+      "passed": true,
+      "tolerance": 1e-10
+    },
+    {
+      "name": "noise with KWT \u03b3\u0303 = 10, RKC (SK-ROCK), T\u0303 = 1e-2",
+      "max_relative": 4.5255164191306116e-14,
+      "cpu_ms": 3.6056844,
+      "bands": 2,
+      "backend_ms": 2.9574694,
+      "steps": 20,
+      "passed": true,
+      "tolerance": 1e-10
+    },
+    {
+      "name": "noise with KWT \u03b3\u0303 = 10, Euler substeps",
+      "max_relative": 2.7362235377606896e-15,
+      "cpu_ms": 1.5615888,
+      "bands": 2,
+      "backend_ms": 1.77370485,
+      "steps": 20,
+      "passed": true,
+      "tolerance": 1e-10
+    },
+    {
+      "name": "production, mesh nx = 48 ny = 24 nz = 12 dx = 0.25",
+      "max_relative": 1.8787798259500502e-15,
+      "cpu_ms": 5.0144654,
+      "bands": 2,
+      "backend_ms": 2.3093089,
+      "steps": 20,
+      "passed": true,
+      "tolerance": 1e-10
+    },
+    {
+      "name": "production, mesh nx = 96 ny = 48 nz = 24 dx = 0.125",
+      "max_relative": 1.5578648211587686e-15,
+      "cpu_ms": 56.2829787,
+      "bands": 2,
+      "backend_ms": 7.4872175,
+      "steps": 10,
+      "passed": true,
+      "tolerance": 1e-10
+    },
+    {
+      "name": "insulating padding, mesh 96x48x24",
+      "max_relative": 8.893438832387542e-10,
+      "cpu_ms": 436.3173688,
+      "bands": 2,
+      "backend_ms": 54.9062361,
+      "steps": 10,
+      "passed": true,
+      "tolerance": 1e-07
+    },
+    {
+      "name": "cable in vacuum, mesh 80x24x24",
+      "max_relative": 1.541268836057038e-10,
+      "cpu_ms": 312.1891925,
+      "bands": 2,
+      "backend_ms": 50.9561903,
+      "steps": 10,
+      "passed": true,
+      "tolerance": 1e-07
+    }
+  ]
+}

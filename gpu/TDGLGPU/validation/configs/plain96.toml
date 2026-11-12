@@ -1,0 +1,17 @@
+[material]
+file = "mgb2_model_II.toml"
+kappa = 2.0
+[mesh]
+nx = 96
+ny = 48
+nz = 24
+dx = 0.5
+buf = 1
+[geometry]
+GEOM_MODE = "WEDGE"
+[scheme]
+threads = false
+
+[run]
+J = [0.3]
+H = 0.03

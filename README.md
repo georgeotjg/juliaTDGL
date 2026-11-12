@@ -2,29 +2,121 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-A three-dimensional, two-band time-dependent Ginzburg–Landau (TDGL) solver in Julia for mesoscopic
-superconductors under applied field and transport current. It was written to study the geometric
-superconducting diode effect in two-gap materials (MgB₂ as the motivating case): a sample whose shape
-breaks the mirror symmetry along the direction of vortex motion carries different critical currents
-in the two directions.
+**Documentation:** https://georgeotjg.github.io/juliaTDGL/ (the model, the numerics, the protocol, examples, tools, validation and
+every option of a run file).
 
-In the repository: the solver (`julia/`), a terminal menu that launches and follows runs, a browser
-editor for three-dimensional shapes, a guide to the physics and the numerics
-([`docs/solver_guide.pdf`](docs/solver_guide.pdf)), and a test suite.
+Three-dimensional time-dependent Ginzburg–Landau (TDGL) solvers in Julia for multiband superconductors
+under applied field and transport current, on mesoscopic samples of any shape: N bands coupled by a
+Josephson matrix, each with its own stiffness, relaxation rate and Kramer–Watts-Tobin parameter (release 2.0),
+and the two-band TDGL of the published work (release 1.2). They were written for the geometric
+superconducting diode effect, where a sample whose shape breaks the mirror symmetry along the direction of
+vortex motion carries different critical currents in the two directions. Two-gap MgB₂ motivated them; a
+material is a file of parameters, so other multiband materials are a new file, not new code.
+
+The repository holds two releases of the same package (`TDGL`):
+- **Release 2.0** (`tdgl2/`), recommended for new work: N bands, each with its own Kramer–Watts-Tobin
+  relaxation (the charge imbalance at the contacts) and an optional finite interband exchange of quasiparticles,
+  anisotropic bands, thermal noise, an open boundary for the self-field, an insulating buffer, a material per region
+  (bilayers, with a barrier between them), and the onset by the delay of the first phase slip. Its own README:
+  [`tdgl2/README.md`](tdgl2/README.md) (with a table of what each release has and what each option costs); its guide:
+  [`docs/solver_guide_2.pdf`](docs/solver_guide_2.pdf).
+- **Release 1.2** (`julia/`), the two-band TDGL of the published work (it contains releases 1.0 and 1.1; by default
+  the production scheme, `Config(:legacy)` the explicit scheme of 1.0.0), with the scalar potential, a terminal
+  menu that launches and follows runs (of both releases), a browser editor for three-dimensional shapes,
+  and its guide ([`docs/solver_guide.pdf`](docs/solver_guide.pdf)). The rest of this page describes it.
+
+With matched schemes and boundaries and the new terms off, the regression settings of 2.0 reproduce 1.2. Release 2.0 includes the optional [TDGLGPU accelerator](gpu/TDGLGPU/README.md) for ladder cycles on CUDA or the KernelAbstractions CPU backend. The tag `v2.0.0` follows release 2.0. The accelerator supports 2.0; the classic solver remains CPU-only. Both are Julia projects
+of the same package, so each runs in its own project (`--project=tdgl2` or `--project=julia`); they are not loaded together.
+
+![Release 2.0, scripts/film.jl: a vortex of the σ band crossing a notched nanowire carved in vacuum (left, in 3D; right, the mid plane from above and the vortex plaquettes against time)](docs/img/film_nanowire.png)
 
 ![Shape editor: a notched box, its mirror, the current, the field and the vortex entry faces](docs/img/editor.png)
 
 **Author:** Jorge Alfredo Robles Calderón — Departamento de Física, Universidad Nacional de Colombia,
 Bogotá.
 
-**Quick start** (Julia 1.10 or later; everything else is installed by the first command):
+**Quick start** (Julia 1.13 or later; everything else is installed by the first command of each release):
 
 ```bash
 git clone https://github.com/georgeotjg/juliaTDGL.git && cd juliaTDGL
+# release 2.0
+julia --project=tdgl2 -e 'using Pkg; Pkg.instantiate()'
+OPENBLAS_NUM_THREADS=1 julia --project=tdgl2 tdgl2/scripts/run.jl tdgl2/examples/wedge_k25.toml   # minutes
+# release 1.2
 julia --project=julia -e 'using Pkg; Pkg.instantiate()'
 julia --project=julia examples/first_run.jl     # a notched box, both polarities, about a minute
 julia julia/scripts/tdgl_tui.jl                 # the terminal menu: launch, follow, stop, resume
 ```
+
+The first hour with release 2.0, from a run to its figures, a finer onset and a 3D film of the vortex:
+[`tdgl2/TUTORIAL.md`](tdgl2/TUTORIAL.md).
+
+**Optional NVIDIA GPU (release 2.0):**
+
+```bash
+julia --project=gpu/TDGLGPU -e 'using Pkg; Pkg.instantiate(); Pkg.add("CUDA")'
+OPENBLAS_NUM_THREADS=1 julia --project=gpu/TDGLGPU gpu/TDGLGPU/scripts/run_gpu.jl \
+  tdgl2/examples/wedge_k25.toml --dir out/gpu-example --require-gpu
+```
+
+`--require-gpu` requires functional CUDA and rejects unsupported steppers instead of falling back to CPU. It covers the
+accelerated ladder cycles; measurements, checkpoints, delay confirmation, open-boundary FFTs and seeded random draws
+still involve the host. State arrays remain Float64/ComplexF64; only the optional PCG preconditioner uses Float32, as on CPU.
+The explicit `--cpu-backend` mode tests KernelAbstractions on CPU. See [installation and scope](gpu/TDGLGPU/README.md),
+[recorded CUDA checks and timings](gpu/TDGLGPU/validation/README.md), and the [performance guide](https://georgeotjg.github.io/juliaTDGL/performance.html#gpu).
+
+The two public PDF manuals are complementary: [2.0](docs/solver_guide_2.pdf) covers the N-band solver;
+[1.2](docs/solver_guide.pdf) documents the classic solver and shared geometry/editor tools. The website focuses on 2.0.
+
+## What release 2.0 contains
+
+**The model.** Generalised TDGL for N bands with a symmetric Josephson matrix, in the gauge Φ = 0, coupled to the
+magnetic field (Ampère with the normal current):
+- Kramer–Watts-Tobin relaxation per band: the charge imbalance at the contacts, in its slaved form.
+- Normal fluids per band with a finite interband exchange rate (`qp_exchange`).
+- Anisotropic masses, a heat model with Joule heating, the mixed-gradient (drag) term, a bath temperature.
+- Thermal Langevin noise on every band and on the field, with fluctuation–dissipation also under KWT.
+- Regions of different materials (other ξ, Γ, a, β, KWT, σ_n, a band absent), joined through a barrier of given transparency.
+- Samples of any shape: notches and holes by a condensation mask, or a sample carved in vacuum (a nanowire) with an
+  insulating buffer.
+- Self-field boundaries: the bar of the sample, the open boundary (lattice Green function), or the slab of release 1.x.
+
+**The numerics.**
+- Gauge-invariant link variables on a staggered mesh; the curl-curl term implicit, solved exactly by separable bases or by
+  preconditioned conjugate gradients with the insulating buffer.
+- The bands made stiff by KWT advance by stabilised explicit stages (damped Runge–Kutta–Chebyshev by default; Legendre on
+  request) in a rotating frame, so a stationary state with charge imbalance is a fixed point of the step for any dt.
+- With noise, the stiff phase modes take the kick inside the stages (SK-ROCK).
+- CPU runs retain their state, auxiliary histories and scheme defaults at closed-rung checkpoints. Stop/resume regression
+  tests use identical arithmetic; changing backend or math libraries is a comparison within tolerance. GPU checkpoints
+  reconstruct link exponentials on CPU, so GPU continuation is not generally bit-identical. Rewinding an older buffered
+  state for delay confirmation also has a separate limitation; see `tdgl2/README.md`.
+
+**The measurement.**
+- Current ladders with a verdict per point: fixed point, flow, normal, heat cut.
+- The onset by the delay of the first phase slip, refined with one command.
+- Brackets and diode efficiency, a one-page report per run, figures, and 3D films of the vortex events (VTK, a browser viewer,
+  GIF).
+
+**How it is checked** (843 assertions in the 2.0 suite):
+- Against release 1.2 of the published work, to the bit, with the new terms off.
+- Against pyTDGL for one band in 2D: the depairing current, the conversion length with KWT (within 0.2 %), and the onset of a
+  notched strip.
+- Analytic and exact limits: the one-dimensional two-fluid law, the proximity length into another material on the lattice
+  (4e-5), the discrete continuity across an interface (1e-15), the discrete energy balance, equipartition of the field modes, and
+  the Gibbs equilibrium under noise independent of the mobility.
+
+**Speed** (one laptop core):
+- A two-band box of 40 × 24 × 6 cells runs a rung of 1600 t_GL in about two minutes without KWT.
+- With KWT and γ̃ = 10 it costs about twice that.
+- The insulating buffer costs about three times a metal one (the nanowire box: 4.5 ms per step against 1.5 ms without vacuum).
+
+**Limits.**
+- A Ginzburg–Landau model: valid near T_c and on scales of ξ, not a microscopic (Bogoliubov–de Gennes or Usadel) theory.
+- The band-resolved charge imbalance has no memory, and release 2.0 has no scalar potential (release 1.2 keeps it).
+- The implicit solve needs dx = dy = dz.
+- Optional GPU acceleration covers ladder cycles; measurements, checkpoints, direct `step!` calls and some auxiliary operations remain on the host. See [TDGLGPU](gpu/TDGLGPU/README.md) for installation, scope and validation.
+- The known limits of each option are in `tdgl2/README.md`.
 
 ## What it solves
 
@@ -69,16 +161,16 @@ Optional terms, all off by default and meant to be switched on one at a time:
   U = exp(−i A·dl): gauge invariance holds exactly on the lattice, and the flux through each
   plaquette is the lattice curl of the link phases.
 - **Time stepping.** Two schemes, chosen in one word:
-  - `Config(:prod)`, recommended for new work: the curl-curl term of the field equation implicit
+  - the production scheme, the default (`Config(...)`, or `Config(:prod; ...)`): the curl-curl term of the field equation implicit
     (one separable solve per step), the π band in substeps, and the step at half the stability
     bound of σ. It gives the onset brackets of the explicit scheme and its flowing voltages within
     0.2 %, about 3 times faster per unit time at κ = 2 and about 100 times at κ = 25. With heat, a
     bath temperature or drag the π band runs without substeps and only the curl-curl term is
     implicit: about 30 times faster at κ = 25, validated against the explicit heat and drag runs.
-    The scalar potential is not available in it.
-  - `Config(:legacy)`, the library default: explicit, with the step set by the most restrictive of
-    the diffusion branches of both bands and the Maxwell branch (∝ dx²/κ²). It is the scheme of
-    release 1.0.0 and of the published runs, and existing scripts reproduce them unchanged.
+    The scalar potential runs in the explicit scheme: a run with `use_phi` switches to it by itself.
+  - `Config(:legacy; ...)`: explicit, with the step set by the most restrictive of the diffusion
+    branches of both bands and the Maxwell branch (∝ dx²/κ²). It is the scheme of release 1.0.0 and of
+    the published runs (the library default up to release 1.2), and the scripts of those runs ask for it.
 
   The order-parameter update is a Jacobi sweep over interior nodes; Neumann conditions are imposed
   on every face of the sample.
@@ -92,10 +184,10 @@ Optional terms, all off by default and meant to be switched on one at a time:
   point (Meissner or pinned vortices) or as a stationary limit cycle (flux flow); the class is
   reported with the result. Current ladders are seeded point by point, so a point depends on the
   path that reached it.
-- **Numerical modes.** `Strict` (default) takes `hypot` and `sincos` from the C maths library, so a
-  run gives the same digits for any number of threads and is the mode of the regression tests;
-  `Fast` uses Julia's native functions, vectorises, is about 1.3 times faster and agrees to machine
-  precision.
+- **Numerical modes.** `Fast` (default) uses Julia's native functions and vectorises; `Strict`
+  (`run_case(cfg; mode=Strict())`) takes `hypot` and `sincos` from the C maths library, is about 1.3 times
+  slower and gives the digits of the earlier releases and of the regression tests. The two agree to
+  machine precision.
 
 A longer description of the physics and the numerics, where runs are written and how to run on a
 cluster, is in [`docs/solver_guide.pdf`](docs/solver_guide.pdf).
@@ -105,7 +197,7 @@ cluster, is in [`docs/solver_guide.pdf`](docs/solver_guide.pdf).
 The code is a Julia project, not a registered package: clone it and instantiate it once. The
 exact versions of every dependency are pinned in `julia/Manifest.toml`.
 
-1. Julia 1.10 or later (1.11 or later for the terminal menu). On Linux and macOS, `curl -fsSL https://install.julialang.org | sh`
+1. Julia 1.13 or later (release 1.2 was tested with 1.12 and 1.13). On Linux and macOS, `curl -fsSL https://install.julialang.org | sh`
    installs `juliaup`; on Windows, follow
    [julialang.org/downloads](https://julialang.org/downloads/).
 2. Clone and instantiate:
@@ -123,7 +215,8 @@ exact versions of every dependency are pinned in `julia/Manifest.toml`.
    ```
 
 Everything runs in Julia, the terminal menu and the shape editor included. Optional: Python 3 with
-matplotlib, only for the quick run figures (`plot_summary.py`).
+matplotlib, only for the quick run figures (`plot_summary.py`); release 2 adds NumPy for its figures and films, and plotly
+(if installed) to carry the 3D film page offline.
 
 ## A first run
 
@@ -149,8 +242,8 @@ polarities dissipate. Here the windows are far too short and +0.15 is undecided,
 formed. A simpler threshold estimate (where |V| first exceeds V_th) is printed next to it and
 withheld when the drive is even in J, when there is no vortex, or when the threshold is already
 crossed at the first current of the grid. The protocol of the paper uses windows of 1500/2000 t_GL
-(`--window paper` below, or `Config(:paper)`). The same keywords in `Config(:prod; ...)` run the
-production scheme.
+(`--window paper` below, or `Config(:paper)`). The same keywords in `Config(:legacy; ...)` run the
+explicit scheme of release 1.0.0.
 
 From the command line, one run per call (writes `julia/runs/<name>/` with `job.json`,
 `j_history.csv`, snapshots and checkpoints for restarting):
@@ -169,8 +262,10 @@ With Φ they use the explicit scheme; with heat, drag or a bath temperature, the
 Any geometry can be drawn in the browser, with nothing to install:
 `julia julia/editor/server.jl` opens it. Pick a face of the sample (or click it on the 3D view)
 and paint from that face inward, `depth` cells deep and `from` cells inside, so cuts can also be
-buried in the sample; figures, f and depth gradients, and a palette of condensation strengths are
-there too. The 3D view shows the current, the field and the face through which vortices enter for
+buried in the sample. Figures (circle, rectangle, polygon, …) are drawn on any of the three views and go
+through the sample along that view's axis; a figure can be kept with the rest removed (a cable), and what is
+removed can be a normal metal (f = 0) or vacuum (no material: release 2, a sculpted sample with leads of its own
+section). f and depth gradients and a palette of condensation strengths are there too. The 3D view shows the current, the field and the face through which vortices enter for
 each sign of J; the checks say, while you draw, whether the shape can rectify at all (a shape
 symmetric under the mirror in y gives η = 0 exactly), whether it touches the injection faces, and
 where either band turns normal. Shapes are saved as TOML in `julia/shapes/` and used with
@@ -182,7 +277,9 @@ where either band turns normal. Shapes are saved as TOML in `julia/shapes/` and 
 `julia julia/scripts/tdgl_tui.jl` launches, stops and resumes runs and lists every Julia run of
 the project with its progress. The launch wizard goes through a starting point, the geometry
 (catalogue, a saved shape, or a new one drawn in the editor), a parameter table (including the
-scheme, `prod` by default), the scalar potential and at most one optional term. Key `v` gives the
+scheme, `prod` by default), the scalar potential and at most one optional term. Key `n` launches a run of
+release 2.0 from a TOML file (one of `tdgl2/examples/` or any path), the wizard ends with the choice of release (`2`
+launches the same run with release 2.0), and the runs of 2.0 are listed, stopped and resumed with the others. Key `v` gives the
 result of every run with the verdict rule; key `c` adds or removes folders to watch (runs started
 from your own scripts elsewhere show up too); while the menu is open (or with `--watch`) a desktop
 notification is sent when a run finishes. `--help` lists the command-line options. The menu and the
@@ -250,10 +347,12 @@ those rungs are re-measured on doubled windows.
 ## Layout
 
 ```
-julia/          solver (src), tests, scripts, terminal menu, shape files and editor
+tdgl2/          release 2.0: solver (src), tests, run script, examples, materials, tools
+julia/          release 1.2: solver (src), tests, scripts, terminal menu, shape files and editor
 data/           stored states used by the regression tests
-docs/           solver_guide.pdf: the model, the numerics, the optional terms and the protocol
+docs/           solver_guide_2.pdf (release 2.0) and solver_guide.pdf (release 1.2)
 examples/       the first run, the demonstration run of this README, and Slurm scripts (one run, a job array)
+.github/        the test suite of release 2.0 on every push (to the bit, and on the machine's own kernels)
 ```
 
 ## Known limitations
@@ -291,16 +390,9 @@ examples/       the first run, the demonstration run of this README, and Slurm s
 
 ## Planned
 
-Each item is validated against this release before it is used; none of it is in this code yet.
-- **An insulating buffer** on the faces parallel to the current, so that all of the current crosses
-  the sample, as in a film in vacuum with leads at its ends. It removes the parallel normal path of
-  the known limitations and makes the magnitude of a diode efficiency a number that can be compared
-  with an experiment.
-- **A multiband generalised TDGL** with a band-resolved charge imbalance (Kramer–Watts-Tobin
-  generalised to several bands). It would compute what TDGL leaves as free parameters, the
-  relaxation rates and how a contact divides the current between the bands, and would let the
-  solver ask whether quasiparticles left by one band change vortex entry in another. Two bands
-  (MgB₂) first; the data structures for N bands from the start.
+Release 2.0 includes an optional [GPU backend](gpu/TDGLGPU/README.md), with CUDA installed separately. CPU CI checks the KernelAbstractions CPU backend; CUDA needs a GPU run. PCG reductions and cycle transfers remain possible optimizations. Not planned without a study that needs it: the memory of the band-resolved
+(Schmid–Schön) imbalance, a scalar potential in 2.0, the drag with materials, and a split of σ_n between bands that changes from
+one material to another (it needs the scalar potential).
 
 ## Citing
 
@@ -310,8 +402,10 @@ The solver, the measurement protocol and the failure modes it guards against are
 > Ginzburg–Landau simulations of geometric superconducting diodes* (Version 1.0.0) [Preprint].
 > Zenodo. https://doi.org/10.5281/zenodo.23163207
 
-With its default settings (`Config(:legacy)`), this repository gives the results of that work; the
-options added since, including the production scheme, are off by default in the library. `CITATION.cff` has the metadata, and GitHub's "Cite this repository" button reads it.
+`Config(:legacy; ...)` with `mode=Strict()` in `julia/` gives the results of that work to the digit, and the
+default production scheme gives its onset brackets (tag `v1.0.0` is the code the paper used). The results of
+release 2.0 (Kramer–Watts-Tobin relaxation and the conversion partition in a two-band diode) are in
+preparation; until then, cite the software with the version used. `CITATION.cff` has the metadata, and GitHub's "Cite this repository" button reads it.
 
 ## License
 
