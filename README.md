@@ -25,7 +25,7 @@ The repository holds two releases of the same package (`TDGL`):
   menu that launches and follows runs (of both releases), a browser editor for three-dimensional shapes,
   and its guide ([`docs/solver_guide.pdf`](docs/solver_guide.pdf)). The rest of this page describes it.
 
-With matched schemes and boundaries and the new terms off, the regression settings of 2.0 reproduce 1.2. Release 2.0 includes the optional [TDGLGPU accelerator](gpu/TDGLGPU/README.md) for ladder cycles on CUDA or the KernelAbstractions CPU backend. The tag `v2.0.0` follows release 2.0. The accelerator supports 2.0; the classic solver remains CPU-only. Both are Julia projects
+With matched schemes and boundaries and the new terms off, the regression settings of 2.0 reproduce 1.2. Release 2.0 includes the optional [TDGLGPU accelerator](gpu/TDGLGPU/README.md) for ladder cycles on CUDA or the KernelAbstractions CPU backend. The tag `v2.0.0` preserves the reference snapshot; `main` includes the subsequent temporal-link correction. Cite the exact commit for results obtained with later maintenance. The accelerator supports 2.0; the classic solver remains CPU-only. Both are Julia projects
 of the same package, so each runs in its own project (`--project=tdgl2` or `--project=julia`); they are not loaded together.
 
 ![Release 2.0, scripts/film.jl: a vortex of the σ band crossing a notched nanowire carved in vacuum (left, in 3D; right, the mid plane from above and the vortex plaquettes against time)](docs/img/film_nanowire.png)
@@ -98,7 +98,7 @@ magnetic field (Ampère with the normal current):
 - Brackets and diode efficiency, a one-page report per run, figures, and 3D films of the vortex events (VTK, a browser viewer,
   GIF).
 
-**How it is checked** (843 assertions in the 2.0 suite):
+**How it is checked** (871 assertions in the 2.0 suite):
 - Against release 1.2 of the published work, to the bit, with the new terms off.
 - Against pyTDGL for one band in 2D: the depairing current, the conversion length with KWT (within 0.2 %), and the onset of a
   notched strip.

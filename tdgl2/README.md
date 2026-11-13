@@ -172,8 +172,8 @@ it (`u`). Its launch wizard (`l`: starting point, geometry, parameters, optional
 | stiff bands | Euler substeps | Runge–Kutta–Chebyshev (default) or Legendre stages, and the rotating frame |
 | self-field boundary | the slab of 1.x | `:bar` (default), `:open`, `:slab` |
 | buffer | normal metal | normal metal or insulating |
-| scalar potential Φ (Coulomb projection, Thomas–Fermi), diffused residual Q | yes (the run switches to the explicit scheme by itself) | not yet |
-| heat (Joule, contact margin), drag, bath temperature | yes (in `:prod`, without π substeps) | yes, with every other option |
+| scalar potential Φ (Coulomb projection, Thomas–Fermi), diffused residual Q | yes (the run switches to the explicit scheme by itself) | not implemented; use 1.2 for these terms |
+| heat (Joule, contact margin), drag, bath temperature | yes (in `:prod`, without π substeps) | yes; combination limits below |
 | interband quasiparticle exchange (normal fluids per band) | — (one fluid) | `qp_exchange = ν` (two bands) or a matrix of rates (N bands); off = one fluid |
 | anisotropic bands (a mass per axis) | — | `m_axes`, or `m_x`, `m_y`, `m_z` in a material file |
 | thermal (Langevin) noise | — | `noise = T̃`, seeded, resumable (with KWT too); `noise_field = true` on A too |
@@ -181,10 +181,26 @@ it (`u`). Its launch wizard (`l`: starting point, geometry, parameters, optional
 | numerical modes | `Fast` (default) and `Strict` (digit for digit with earlier releases) | native arithmetic |
 | onset by the delay, the 'N' verdict | — | yes |
 | a run is | `Config`, `run_preset.jl` flags or the menu wizard | a TOML file, or the menu (key `n`) |
-| stop and resume | yes | yes, to the bit |
+| stop and resume | yes | CPU with matched arithmetic; GPU within tolerance (see below) |
 | shapes, catalogue and editor | yes (figures on any face, kept or removed) | the same, and vacuum: a sculpted sample (a cable, a film with a hole) with leads of its own section |
 
 Use 1.2 for the scalar potential, for the `Strict` mode, or to reproduce the published work of release 1.x; 2.0 for the rest.
+
+The configuration rejects combinations for which the corresponding discretization is not implemented:
+
+- Thermal noise cannot be combined with the heat model. Noise on a KWT band is rejected if that band uses RKL stages;
+  RKC and Euler substeps are supported, with Euler warning about equilibrium bias for stiff bands. `noise_field` also
+  requires the order-parameter noise amplitude.
+- Sculpted vacuum requires insulating padding and a `:bar` or `:open` boundary; heat, drag and `:slab` are excluded.
+- Regional materials cannot be combined with drag or the matrix form of N normal fluids. The scalar two-band exchange
+  is supported, with a consistent conductivity split. Materials share the global number of bands, κ and reference
+  temperature; an absent band can be specified in a secondary material. Transparency matrices are symmetric in (0, 1].
+- The implicit field solver and the open boundary require `dx = dy = dz`. The rotating frame requires extrapolation.
+
+These guards apply before selecting the CPU or GPU backend; implementation coverage does not certify every parameter
+combination. Main checkpoints retain auxiliary state for resuming. Replaying an older ring-buffer entry has a separate
+PCG/RNG-history limitation; CPU bitwise continuation also requires the same arithmetic environment. GPU restarts are
+compared within tolerance because checkpoint loading reconstructs links on the host.
 
 ## Performance
 

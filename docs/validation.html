@@ -76,8 +76,9 @@
 <p class="lead">Why the numbers can be trusted, and where they stop.</p>
 
 <p>The classic <code>Strict</code> archive checks also pin the original <code>libm</code> build in an isolated container. Matching only the glibc version is insufficient: <code>hypot</code> may round differently across builds. The assertions and stored states are kept unchanged.</p>
+<p>The temporal-link regression checks 93 inputs near zero, ±pi and the short-series cutoffs, including fused and unfused accelerator kernels. It passed on KA-CPU and a Tesla T4. The accompanying <a href="https://github.com/georgeotjg/juliaTDGL/blob/main/gpu/TDGLGPU/validation/temporal_rotations.json">record</a> identifies the source hashes and the separate full CUDA validation. These checks do not recertify research campaigns.</p>
 <h2 id="suite">The suite</h2>
-<p>The release-2.0 suite has 843 assertions and the classic suite 56 391 (12 November 2026). Both run on every push to the repository (GitHub Actions), together with the accelerator on its CPU backend. The tests
+<p>The release-2.0 suite has 871 assertions and the classic suite 56 400 (12 November 2026). Both run on every push to the repository (GitHub Actions), together with the accelerator on its CPU backend. The tests
 of release 2.0 run at a tolerance of 10<sup>−10</sup> on any machine and to the bit with the Haswell kernels of OpenBLAS:</p>
 <pre><code>TDGL_TEST_BITS=1 OPENBLAS_NUM_THREADS=1 julia --project=tdgl2 tdgl2/test/run.jl    # to the bit (x86 with AVX2)
 OPENBLAS_NUM_THREADS=1 julia --project=julia julia/test/run.jl                     # release 1.2</code></pre>

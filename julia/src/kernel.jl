@@ -131,8 +131,8 @@ end
 # the silent state), and freezing them for n substeps lags the band behind that
 # rotation (measured: the contact current share off by 3-6 %).  After the swap
 # of [I], U holds the links of the previous step until block [E] overwrites
-# them.  Q^(1/n) from short series (asin, cos, sin; error <= 3e-8 for
-# |sin dtheta| <= 0.05, measured |dtheta| <= 0.042 per step at dt = 0.04) and
+# them.  Q^(1/n) from short series (asin, cos, sin; error <= 3e-8 for n>=2,
+# Re(Q)>0 and |sin dtheta| <= 0.05, measured |dtheta| <= 0.042 per step at dt = 0.04) and
 # exactly (angle, cis) above that.  Without it (or on the first step after a
 # load, where U = V) the links are frozen.
 function pi_substeps!(s, p::Params, fmask, mode::NumMode)
@@ -182,7 +182,7 @@ function _pi_rot!(L, R, V, U, n::Int, rng)
         v = V[I]; L[I] = v
         q = v * conj(U[I])                        # Q = exp(-i dtheta)
         sf = -imag(q)                             # sin(dtheta)
-        if abs(sf) <= 0.05
+        if real(q) > 0 && abs(sf) <= 0.05
             a = (sf + sf*sf*sf/6) / n             # dtheta/n  (asin to third order)
             a2 = a*a
             R[I] = complex(1 - a2/2, -a*(1 - a2/6))   # exp(-i dtheta/n)

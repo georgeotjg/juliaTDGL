@@ -105,7 +105,7 @@ conductivity contrast. That is why no cheap separable preconditioner removes the
 would cost more per iteration than it saves. What pays is the tolerance (10<sup>−8</sup> of the step's right-hand side) and a first
 guess extrapolated from the last two steps, with the preconditioner in single precision inside a flexible conjugate gradient. On the
 nanowire box that takes 14 iterations to 6.5 and the step from 10.1 to 4.5 ms; the state stays within 2 × 10<sup>−9</sup>, and a
-ladder resumes to the bit.</p>
+CPU ladder resumes to the bit with matched arithmetic.</p>
 
 <h2 id="step">The time step</h2>
 <p>The step is the smallest of the stability bounds, times 0.99 and <code>dt_scale</code> (0.5 by default). For band μ,</p>
@@ -161,7 +161,9 @@ modes, and it goes away when the step resolves them.</li>
 <li><strong>To the bit.</strong> With the new terms off, release 2.0 reproduces release 1.2 state by state, to the bit with the Haswell
 kernels of OpenBLAS (any x86 machine with AVX2), and to 10<sup>−10</sup> on other kernels. Verdicts and counts are exact either way.</li>
 <li><strong>Stop and resume.</strong> A checkpoint per closed point carries the state and the whole ladder: the solver's last solutions,
-the noise stream, the temperature, the open-boundary ramp. A stopped run resumes to the bit.</li>
+the noise stream, the temperature, the open-boundary ramp. CPU continuation is bitwise with matched arithmetic;
+GPU continuation is checked within tolerance because loading reconstructs links on the host. Older replay-ring entries
+have a separate PCG/RNG-history limitation.</li>
 <li><strong>The scheme defaults travel with the run.</strong> A run folder keeps the defaults it started with
 (<code>scheme_defaults.toml</code>), so resuming, refining or filming an old run never switches its integrator in the middle of a
 ladder. A key given in the run file always wins.</li>

@@ -1460,7 +1460,7 @@ _rz(gr) = ((gr.x1 - 1, gr.y1 - 1, gr.z1 - 1), (gr.x2 - gr.x1 + 2, gr.y2 - gr.y1 
         v = V[i,j,k]
         q = v * conj(U[i,j,k])
         sf = -imag(q)
-        if abs(sf) <= 0.05
+        if real(q) > 0 && abs(sf) <= 0.05
             t = (sf + sf*sf*sf/6) * c
             t2 = t*t
             L[i,j,k] = v * complex(1 - t2/2, -t*(1 - t2/6))
@@ -1475,7 +1475,7 @@ end
         v = V[i,j,k]; L[i,j,k] = v
         q = v * conj(U[i,j,k])
         sf = -imag(q)
-        if abs(sf) <= 0.05
+        if real(q) > 0 && abs(sf) <= 0.05
             t = (sf + sf*sf*sf/6) / n
             t2 = t*t
             R[i,j,k] = complex(1 - t2/2, -t*(1 - t2/6))
@@ -1597,6 +1597,7 @@ end
 _frame_turn!(F, Ω, dt, gs) = (gr = gs.st.grid;
     _launch(gs, _fturn_k!, (gr.x2 - gr.x1, gr.y2 - gr.y1, gr.z2 - gr.z1), F, Ω, dt, gr.x1, gr.y1, gr.z1); F)
 
+# Same short series as CPU: complex error <= 2.605e-7 for |a|<=0.05.
 @inline _cis(a::Float64) = abs(a) <= 0.05 ? (a2 = a*a; complex(1 - a2/2, a*(1 - a2/6))) : cis(a)
 # _frame_links!: L ← L e^{i(ω̂ᵢ₊₁ − ω̂ᵢ)τ}, over the range of the link with the offset d of its far node
 @kernel function _flinks_k!(L, @Const(Ω), τ::Float64, o::NTuple{3,Int}, d::NTuple{3,Int})
@@ -1608,7 +1609,7 @@ _frame_links!(Lx, Ly, Lz, Ω, τ, gs) = (gr = gs.st.grid; _launch(gs, _flinks3_k
     a, b, e = @index(Global, NTuple); i = o[1] + a; j = o[2] + b; k = o[3] + e
     @inbounds begin
         q = V[i,j,k] * conj(U[i,j,k]); sf = -imag(q)
-        t = abs(sf) <= 0.05 ? -(sf + sf*sf*sf/6) : angle(q)
+        t = real(q) > 0 && abs(sf) <= 0.05 ? -(sf + sf*sf*sf/6) : angle(q)
         R[i,j,k] = t + (Ω[i+d[1],j+d[2],k+d[3]] - Ω[i,j,k]) * dt
     end
 end
@@ -1622,7 +1623,7 @@ end
 @inline function _rotfrac1(V, U, c, i, j, k)
     @inbounds begin
         v = V[i,j,k]; q = v * conj(U[i,j,k]); sf = -imag(q)
-        if abs(sf) <= 0.05
+        if real(q) > 0 && abs(sf) <= 0.05
             t = (sf + sf*sf*sf/6) * c; t2 = t*t
             v * complex(1 - t2/2, -t*(1 - t2/6))
         else
@@ -1642,7 +1643,7 @@ end
 @inline function _rot1(V, U, n, i, j, k)
     @inbounds begin
         v = V[i,j,k]; q = v * conj(U[i,j,k]); sf = -imag(q)
-        if abs(sf) <= 0.05
+        if real(q) > 0 && abs(sf) <= 0.05
             t = (sf + sf*sf*sf/6) / n; t2 = t*t
             (v, complex(1 - t2/2, -t*(1 - t2/6)))
         else
@@ -1678,7 +1679,7 @@ end
 @inline function _lrate1(V, U, Ω, dt, i, j, k, i2, j2, k2)
     @inbounds begin
         q = V[i,j,k] * conj(U[i,j,k]); sf = -imag(q)
-        t = abs(sf) <= 0.05 ? -(sf + sf*sf*sf/6) : angle(q)
+        t = real(q) > 0 && abs(sf) <= 0.05 ? -(sf + sf*sf*sf/6) : angle(q)
         t + (Ω[i2,j2,k2] - Ω[i,j,k]) * dt
     end
 end

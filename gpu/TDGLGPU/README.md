@@ -88,10 +88,15 @@ whole magnitude for normalization; the fast PCG cases use a looser, explicitly r
 
 The insulating field PCG treats a zero source explicitly, including a warm or extrapolated initial guess. A shared CPU/device regression checks decoupled links, history and checkpoint continuation in four PCG modes.
 
+Temporal-link interpolation uses its short series only when `real(V*conj(U)) > 0` and the sine is small. Other rotations
+use `angle`/`cis`, including those near ±π. The regression exercises 93 manufactured inputs around both cutoffs,
+fractional rotations, roots and link rates, through fused and unfused kernels. This guard preserves the existing
+small-angle arithmetic; it does not normalize the main links or change the integrator.
+
 Analytic checks cover a uniform equilibrium, radial GL/KWT relaxation and a stationary pure lattice gauge. Numerical
 CPU/device agreement alone is not an independent validation of the physical model or its continuum limit.
 
-Validation snapshot (12 November 2026): 37 CPU-backend cases and 41 Tesla T4 cases passed, plus eight analytic assertions
+Published baseline (0d65bd6, 12 November 2026): 37 CPU-backend cases and 41 Tesla T4 cases passed, plus eight analytic assertions
 and two short ladders on each backend. The zero-source PCG and checkpoint regression passed 217 assertions on CPU, KA-CPU and CUDA. The largest T4 step error was 7.136e-8 at its explicit 1e-7 tolerance; PCG ladder
 voltages differed by at most 9.587e-11 relatively, with identical verdicts/cycles. Five CUDA checkpoint continuations passed
 38 assertions; the strict CLI and the wrapped CPU CLI both executed CUDA without fallback. A completed strict-CLI resume
@@ -99,6 +104,9 @@ preserved all eleven numerical output files. CUDA run: Julia 1.13.2, CUDA.jl 6.5
 KernelAbstractions 0.10.7 and Adapt 4.8.0. This records the tested suite and environment, not every possible combination.
 
 The repository CI runs the CPU backend. CUDA validation requires a separate GPU run; a CPU CI badge does not certify CUDA.
+The subsequent temporal-link guard passed 56 additional assertions on both KA-CPU and Tesla T4, with 93 manufactured
+inputs and maximum CPU/backend difference 6.939e-18. Its source fingerprints and results are recorded separately in
+`validation/temporal_rotations.json`; the older baseline files retain their original source hashes and timings.
 Small meshes may run slower on GPU because of launch and transfer overhead. Performance claims must name the device,
 mesh, scheme, host CPU and measured workload. No A100 performance is inferred from a T4 run.
 

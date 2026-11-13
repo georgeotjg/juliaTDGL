@@ -2,10 +2,12 @@
 
 ## 2.0.0
 
-Release 2.0 grows until it is complete; the tag `v2.0.0` follows it. The sculpted sample (vacuum) was the last item of its
+Release 2.0 is maintained on `main`; the tag `v2.0.0` preserves the published reference snapshot. The sculpted sample (vacuum) was the last item of its
 frozen scope. The optional GPU package is distributed alongside the solver. Not planned (see the README's limitations): the memory of the band-resolved (Schmid–Schön)
 charge imbalance (its slaved form and the interband exchange are in) and the scalar potential of release 1.x (with the
 charge imbalance slaved it is a choice of gauge; it stays in release 1.2).
+
+**12 November 2026, maintenance.** Corrected the temporal-link branch near ±pi: the short series also requires real(q)>0. CPU and device helpers share the guard and cutoff regressions; no new integration method, normalization or solver tolerance.
 
 **12 November 2026.** Fixed the insulating field PCG for a zero source after a nonzero warm start. The CPU and device paths now return a zero increment, preserve extrapolation history and leave decoupled links on their diagonal update. A shared regression checks cold/warm/repeated zero sources and checkpoint continuation; solver tolerances and integration stages are unchanged.
 

@@ -285,7 +285,7 @@ function _frame_term!(C::A3c, S::A3c, Ω::A3r, h::Float64, gr::Grid; turn::Bool=
     C
 end
 
-# e^{ia}: short series while |a| <= 0.05 (error <= 3e-8, as _rot!), exactly above.
+# e^{ia}: short series while |a| <= 0.05 (complex error <= 2.605e-7), exactly above.
 @inline _cis(a::Float64) = abs(a) <= 0.05 ? (a2 = a*a; complex(1 - a2/2, a*(1 - a2/6))) : cis(a)
 
 # Links in the turning gauge, τ later: L ← L e^{i(ω̂ᵢ₊₁ − ω̂ᵢ)τ}.
@@ -303,7 +303,7 @@ end
 function _link_rate!(R, V, U, Ω, dt, rng, o)
     @inbounds for I in rng
         q = V[I] * conj(U[I]); sf = -imag(q)
-        a = abs(sf) <= 0.05 ? -(sf + sf*sf*sf/6) : angle(q)
+        a = real(q) > 0 && abs(sf) <= 0.05 ? -(sf + sf*sf*sf/6) : angle(q)
         R[I] = a + (Ω[I + o] - Ω[I]) * dt
     end
     R
@@ -351,13 +351,13 @@ _ry(gr::Grid) = CartesianIndices((gr.x1:gr.x2+1, gr.y1:gr.y2,   gr.z1:gr.z2+1))
 _rz(gr::Grid) = CartesianIndices((gr.x1:gr.x2+1, gr.y1:gr.y2+1, gr.z1:gr.z2))
 
 # Link of substep m = V Q^((m-1)/n), Q = V conj(U) = exp(-i dθ) the rotation of the previous
-# step.  Q^(1/n) from a short series while |sin dθ| <= 0.05 (error <= 3e-8) and exactly above.
+# step.  Q^(1/n) from a short series for Re(Q)>0 and |sin dθ| <= 0.05 (error <= 3e-8 for n>=2), otherwise exact.
 function _rot!(L, R, V, U, n::Int, rng)
     @inbounds for I in rng
         v = V[I]; L[I] = v
         q = v * conj(U[I])
         sf = -imag(q)
-        if abs(sf) <= 0.05
+        if real(q) > 0 && abs(sf) <= 0.05
             a = (sf + sf*sf*sf/6) / n
             a2 = a*a
             R[I] = complex(1 - a2/2, -a*(1 - a2/6))
@@ -411,7 +411,7 @@ function _rotfrac!(L, V, U, c::Float64, rng)
         v = V[I]
         q = v * conj(U[I])
         sf = -imag(q)
-        if abs(sf) <= 0.05
+        if real(q) > 0 && abs(sf) <= 0.05
             a = (sf + sf*sf*sf/6) * c
             a2 = a*a
             L[I] = v * complex(1 - a2/2, -a*(1 - a2/6))

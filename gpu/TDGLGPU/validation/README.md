@@ -3,11 +3,20 @@
 These are engineering validation data, separate from any research campaign. They establish agreement of the tested
 discrete trajectories within their recorded tolerances, not continuum convergence or arbitrary combinations.
 
-The CUDA snapshot used Julia 1.13.2, CUDA.jl 6.5.1, KernelAbstractions 0.10.7 and Adapt 4.8.0 on a Tesla T4.
+The published baseline (0d65bd6) used Julia 1.13.2, CUDA.jl 6.5.1, KernelAbstractions 0.10.7 and Adapt 4.8.0 on a Tesla T4.
 `t4_environment.json` records uploaded and distributed source hashes. `kernel_body.json` identifies the numerical module
-body, unchanged by this audit's host-side cache, strict-mode and execution-counter changes. The current CUDA run tested
+body, unchanged by that audit's host-side cache, strict-mode and execution-counter changes. That CUDA run tested
 those controls as well as the numerical paths. `phases.json` keeps the initial harness failures separate from successful
 validation and retries; an initial job exit of 1 is not relabelled as a successful whole job.
+
+`temporal_rotations.json` records the later branch guard separately: `real(q)>0` accompanies the small-sine criterion.
+The additional regression passed 56 assertions on KA-CPU and 56 on Tesla T4, with 93 manufactured inputs around zero,
+±pi and the cutoffs, including fused/unfused kernels. Maximum CPU/backend difference was 6.939e-18. The file records
+distributed source/test fingerprints. These checks do not retime the older benchmarks or establish new onset values.
+The same post-guard CUDA run also completed all 41 step cases, 217 PCG assertions, eight analytic assertions, five
+checkpoint continuations (38 assertions), backend-policy checks and both smoke ladders, with exit 0. Its largest step
+error was 7.031e-8 against a 1e-7 tolerance; the PCG ladder state error was 4.430e-9 against 1e-6. These later results are
+under `full_validation` in the same file; the older snapshot and repeated timing tables below keep their own provenance.
 
 - `t4_steps.json`: all 41 configurations, step counts, tolerances, maximum errors and one timing batch per configuration.
 - `t4_ladder.json`, `t4_ladder_pcg.json`: short ladders, including PCG; verdicts and cycle counts agree. `FFFF*` leaves the

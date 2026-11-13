@@ -3,7 +3,9 @@
 ## 2.0.0 (2026-10-20; updated 2026-11-12)
 
 Release 2.0 includes the optional TDGLGPU accelerator for ladder cycles, with CUDA installed separately and CPU-backend
-tests in CI. Direct `step!` calls and host measurements remain on CPU. The tag `v2.0.0` follows release 2.0.
+tests in CI. Direct `step!` calls and host measurements remain on CPU. The tag `v2.0.0` preserves the reference snapshot 0d65bd6; subsequent maintenance is committed on `main`.
+
+**12-Nov, maintenance on main.** Temporal-link interpolation now uses its small-sine series only in the positive real half-plane. Rotations near ±pi take the existing angle/cis path, in both solvers and the optional accelerator. Added cutoff regressions and separate CUDA source fingerprints. The time step, integration stages and solver tolerances are unchanged.
 
 **12-Nov.** Optional GPU package with CLI wrappers, analytic checks and CPU/device comparisons. Fixed the insulating field PCG with a zero right-hand side after a nonzero warm start: the increment is now zero, and extrapolation history remains consistent. CPU and device paths share the correction and checkpoint regression. The equations, integration stages and solver tolerances are unchanged.
 

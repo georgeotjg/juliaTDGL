@@ -26,6 +26,9 @@ if "cuda" in ARGS
 end
 open(io -> TOML.print(io, meta), joinpath(work, "environment.toml"), "w")
 
+module LinkRotations
+include("test_link_rotations.jl")
+end
 module BackendChecks
 include("test_backend_hook.jl")
 end

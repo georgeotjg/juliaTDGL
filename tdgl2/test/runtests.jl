@@ -7,6 +7,7 @@ using Test, TDGL
     include("test_protocol.jl")
     include("test_config.jl")
     include("test_resume_seed.jl")
+    include("test_link_rotations.jl")
     include("test_physics.jl")
     include("test_pcg_zero_rhs.jl")
     include("test_openbc.jl")
