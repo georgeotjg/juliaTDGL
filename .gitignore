@@ -1,24 +1,19 @@
-# Simulation output: never in the public repository
+# Output
 runs/
 **/runs/
 *.mat
-# ...except the reference states used by the acceptance tests
+# Reference data
 !data/**/*.mat
 *.vtk
 *.pid
 STOP.txt
-# Manuscripts are kept out of the code repository for now
-articulos*/
-articles/
-papers/
-paper/
-# Shapes replaced in the editor are moved here, never deleted
+# Editor backups
 trash_/
 # Julia
 *.jl.cov
 *.jl.*.cov
 *.jl.mem
-# LaTeX build files
+# LaTeX
 *.aux
 *.log
 *.out
@@ -27,24 +22,14 @@ trash_/
 *.fdb_latexmk
 *.synctex.gz
 *.blg
-# Editors and OS
+# Editors
 __pycache__/
 *.pyc
 *~
 *.swp
 .DS_Store
 
-# Personal study notes and local agent/cloud configuration never belong here.
-ESTUDIO/
-GPT/
-AGENTS/
-cloud/
-.aws/
-.codex/
-.agents/
-**/guia_juliaTDGL*
-
-# Optional-backend output and local development environments
+# Local files
 out/
 gpu/TDGLGPU/Manifest.toml
 .tdgl-tui-run
