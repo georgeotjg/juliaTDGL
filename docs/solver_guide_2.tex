@@ -15,7 +15,7 @@
 time-dependent Ginzburg--Landau solver}
 \author{J.~A.~Robles Calder\'on\\
 \small Departamento de F\'isica, Universidad Nacional de Colombia, Bogot\'a}
-\date{Release 2.0 (updated 12 November 2026)}
+\date{Release 2.0 (updated 13 November 2026)}
 
 \begin{document}
 \sloppy
@@ -431,7 +431,8 @@ Off by default and meant one at a time (the first three as in release 1.2):
   $C_\mu$ the conversion of band $\mu$ (the divergence of its supercurrent plus the Josephson exchange), with $\delta = 0$ at
   the contacts and Neumann elsewhere, solved exactly in the eigenbases of the three one-dimensional operators. Each band
   then turns by $e^{-i\mu_\mu dt}$, tangential, so KWT does not act on it. It is the slaved branch imbalance with a finite
-  exchange (its memory does not move a saddle-node onset); $\nu\to\infty$ is the step of one fluid to $O(1/\nu)$, and in a
+  exchange. A time-derivative term for its memory vanishes in the stationary equations; the stability and switching
+  thresholds of a model with memory have not been tested. The limit $\nu\to\infty$ is the step of one fluid to $O(1/\nu)$, and in a
   strip the $\sigma$ share of the converted current follows the one-dimensional two-fluid law. With $N$ bands
   \code{qp\_exchange} is the matrix of rates $\nu_{\mu\nu}$ (detailed balance $\chi_\mu\nu_{\mu\nu} = \chi_\nu\nu_{\nu\mu}$): with
   $L$ the Laplacian of the exchange graph and $S = \mathrm{diag}(s)$, $\sigma_n\nabla^2\mu - S^{-1}L\mu = S^{-1}C - \mathbb 1\sum C$,
@@ -611,8 +612,8 @@ The suite (\code{tdgl2/test/run.jl}, a few minutes) checks:
 
 \textbf{Against pyTDGL} (version 0.9; one band in 2D, the one-band equation of this code with $\Gamma = u$, $\sigma_n =
 1$, $\kappa$ large; pyTDGL's current unit is four times the GL unit at its interface, and it solves in the GL unit inside):
-the depairing current of a narrow strip, $0.385$; the conversion length with KWT for $\gt = 0$--30, $0.2\,\%$ between the
-codes and $0.1\,\%$ from $\lambda_c^2 = \sqrt{1+\gt^2|\Psi|^2}/(u|\Psi|^2)$; the onset of a notched strip, independent of
+the depairing current of a narrow strip, $0.385$; the conversion length with KWT for $\gt = 0$--30, agreement to about $0.2\,\%$ between the
+codes and within $1\,\%$ of $\lambda_c^2 = \sqrt{1+\gt^2|\Psi|^2}/(u|\Psi|^2)$; the onset of a notched strip, independent of
 $\gt$ in both codes, which with the mesh approaches pyTDGL's value ($8\,\%$ below it at $dx = 0.5\,\xi$, $4\,\%$ at
 $0.25\,\xi$: the $O(dx)$ error at the notch tip). The flowing voltage has not been compared.
 
