@@ -38,7 +38,7 @@ Or use the command-line wrapper:
 ```bash
 julia --project=gpu/TDGLGPU gpu/TDGLGPU/scripts/run_gpu.jl run.toml --dir out/example --require-gpu
 julia --project=gpu/TDGLGPU gpu/TDGLGPU/scripts/run_gpu.jl run.toml --dir out/cpu-check --cpu-backend
-julia --project=gpu/TDGLGPU gpu/TDGLGPU/scripts/with_gpu.jl tdgl2/scripts/run.jl run.toml --dir out/example
+julia --project=gpu/TDGLGPU gpu/TDGLGPU/scripts/with_gpu.jl gtdgl/scripts/run.jl run.toml --dir out/example
 ```
 
 The wrappers accept `--help` and `--require-gpu`; `run_gpu.jl` also accepts `--resume` and `--polarity +|-`. Strict mode

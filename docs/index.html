@@ -103,11 +103,11 @@ file, not new code.</p>
 
 <h2 id="releases">Two releases</h2>
 <div class="two">
-<div class="card"><h3>Release 2.0 (<code>tdgl2/</code>), for new work</h3>
+<div class="card"><h3>Release 2.0 (<code>gtdgl/</code>), for new work</h3>
 <p>N bands, each with its own Kramer–Watts-Tobin relaxation (the charge imbalance at the contacts); normal fluids per band with a
 finite interband exchange; thermal noise; anisotropic bands; regions of different materials; samples carved in vacuum; open or
 bar boundaries for the self-field; the onset by the delay of the first phase slip. With its new terms off it reproduces release 1.2.</p></div>
-<div class="card"><h3>Release 1.2 (<code>julia/</code>), the published work</h3>
+<div class="card"><h3>Release 1.2 (<code>tdgl/</code>), the published work</h3>
 <p>The two-band TDGL of the methods paper, with the scalar potential (Coulomb projection, Thomas–Fermi screening), a strict mode
 that reproduces release 1.0.0 to the digit, the terminal menu and the shape editor. Use it to reproduce the published results.</p></div>
 </div>
@@ -115,9 +115,9 @@ that reproduces release 1.0.0 to the digit, the terminal menu and the shape edit
 <h2 id="start">Quick start</h2>
 <p>Julia 1.13 or later; everything else is installed by the first command of each release.</p>
 <pre><code>git clone https://github.com/georgeotjg/juliaTDGL.git &amp;&amp; cd juliaTDGL
-julia --project=tdgl2 -e 'using Pkg; Pkg.instantiate()'
-OPENBLAS_NUM_THREADS=1 julia --project=tdgl2 tdgl2/scripts/run.jl tdgl2/examples/wedge_k25.toml   # minutes</code></pre>
-<p>The first hour, from a run to its figures, a finer onset and a 3D film: <a href="https://github.com/georgeotjg/juliaTDGL/blob/main/tdgl2/TUTORIAL.md">tdgl2/TUTORIAL.md</a>.
+julia --project=gtdgl -e 'using Pkg; Pkg.instantiate()'
+OPENBLAS_NUM_THREADS=1 julia --project=gtdgl gtdgl/scripts/run.jl gtdgl/examples/wedge_k25.toml   # minutes</code></pre>
+<p>The first hour, from a run to its figures, a finer onset and a 3D film: <a href="https://github.com/georgeotjg/juliaTDGL/blob/main/gtdgl/TUTORIAL.md">gtdgl/TUTORIAL.md</a>.
 More in <a href="getting-started.html">Getting started</a>.</p>
 
 <h2 id="paper">The paper</h2>

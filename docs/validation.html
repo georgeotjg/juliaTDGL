@@ -80,8 +80,8 @@
 <h2 id="suite">The suite</h2>
 <p>The release-2.0 suite has 871 assertions and the classic suite 56 400 (12 November 2026). Both run on every push to the repository (GitHub Actions), together with the accelerator on its CPU backend. The tests
 of release 2.0 run at a tolerance of 10<sup>−10</sup> on any machine and to the bit with the Haswell kernels of OpenBLAS:</p>
-<pre><code>TDGL_TEST_BITS=1 OPENBLAS_NUM_THREADS=1 julia --project=tdgl2 tdgl2/test/run.jl    # to the bit (x86 with AVX2)
-OPENBLAS_NUM_THREADS=1 julia --project=julia julia/test/run.jl                     # release 1.2</code></pre>
+<pre><code>TDGL_TEST_BITS=1 OPENBLAS_NUM_THREADS=1 julia --project=gtdgl gtdgl/test/run.jl    # to the bit (x86 with AVX2)
+OPENBLAS_NUM_THREADS=1 julia --project=tdgl tdgl/test/run.jl                     # release 1.2</code></pre>
 
 <h2 id="regression">Against release 1.2</h2>
 <p>With the new terms off and the boundary of 1.x, release 2.0 reproduces release 1.2 state by state: the step, the masks, the

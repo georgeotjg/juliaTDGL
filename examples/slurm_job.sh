@@ -11,6 +11,6 @@
 # On a cluster, load Julia first (e.g. `module load julia`, or a juliaup install in $HOME).
 export JULIA_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1   # one core per run; more BLAS threads only oversubscribe
 RUN=${RUN:-wedge}
-julia --project=julia julia/scripts/run_preset.jl --geom WEDGE \
+julia --project=tdgl tdgl/scripts/run_preset.jl --geom WEDGE \
       --mesh production --window paper --J 0.0,0.040,0.045 \
       --dir runs/$RUN ${RESUME:+--restart}

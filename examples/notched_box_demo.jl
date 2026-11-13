@@ -1,8 +1,8 @@
 # The run behind the figures of the README, in the explicit scheme they were made with (Config(:legacy);
 # without it, the default production scheme runs it about three times faster): the same notched box, J from 0.02
 # to 0.24, windows of 300/400 t_GL, about ten minutes. Then
-#   python3 julia/scripts/plot_summary.py runs/demo
-#   julia --project=julia examples/notched_box_demo.jl
+#   python3 tdgl/scripts/plot_summary.py runs/demo
+#   julia --project=tdgl examples/notched_box_demo.jl
 using TDGL
 run_case(Config(:legacy; GEOM_MODE="WEDGE", Nx_sc=24, Ny_sc=16, Nz_sc=4, dx=0.5, dy=0.5, dz=0.5,
                 kappa_s=2.0, kappa_p=2.0, xi_ratio=1.3, H_const=0.5,

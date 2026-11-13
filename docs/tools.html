@@ -77,7 +77,7 @@
 vortex events.</p>
 
 <h2 id="menu">The terminal menu</h2>
-<pre><code>julia julia/scripts/tdgl_tui.jl</code></pre>
+<pre><code>julia tdgl/scripts/tdgl_tui.jl</code></pre>
 <ul>
 <li>It lists the runs of both releases, live and archived, with their state, points, last current and verdict.</li>
 <li><code>n</code> launches a run of release 2.0 from any run file; two CPUs run the polarities in parallel.</li>
@@ -90,7 +90,7 @@ vortex events.</p>
 <figure><img src="img/tui_parameters.svg" alt="The parameter screen of the launch wizard of the terminal menu" loading="lazy"><figcaption>The launch wizard.</figcaption></figure>
 
 <h2 id="editor">The shape editor</h2>
-<p>A browser editor for three-dimensional shapes (<code>julia julia/editor/server.jl</code>, or key <code>g</code> of the menu). It saves
+<p>A browser editor for three-dimensional shapes (<code>julia tdgl/editor/server.jl</code>, or key <code>g</code> of the menu). It saves
 the TOML file that a run reads with <code>GEOM_MODE = "CUSTOM"</code>. Each voxel is a mesh node.</p>
 <ul>
 <li>Figures (circle, rectangle, triangle, polygon, sphere, n-gon) can be drawn on any of the three views and go through the sample along
@@ -114,7 +114,7 @@ coupled only through the field.</figcaption></figure>
 </div>
 
 <h2 id="figures">The figures of a run</h2>
-<pre><code>julia --project=tdgl2 tdgl2/scripts/figures.jl RUNDIR</code></pre>
+<pre><code>julia --project=gtdgl gtdgl/scripts/figures.jl RUNDIR</code></pre>
 <p>From the folder of any run (it can still be running) this draws:</p>
 <ul>
 <li>the sheet of the ladders: crossings per line, |V|, the rung times and the current through the mid plane, with the brackets;</li>
@@ -132,7 +132,7 @@ converts.</figcaption></figure>
 </div>
 
 <h2 id="films">3D films</h2>
-<pre><code>julia --project=tdgl2 tdgl2/scripts/film.jl RUNDIR [+|-] [--J J] [--every DT] [--state FILE]</code></pre>
+<pre><code>julia --project=gtdgl gtdgl/scripts/film.jl RUNDIR [+|-] [--J J] [--every DT] [--state FILE]</code></pre>
 <p>From the kept state of a rung, or from any state file, the film steps the state at its current. It records only around the moments
 that matter: the entry, the crossing and the exit of each vortex. It writes:</p>
 <ul>

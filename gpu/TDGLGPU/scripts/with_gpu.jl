@@ -1,5 +1,5 @@
-# Any script of release 2 (tdgl2/scripts: refine.jl, hysteresis.jl, mh.jl, run.jl, ...) with the step on a GPU (TDGLGPU):
-#   julia --project=gpu/TDGLGPU gpu/TDGLGPU/scripts/with_gpu.jl [--cpu-backend] [--require-gpu] tdgl2/scripts/SCRIPT.jl ARGS...
+# Any script of release 2 (gtdgl/scripts: refine.jl, hysteresis.jl, mh.jl, run.jl, ...) with the step on a GPU (TDGLGPU):
+#   julia --project=gpu/TDGLGPU gpu/TDGLGPU/scripts/with_gpu.jl [--cpu-backend] [--require-gpu] gtdgl/scripts/SCRIPT.jl ARGS...
 # Every ladder the script walks steps its cycles on the device (TDGLGPU.enable!); the script itself is not changed.
 using TDGL, TDGLGPU, KernelAbstractions
 if isempty(ARGS) || ARGS[1] in ("-h", "--help")

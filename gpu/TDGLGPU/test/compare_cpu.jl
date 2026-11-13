@@ -118,7 +118,7 @@ worst = max(worst, compare("three bands with three normal fluids (a matrix of ra
                            replace(three, "[scheme]" => "[scheme]\nqp_exchange = [[0.0, 0.5, 0.2], [0.5, 0.0, 0.3], [0.2, 0.3, 0.0]]\nqp_split = [1.0, 1.0, 1.0]",
                                    "name = \"3\"" => "name = \"3\"\na = 0.7")))     # band 3 weaker: the potentials do not cancel
 # the heat model (the in-place sweep of θ by planes on the device) and drag: the example heat_k25.toml (both), with KWT too
-hk = replace(read(joinpath(@__DIR__, "..", "..", "..", "tdgl2", "examples", "heat_k25.toml"), String),
+hk = replace(read(joinpath(@__DIR__, "..", "..", "..", "gtdgl", "examples", "heat_k25.toml"), String),
              r"\[protocol\][\s\S]*" => "[run]\nJ = [0.3]\nH = 0.03\n", "[scheme]" => "[scheme]\nthreads = false")
 worst = max(worst, compare("heat (Joule, margin) and drag: heat_k25.toml", hk))
 worst = max(worst, compare("heat without drag", replace(hk, r"drag = .*" => "")))
@@ -136,11 +136,11 @@ worst = max(worst, compare("noise T̃ = 1e-2 on the bands and the field", base(s
 worst = max(worst, compare("noise on the field with the insulating padding", base(small * "\nbuf = 2", "sigma_vac = 0.01\nnoise = 1e-2\nnoise_seed = 7\nnoise_field = true")))
 # materials per region: the examples of the catalogue (a tunnel-coupled bilayer; a one-band metal next to the two-band sample)
 for ex in ("bicapa_tunel.toml", "metal_una_banda.toml")
-    txt = read(joinpath(@__DIR__, "..", "..", "..", "tdgl2", "examples", ex), String)
+    txt = read(joinpath(@__DIR__, "..", "..", "..", "gtdgl", "examples", ex), String)
     txt = replace(txt, r"\[run\][\s\S]*" => "[run]\nJ = [0.3]\nH = 0.03\n", "qp_exchange = 1.0" => "")   # the stepper; one fluid
     for shp in (m.captures[1] for m in eachmatch(r"geom_file\s*=\s*\"([^\"]+)\"", txt))
         for d in ("shapes", "examples")
-            src = joinpath(@__DIR__, "..", "..", "..", "tdgl2", d, shp)
+            src = joinpath(@__DIR__, "..", "..", "..", "gtdgl", d, shp)
             isfile(src) && cp(src, joinpath(dir, shp); force=true)
         end
     end
@@ -148,14 +148,14 @@ for ex in ("bicapa_tunel.toml", "metal_una_banda.toml")
 end
 # normal fluids with materials: the one-band metal next to the two-band sample with its qp_exchange (a one-fluid region: QPVar),
 # and the bilayer with two fluids in both materials (the conversion with ρ and the node's Josephson row)
-mub = read(joinpath(@__DIR__, "..", "..", "..", "tdgl2", "examples", "metal_una_banda.toml"), String)
+mub = read(joinpath(@__DIR__, "..", "..", "..", "gtdgl", "examples", "metal_una_banda.toml"), String)
 worst = max(worst, compare("normal fluids with materials: metal_una_banda.toml (QPVar)",
                            replace(mub, r"\[run\][\s\S]*" => "[run]\nJ = [0.3]\nH = 0.03\n")))
 worst = max(worst, compare("normal fluids with materials: bilayer, qp_exchange = 0.5",
-                           replace(read(joinpath(@__DIR__, "..", "..", "..", "tdgl2", "examples", "bicapa_tunel.toml"), String),
+                           replace(read(joinpath(@__DIR__, "..", "..", "..", "gtdgl", "examples", "bicapa_tunel.toml"), String),
                                    r"\[run\][\s\S]*" => "[run]\nJ = [0.3]\nH = 0.03\n") * "[scheme]\nqp_exchange = 0.5\nqp_split = [0.5, 0.5]\n"))
 # heat with materials: the bilayer with one D_T (the in-place sweep by planes) and with D_T per material (Jacobi)
-bil = replace(read(joinpath(@__DIR__, "..", "..", "..", "tdgl2", "examples", "bicapa_tunel.toml"), String), r"\[run\][\s\S]*" => "[run]\nJ = [0.3]\nH = 0.03\n")
+bil = replace(read(joinpath(@__DIR__, "..", "..", "..", "gtdgl", "examples", "bicapa_tunel.toml"), String), r"\[run\][\s\S]*" => "[run]\nJ = [0.3]\nH = 0.03\n")
 worst = max(worst, compare("heat with materials, one D_T (bilayer)", bil * "[heat]\njoule = true\n"))
 worst = max(worst, compare("noise with materials (bilayer, T̃ = 1e-2)", bil * "[scheme]\nnoise = 1e-2\nnoise_seed = 3\n"))
 bilk = replace(bil, "Gamma = 2.0\na = 0.8" => "Gamma = 2.0\na = 0.8\ngamma_kwt = 10.0", "Gamma = 2.0\na = 0.5" => "Gamma = 2.0\na = 0.5\ngamma_kwt = 10.0")

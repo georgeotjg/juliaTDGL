@@ -12,4 +12,4 @@ of the code that are not meant to change the results.
 The first two were produced by an earlier implementation of the same scheme, the third by this
 package. Each point runs a fixed number of cycles (`eps_conv = 1e-14`, `iter_min = mMax`), so the
 comparison does not depend on a stopping rule. The states are text `.mat` files, read by `read_state`
-(`julia/src/octmat.jl`).
+(`tdgl/src/octmat.jl`).

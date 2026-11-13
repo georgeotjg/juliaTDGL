@@ -460,7 +460,7 @@ f = 0.0
 \end{verbatim}
 Because positions are physical, the same file rasterises on any mesh; the
 catalogue shapes written as files reproduce the catalogue masks bit for
-bit. The browser editor (\code{julia julia/editor/server.jl}) draws these
+bit. The browser editor (\code{julia tdgl/editor/server.jl}) draws these
 files. One picks a face of the sample and paints from it inward, a given
 number of cells deep and starting a given number of cells inside, so cuts
 can be buried; figures, gradients of $f$ or of depth, and a palette of
@@ -527,7 +527,7 @@ $0.046$\,s.
 
 \subsection{From Julia}
 \begin{verbatim}
-using Pkg; Pkg.activate("julia")
+using Pkg; Pkg.activate("tdgl")
 using TDGL
 sde = run_case(Config(GEOM_MODE="WEDGE", Nx_sc=40, Ny_sc=24, Nz_sc=6,
                       dx=0.5, dy=0.5, dz=0.5, kappa_s=2.0, xi_ratio=1.30,
@@ -540,7 +540,7 @@ The same, smaller and in about a minute, is \code{examples/first\_run.jl}.
 
 \subsection{From the command line and the terminal menu}
 
-\code{julia/scripts/run\_preset.jl} launches one run with flags for the
+\code{tdgl/scripts/run\_preset.jl} launches one run with flags for the
 geometry (\code{--geom}, \code{--shape}), the parameters (\code{--kappa},
 \code{--H}, \code{--xi-ratio}, \code{--gamma12}, \code{--T}), the currents
 (\code{--J}), the mesh (\code{--mesh} or \code{--Nx --Ny --Nz --dx}), the
@@ -549,16 +549,16 @@ times (\code{--window} or \code{--tmin --tminres}), the scalar potential
 \code{--heat}, \code{--qss}), and the scheme (\code{--scheme prod|legacy};
 prod unless $\Phi$ or $Q$ needs legacy; with heat, drag or $T$, prod only where
 its step is at least twice the explicit one; a resumed run keeps its
-scheme). \code{julia julia/scripts/tdgl\_tui.jl} builds
+scheme). \code{julia tdgl/scripts/tdgl\_tui.jl} builds
 the same command step by step, lists the runs, stops them cleanly and
 resumes them.
 
 \subsection{Where runs are written}
 
 \code{run\_case} writes to \code{out\_dir}, any path, created if needed;
-\code{run\_preset.jl} writes to \code{julia/runs/<name>/} unless \code{--dir}
-says otherwise. The terminal menu lists every run below \code{julia/runs}, at
-any depth (\code{julia/runs/project/runs/case} is found), and every
+\code{run\_preset.jl} writes to \code{tdgl/runs/<name>/} unless \code{--dir}
+says otherwise. The terminal menu lists every run below \code{tdgl/runs}, at
+any depth (\code{tdgl/runs/project/runs/case} is found), and every
 \code{runs/} folder one or two levels below the root of the repository
 (\code{project/runs}, \code{group/project/runs}); a run kept anywhere else is
 not scanned. Runs started outside the menu (a script, a cluster job) appear
@@ -578,19 +578,19 @@ change to the solver.
 export JULIA_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1
 FIELDS=(0.015 0.03 0.06 0.09 0.12)
 H=${FIELDS[$SLURM_ARRAY_TASK_ID]}
-julia --project=julia julia/scripts/run_preset.jl --geom WEDGE --kappa 25 \
+julia --project=tdgl tdgl/scripts/run_preset.jl --geom WEDGE --kappa 25 \
       --xi-ratio 4 --H $H --J 0.02,0.04,0.06,0.08,0.10,0.20,0.30,0.40 \
       --mesh production --window long --dir runs/field_H$H ${RESUME:+--restart}
 \end{verbatim}
 A task stopped by the time limit resumes from its last closed point when it is
 submitted again with \code{RESUME=1}: the folder name must not depend on the
 job number. \code{examples/slurm\_job.sh} is the same for a single run.
-Results are read without the menu: \code{julia julia/scripts/tdgl\_tui.jl
+Results are read without the menu: \code{julia tdgl/scripts/tdgl\_tui.jl
 --results}, or \code{brackets(sde)} in Julia.
 
 \subsection{What a run writes}
 \begin{center}
-\begin{tabular}{ll}
+\begin{tabular}{@{}p{0.42\linewidth}p{0.54\linewidth}@{}}
 \toprule
 file & content \\
 \midrule
@@ -604,12 +604,12 @@ file & content \\
 \bottomrule
 \end{tabular}
 \end{center}
-Any checkpoint converts to VTK with \code{julia/scripts/vtk\_from\_checkpoint.jl}.
+Any checkpoint converts to VTK with \code{tdgl/scripts/vtk\_from\_checkpoint.jl}.
 
 % ======================================================================
 \section{Tests}
 
-\code{julia --project=julia julia/test/run.jl} runs about $56\,000$
+\code{julia --project=tdgl tdgl/test/run.jl} runs about $56\,000$
 assertions in a minute and a half. They check the kernel against the
 reference loop and across threads; regression against two stored states
 (a Meissner state and a state with vortex flow);

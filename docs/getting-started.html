@@ -80,14 +80,14 @@
 project; the first command installs its packages. Python 3 with NumPy and matplotlib draws the figures; a browser opens the shape
 editor and the 3D viewer.</p>
 <pre><code>git clone https://github.com/georgeotjg/juliaTDGL.git &amp;&amp; cd juliaTDGL
-julia --project=tdgl2 -e 'using Pkg; Pkg.instantiate()'    # release 2.0
-julia --project=julia -e 'using Pkg; Pkg.instantiate()'    # release 1.2 (the menu and the editor live here)</code></pre>
+julia --project=gtdgl -e 'using Pkg; Pkg.instantiate()'    # release 2.0
+julia --project=tdgl -e 'using Pkg; Pkg.instantiate()'    # release 1.2 (the menu and the editor live here)</code></pre>
 <p>The two releases are the same package (<code>TDGL</code>) in two projects; they are not loaded together.</p>
 
 <h2 id="first">A first run</h2>
-<p>A run is one TOML file. The examples in <code>tdgl2/examples/</code> cover every option; the notched two-band box at κ = 25 takes
+<p>A run is one TOML file. The examples in <code>gtdgl/examples/</code> cover every option; the notched two-band box at κ = 25 takes
 minutes on one core:</p>
-<pre><code>OPENBLAS_NUM_THREADS=1 julia --project=tdgl2 tdgl2/scripts/run.jl tdgl2/examples/wedge_k25.toml</code></pre>
+<pre><code>OPENBLAS_NUM_THREADS=1 julia --project=gtdgl gtdgl/scripts/run.jl gtdgl/examples/wedge_k25.toml</code></pre>
 <p>One BLAS thread per process is the right setting: the step is limited by memory bandwidth, so a campaign runs one single-threaded
 process per physical core. <code>--polarity +</code> and <code>--polarity -</code> run the two directions as two processes into the
 same folder.</p>
@@ -104,7 +104,7 @@ kappa = 2.0
 <h2 id="gpu">Optional GPU</h2>
 <pre><code>julia --project=gpu/TDGLGPU -e 'using Pkg; Pkg.instantiate(); Pkg.add("CUDA")'
 OPENBLAS_NUM_THREADS=1 julia --project=gpu/TDGLGPU gpu/TDGLGPU/scripts/run_gpu.jl \
-  tdgl2/examples/wedge_k25.toml --dir out/gpu-example --require-gpu</code></pre>
+  gtdgl/examples/wedge_k25.toml --dir out/gpu-example --require-gpu</code></pre>
 <p>A compatible NVIDIA driver is required. Strict mode rejects CPU fallback for unsupported ladder cycles; measurements,
 checkpoints and auxiliary host work remain on CPU. <code>--cpu-backend</code> explicitly selects KA-CPU for testing.
 See <a href="performance.html#gpu">GPU scope, validation and timings</a>. GPU continuation is checked within tolerance;
@@ -121,11 +121,11 @@ stopped.</li>
 <li><code>run.toml</code>, with contained relative shape and initial-state files copied alongside it. Absolute paths and
 paths through <code>..</code> remain external dependencies.</li>
 </ul>
-<p><code>julia --project=tdgl2 tdgl2/scripts/figures.jl RUNDIR</code> draws the standard figures of the run and a one-page
+<p><code>julia --project=gtdgl gtdgl/scripts/figures.jl RUNDIR</code> draws the standard figures of the run and a one-page
 <code>REPORT.md</code> (see <a href="tools.html">Tools</a>).</p>
 
 <h2 id="menu">The terminal menu</h2>
-<pre><code>julia julia/scripts/tdgl_tui.jl</code></pre>
+<pre><code>julia tdgl/scripts/tdgl_tui.jl</code></pre>
 <p>It lists the runs of both releases with their progress. It launches a run of release 2.0 from a run file (key <code>n</code>; two
 CPUs run the two polarities in parallel) and stops it cleanly after the current point (<code>s</code>). It resumes it to the bit
 (<code>u</code>), opens the shape editor (<code>g</code>) and shows the films of a run (<code>w</code>).</p>

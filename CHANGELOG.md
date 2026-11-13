@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+The classic solver is in `tdgl/` and the generalised solver is in `gtdgl/`.
+Use these paths in project activation, scripts and examples on `main`.
+Delay confirmation can retain the PCG history and random stream of each buffered rung with `confirm_replay`.
+`slip_band_mode = "any_band"` enables a per-band flow verdict and records the triggering band.
+
 ## 2.0.0 (2026-10-20; updated 2026-11-12)
 
 Release 2.0 includes the optional TDGLGPU accelerator for ladder cycles, with CUDA installed separately and CPU-backend
@@ -16,7 +23,7 @@ step counts; re-enabling clears the device cache. Recorded CUDA checks and a rep
 optional package. GPU restart comparisons allow CPU/device rounding when reconstructing link exponentials.
 
 **30-oct.** A documentation site (`docs/`, on GitHub Pages): the two formalisms, the numerics, the measuring protocol,
-examples, tools, validation, performance, every key of a run file and the citations. Release 2.0 (`tdgl2/`): a material of the
+examples, tools, validation, performance, every key of a run file and the citations. Release 2.0 (`gtdgl/`): a material of the
 catalogue in `[materials.<name>]` (`file = "<name>.toml"`); the down branch of a run (`scripts/hysteresis.jl`: from the state
 its ladder ended in, the currents walked back down; the retrapping bracket and the width Ic − Ir) and the magnetisation loop
 (`scripts/mh.jl`: M(H) at a fixed current, 0 → H → 0, with the vortex count of each band). The shape editor suggests the
@@ -25,10 +32,10 @@ menu launches them; one-band Nb, NbN and a-MoGe in the catalogue, then a three-b
 of the clean MgB₂ file negative (the other models keep their bits); the site has a light/dark switch. In the evening, fixed: with KWT the heat source counted the dissipation of a
 turning phase √(1 + γ̃²|Ψ|²) times over (the TDGL form Γ|Ψ̇|²); it is now the dissipation of the functional with KWT (runs with heat
 and KWT heated too fast; without KWT nothing changes). Details in
-[`tdgl2/CHANGELOG.md`](tdgl2/CHANGELOG.md).
+[`gtdgl/CHANGELOG.md`](gtdgl/CHANGELOG.md).
 
-**26-oct.** Release 2.0 (`tdgl2/`): a material per region (`material = "name"` on a shape region, `[materials.<name>]` tables
-in the run file, a barrier transparency; `tdgl2/examples/bicapa_tunel.toml`, a tunnel-coupled bilayer). Damped
+**26-oct.** Release 2.0 (`gtdgl/`): a material per region (`material = "name"` on a shape region, `[materials.<name>]` tables
+in the run file, a barrier transparency; `gtdgl/examples/bicapa_tunel.toml`, a tunnel-coupled bilayer). Damped
 Runge–Kutta–Chebyshev stages and a field-solver tolerance of 1e-8 are the defaults (−6 % and −10 % per step with KWT at γ̃ = 10
 and 30; −41 % per step with the insulating padding; the same brackets); a run folder keeps the defaults it started with, and
 `rkl = true`, `pcg_tol = 1e-11` give the runs made before. The shape editor writes, draws and checks materials (a colour per
@@ -38,32 +45,32 @@ superconductor (`absent`), noise, anisotropic bands and heat per material; the i
 the last two steps with a single-precision preconditioner (−55 % per step on the nanowire; the defaults). Thermal noise with KWT fixed: it
 diverged on the two-band box at κ = 2, and when finite its equilibrium was wrong; a KWT band with noise now steps in log-polar form
 with the phase kick inside the stages (SK-ROCK), its equilibrium within 1.2 % of the one without KWT at T̃ = 1e-3 (the stiff π band
-+5–10 % at T̃ = 1e-2 at the production step). Details in [`tdgl2/CHANGELOG.md`](tdgl2/CHANGELOG.md).
++5–10 % at T̃ = 1e-2 at the production step). Details in [`gtdgl/CHANGELOG.md`](gtdgl/CHANGELOG.md).
 
-**23-oct.** Release 2.0 (`tdgl2/`): two normal fluids with a finite interband quasiparticle exchange (`qp_exchange`; the
+**23-oct.** Release 2.0 (`gtdgl/`): two normal fluids with a finite interband quasiparticle exchange (`qp_exchange`; the
 slaved branch imbalance of each band, with KWT, and its exchange), anisotropic bands (a mass per axis), thermal (Langevin)
 noise; all off by default, and off they keep the bits. Fixed: the two polarities launched together could race for the run
-file; resuming left duplicate rows in the menu history; in `julia/`, a run with the scalar potential reset a `dt_scale` the
+file; resuming left duplicate rows in the menu history; in `tdgl/`, a run with the scalar potential reset a `dt_scale` the
 run had set. Later the same day: normal fluids per band with any number of bands (`qp_exchange` as a matrix of rates with
 detailed balance; with two bands it gives the two-band result to rounding), and thermal noise with KWT (the kick scaled by the
 Ψ-dependent mobility, with its Itô drift). The launch wizard of the terminal menu recommends release 2.0. In the evening: a
 sculpted sample (a shape with `vacuum = true`: a free surface, the insulating padding and the leads follow the sample's
-section; `tdgl2/examples/cable_k2.toml`), shape figures on any face (`axis`) and kept figures (`outside`), and the shape editor
+section; `gtdgl/examples/cable_k2.toml`), shape figures on any face (`axis`) and kept figures (`outside`), and the shape editor
 draws figures on its three views (before, only on the top one), with the work face starting through the sample. Details in
-[`tdgl2/CHANGELOG.md`](tdgl2/CHANGELOG.md).
+[`gtdgl/CHANGELOG.md`](gtdgl/CHANGELOG.md).
 
-**21-oct.** The two-band package (`julia/`, metadata 1.3.0) runs the production scheme and the Fast mode by default: `Config(...)`
+**21-oct.** The two-band package (`tdgl/`, metadata 1.3.0) runs the production scheme and the Fast mode by default: `Config(...)`
 is what `Config(:prod; ...)` was, and `run_case` takes `mode=Fast()`. `Config(:legacy; ...)` with `mode=Strict()` is the
 explicit scheme of 1.0.0 to the digit (the tests and the scripts of the published runs ask for it). A run with the scalar
 potential switches to the explicit scheme by itself, with a note, instead of an error. Suite 56 387/56 387.
 
-Release 2.0 (`tdgl2/`): the onset by the delay works with the heat model; `sigma_vac` for the insulating buffer in a run
-file; run files for every option in `tdgl2/examples/`; its README says what each release has and what each option costs.
+Release 2.0 (`gtdgl/`): the onset by the delay works with the heat model; `sigma_vac` for the insulating buffer in a run
+file; run files for every option in `gtdgl/examples/`; its README says what each release has and what each option costs.
 The launch wizard of the terminal menu launches the same run with release 2.0 (key `l`, then `2`); `dt_scale = 1` is
-validated with KWT for onsets. Details in [`tdgl2/CHANGELOG.md`](tdgl2/CHANGELOG.md).
+validated with KWT for onsets. Details in [`gtdgl/CHANGELOG.md`](gtdgl/CHANGELOG.md).
 
-**20-oct.** A new release of the package, in `tdgl2/`, next to release 1.2.0 (`julia/`), which stays to reproduce the
-published work. Its changes are in [`tdgl2/CHANGELOG.md`](tdgl2/CHANGELOG.md) and its guide is
+**20-oct.** A new release of the package, in `gtdgl/`, next to release 1.2.0 (`tdgl/`), which stays to reproduce the
+published work. Its changes are in [`gtdgl/CHANGELOG.md`](gtdgl/CHANGELOG.md) and its guide is
 `docs/solver_guide_2.pdf`. In short: N bands with a Josephson matrix; Kramer–Watts-Tobin relaxation per
 band; Runge–Kutta–Legendre stages and a rotating frame for the stiff bands; self-field boundaries `:bar`
 (default) and `:open`; an insulating buffer; the onset by the delay of the first phase slip and a verdict
@@ -92,10 +99,10 @@ bit. What changed is around it.
 - **A resumed run with Φ keeps the V_Φ of the points before the stop** (it was NaN).
 - **MAT.jl is no longer a dependency** (54 packages instead of 83): it is a package extension, loaded
   only to read binary MATLAB files.
-- **The terminal menu and the shape editor server are Julia** (`julia/tui/`, a small package with the
+- **The terminal menu and the shape editor server are Julia** (`tdgl/tui/`, a small package with the
   standard library only, Julia 1.11 or later): same screens and results as the Python versions, which
   are retired. Python is needed only for the optional matplotlib figures. It is also a Pkg app (Julia
-  1.12 or later): `Pkg.Apps.develop(path="julia/tui")` installs the command `tdgl-tui`
+  1.12 or later): `Pkg.Apps.develop(path="tdgl/tui")` installs the command `tdgl-tui`
   (`--editor` opens the editor).
 - **Terminal menu:** live runs first, then the most recently active (it was alphabetical); folders
   added with `--add-dir` are searched whole; the `runs/` folder at the root, where the examples write,

@@ -117,6 +117,12 @@ saved state of the last silent rung. It joins the two, gives the bracket and η,
 zero.</p>
 
 <h2 id="noise">With noise</h2>
+<p>In <code>[protocol]</code>, <code>slip_band_mode = "any_band"</code> lets each band trigger a flowing closure or a
+delay crossing. The window bracket uses the largest magnitude of the gated second-half voltages. An exhausted rung
+with a low rate remains undecided. The output records the triggering band. The default <code>"band1"</code> retains
+the historical rule and <code>V</code> still reports band 1.</p>
+<p>With delay confirmation enabled, <code>confirm_replay = true</code> saves the field PCG and random stream at each buffered
+rung. The confirmation runs on the host. A checkpoint must contain these histories for active terms to replay its saved rungs.</p>
 <p>With thermal noise the state never reaches a fixed point. A rung then closes silent when it has held <code>t_min_GL_res</code>
 without a phase slip on any band. Set that time to the waiting time the question needs. An escape time is a distribution, not a
 number: to measure one, run many seeds.</p>

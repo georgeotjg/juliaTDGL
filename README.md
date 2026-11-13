@@ -14,19 +14,19 @@ vortex motion carries different critical currents in the two directions. Two-gap
 material is a file of parameters, so other multiband materials are a new file, not new code.
 
 The repository holds two releases of the same package (`TDGL`):
-- **Release 2.0** (`tdgl2/`), recommended for new work: N bands, each with its own Kramer–Watts-Tobin
+- **Release 2.0** (`gtdgl/`), recommended for new work: N bands, each with its own Kramer–Watts-Tobin
   relaxation (the charge imbalance at the contacts) and an optional finite interband exchange of quasiparticles,
   anisotropic bands, thermal noise, an open boundary for the self-field, an insulating buffer, a material per region
   (bilayers, with a barrier between them), and the onset by the delay of the first phase slip. Its own README:
-  [`tdgl2/README.md`](tdgl2/README.md) (with a table of what each release has and what each option costs); its guide:
+  [`gtdgl/README.md`](gtdgl/README.md) (with a table of what each release has and what each option costs); its guide:
   [`docs/solver_guide_2.pdf`](docs/solver_guide_2.pdf).
-- **Release 1.2** (`julia/`), the two-band TDGL of the published work (it contains releases 1.0 and 1.1; by default
+- **Release 1.2** (`tdgl/`), the two-band TDGL of the published work (it contains releases 1.0 and 1.1; by default
   the production scheme, `Config(:legacy)` the explicit scheme of 1.0.0), with the scalar potential, a terminal
   menu that launches and follows runs (of both releases), a browser editor for three-dimensional shapes,
   and its guide ([`docs/solver_guide.pdf`](docs/solver_guide.pdf)). The rest of this page describes it.
 
 With matched schemes and boundaries and the new terms off, the regression settings of 2.0 reproduce 1.2. Release 2.0 includes the optional [TDGLGPU accelerator](gpu/TDGLGPU/README.md) for ladder cycles on CUDA or the KernelAbstractions CPU backend. The tag `v2.0.0` preserves the reference snapshot; `main` includes the subsequent temporal-link correction. Cite the exact commit for results obtained with later maintenance. The accelerator supports 2.0; the classic solver remains CPU-only. Both are Julia projects
-of the same package, so each runs in its own project (`--project=tdgl2` or `--project=julia`); they are not loaded together.
+of the same package, so each runs in its own project (`--project=gtdgl` or `--project=tdgl`); they are not loaded together.
 
 ![Release 2.0, scripts/film.jl: a vortex of the σ band crossing a notched nanowire carved in vacuum (left, in 3D; right, the mid plane from above and the vortex plaquettes against time)](docs/img/film_nanowire.png)
 
@@ -40,23 +40,23 @@ Bogotá.
 ```bash
 git clone https://github.com/georgeotjg/juliaTDGL.git && cd juliaTDGL
 # release 2.0
-julia --project=tdgl2 -e 'using Pkg; Pkg.instantiate()'
-OPENBLAS_NUM_THREADS=1 julia --project=tdgl2 tdgl2/scripts/run.jl tdgl2/examples/wedge_k25.toml   # minutes
+julia --project=gtdgl -e 'using Pkg; Pkg.instantiate()'
+OPENBLAS_NUM_THREADS=1 julia --project=gtdgl gtdgl/scripts/run.jl gtdgl/examples/wedge_k25.toml   # minutes
 # release 1.2
-julia --project=julia -e 'using Pkg; Pkg.instantiate()'
-julia --project=julia examples/first_run.jl     # a notched box, both polarities, about a minute
-julia julia/scripts/tdgl_tui.jl                 # the terminal menu: launch, follow, stop, resume
+julia --project=tdgl -e 'using Pkg; Pkg.instantiate()'
+julia --project=tdgl examples/first_run.jl     # a notched box, both polarities, about a minute
+julia tdgl/scripts/tdgl_tui.jl                 # the terminal menu: launch, follow, stop, resume
 ```
 
 The first hour with release 2.0, from a run to its figures, a finer onset and a 3D film of the vortex:
-[`tdgl2/TUTORIAL.md`](tdgl2/TUTORIAL.md).
+[`gtdgl/TUTORIAL.md`](gtdgl/TUTORIAL.md).
 
 **Optional NVIDIA GPU (release 2.0):**
 
 ```bash
 julia --project=gpu/TDGLGPU -e 'using Pkg; Pkg.instantiate(); Pkg.add("CUDA")'
 OPENBLAS_NUM_THREADS=1 julia --project=gpu/TDGLGPU gpu/TDGLGPU/scripts/run_gpu.jl \
-  tdgl2/examples/wedge_k25.toml --dir out/gpu-example --require-gpu
+  gtdgl/examples/wedge_k25.toml --dir out/gpu-example --require-gpu
 ```
 
 `--require-gpu` requires functional CUDA and rejects unsupported steppers instead of falling back to CPU. It covers the
@@ -90,7 +90,7 @@ magnetic field (Ampère with the normal current):
 - CPU runs retain their state, auxiliary histories and scheme defaults at closed-rung checkpoints. Stop/resume regression
   tests use identical arithmetic; changing backend or math libraries is a comparison within tolerance. GPU checkpoints
   reconstruct link exponentials on CPU, so GPU continuation is not generally bit-identical. Rewinding an older buffered
-  state for delay confirmation also has a separate limitation; see `tdgl2/README.md`.
+  state for delay confirmation also has a separate limitation; see `gtdgl/README.md`.
 
 **The measurement.**
 - Current ladders with a verdict per point: fixed point, flow, normal, heat cut.
@@ -116,7 +116,7 @@ magnetic field (Ampère with the normal current):
 - The band-resolved charge imbalance has no memory, and release 2.0 has no scalar potential (release 1.2 keeps it).
 - The implicit solve needs dx = dy = dz.
 - Optional GPU acceleration covers ladder cycles; measurements, checkpoints, direct `step!` calls and some auxiliary operations remain on the host. See [TDGLGPU](gpu/TDGLGPU/README.md) for installation, scope and validation.
-- The known limits of each option are in `tdgl2/README.md`.
+- The known limits of each option are in `gtdgl/README.md`.
 
 ## What it solves
 
@@ -134,7 +134,7 @@ normal metal of unit conductivity, not as vacuum; its width is a parameter of th
 - **Geometry.** The sample is always the box; `f(r)` (between 0 and 1, or above 1 for locally
   stronger condensation) sets the local condensation strength. Notches, holes and graded regions are regions of
   reduced `f`. A catalogue of shapes is built in, and any shape can be read from a TOML file or drawn
-  in a browser editor (`julia/editor/`).
+  in a browser editor (`tdgl/editor/`).
 - **Two bands.** `a2n` is the equilibrium density of the π band, `mr` its mass ratio (set from the
   requested ξπ/ξσ), `γ12` the interband coupling, `Γr` the ratio of the π to the σ relaxation time.
 - **Field and current.** The applied field enters as a boundary condition on the curl of **A**. The
@@ -195,7 +195,7 @@ cluster, is in [`docs/solver_guide.pdf`](docs/solver_guide.pdf).
 ## Install
 
 The code is a Julia project, not a registered package: clone it and instantiate it once. The
-exact versions of every dependency are pinned in `julia/Manifest.toml`.
+exact versions of every dependency are pinned in `tdgl/Manifest.toml`.
 
 1. Julia 1.13 or later (release 1.2 was tested with 1.12 and 1.13). On Linux and macOS, `curl -fsSL https://install.julialang.org | sh`
    installs `juliaup`; on Windows, follow
@@ -205,13 +205,13 @@ exact versions of every dependency are pinned in `julia/Manifest.toml`.
    ```bash
    git clone https://github.com/georgeotjg/juliaTDGL.git
    cd juliaTDGL
-   julia --project=julia -e 'using Pkg; Pkg.instantiate()'
+   julia --project=tdgl -e 'using Pkg; Pkg.instantiate()'
    ```
 
 3. Check the installation (about two minutes):
 
    ```bash
-   julia --project=julia julia/test/run.jl
+   julia --project=tdgl tdgl/test/run.jl
    ```
 
 Everything runs in Julia, the terminal menu and the shape editor included. Optional: Python 3 with
@@ -221,10 +221,10 @@ matplotlib, only for the quick run figures (`plot_summary.py`); release 2 adds N
 ## A first run
 
 About a minute on a laptop: a small notched box, both polarities, short windows
-(`julia --project=julia examples/first_run.jl` runs the same).
+(`julia --project=tdgl examples/first_run.jl` runs the same).
 
 ```julia
-using Pkg; Pkg.activate("julia")
+using Pkg; Pkg.activate("tdgl")
 using TDGL
 sde = run_case(Config(GEOM_MODE="WEDGE", Nx_sc=24, Ny_sc=16, Nz_sc=4, dx=0.5, dy=0.5, dz=0.5,
                       kappa_s=2.0, kappa_p=2.0, xi_ratio=1.3, H_const=0.5,
@@ -245,11 +245,11 @@ crossed at the first current of the grid. The protocol of the paper uses windows
 (`--window paper` below, or `Config(:paper)`). The same keywords in `Config(:legacy; ...)` run the
 explicit scheme of release 1.0.0.
 
-From the command line, one run per call (writes `julia/runs/<name>/` with `job.json`,
+From the command line, one run per call (writes `tdgl/runs/<name>/` with `job.json`,
 `j_history.csv`, snapshots and checkpoints for restarting):
 
 ```bash
-julia --project=julia julia/scripts/run_preset.jl \
+julia --project=tdgl tdgl/scripts/run_preset.jl \
     --geom WEDGE --kappa 2 --mesh production --window paper --J 0.0,0.040,0.045
 ```
 
@@ -260,7 +260,7 @@ With Φ they use the explicit scheme; with heat, drag or a bath temperature, the
 ## Shapes
 
 Any geometry can be drawn in the browser, with nothing to install:
-`julia julia/editor/server.jl` opens it. Pick a face of the sample (or click it on the 3D view)
+`julia tdgl/editor/server.jl` opens it. Pick a face of the sample (or click it on the 3D view)
 and paint from that face inward, `depth` cells deep and `from` cells inside, so cuts can also be
 buried in the sample. Figures (circle, rectangle, polygon, …) are drawn on any of the three views and go
 through the sample along that view's axis; a figure can be kept with the rest removed (a cable), and what is
@@ -268,27 +268,27 @@ removed can be a normal metal (f = 0) or vacuum (no material: release 2, a sculp
 section). f and depth gradients and a palette of condensation strengths are there too. The 3D view shows the current, the field and the face through which vortices enter for
 each sign of J; the checks say, while you draw, whether the shape can rectify at all (a shape
 symmetric under the mirror in y gives η = 0 exactly), whether it touches the injection faces, and
-where either band turns normal. Shapes are saved as TOML in `julia/shapes/` and used with
-`GEOM_MODE="CUSTOM", geom_file="julia/shapes/<name>.toml"`.
+where either band turns normal. Shapes are saved as TOML in `tdgl/shapes/` and used with
+`GEOM_MODE="CUSTOM", geom_file="tdgl/shapes/<name>.toml"`.
 
 
 ## The terminal menu
 
-`julia julia/scripts/tdgl_tui.jl` launches, stops and resumes runs and lists every Julia run of
+`julia tdgl/scripts/tdgl_tui.jl` launches, stops and resumes runs and lists every Julia run of
 the project with its progress. The launch wizard goes through a starting point, the geometry
 (catalogue, a saved shape, or a new one drawn in the editor), a parameter table (including the
 scheme, `prod` by default), the scalar potential and at most one optional term. Key `n` launches a run of
-release 2.0 from a TOML file (one of `tdgl2/examples/` or any path), the wizard ends with the choice of release (`2`
+release 2.0 from a TOML file (one of `gtdgl/examples/` or any path), the wizard ends with the choice of release (`2`
 launches the same run with release 2.0), and the runs of 2.0 are listed, stopped and resumed with the others. Key `v` gives the
 result of every run with the verdict rule; key `c` adds or removes folders to watch (runs started
 from your own scripts elsewhere show up too); while the menu is open (or with `--watch`) a desktop
 notification is sent when a run finishes. `--help` lists the command-line options. The menu and the
-editor server are a small package of their own (`julia/tui/`, standard library only, Julia 1.11 or
+editor server are a small package of their own (`tdgl/tui/`, standard library only, Julia 1.11 or
 later); the first start compiles it once, later ones take a fraction of a second. To have it as a
 command anywhere (Julia 1.12 or later, Pkg apps):
 
 ```bash
-julia -e 'using Pkg; Pkg.Apps.develop(path="julia/tui")'   # installs ~/.julia/bin/tdgl-tui
+julia -e 'using Pkg; Pkg.Apps.develop(path="tdgl/tui")'   # installs ~/.julia/bin/tdgl-tui
 tdgl-tui            # the menu;  tdgl-tui --editor  the shape editor;  tdgl-tui --help
 ```
 
@@ -300,14 +300,14 @@ tdgl-tui            # the menu;  tdgl-tui --editor  the shape editor;  tdgl-tui 
 
 ## What a run gives
 
-`python3 julia/scripts/plot_summary.py RUNDIR` (optional: Python 3 with matplotlib) draws V(J) for both polarities (linear, and
+`python3 tdgl/scripts/plot_summary.py RUNDIR` (optional: Python 3 with matplotlib) draws V(J) for both polarities (linear, and
 log|V| against V_th, where the thresholds are read) and the mid-plane |Ψσ|² of every closed
 current point. For ParaView, `vtk_from_checkpoint.jl` writes the full state as VTK.
 
 When a run starts from `run_preset.jl` (or the terminal menu), `figures/geometry.png` shows the
 mask: the six faces unfolded, the mid plane and how many z planes each column has with f ≠ 1.
 
-To compare shapes before committing hours, `julia/scripts/scout_shapes.jl a.toml b.toml …` runs
+To compare shapes before committing hours, `tdgl/scripts/scout_shapes.jl a.toml b.toml …` runs
 each on the production box with short windows and prints a ranking (minutes per shape; a ranking,
 not a measurement: the winner then needs the full protocol and its mirror).
 
@@ -347,8 +347,8 @@ those rungs are re-measured on doubled windows.
 ## Layout
 
 ```
-tdgl2/          release 2.0: solver (src), tests, run script, examples, materials, tools
-julia/          release 1.2: solver (src), tests, scripts, terminal menu, shape files and editor
+gtdgl/          release 2.0: solver (src), tests, run script, examples, materials, tools
+tdgl/          release 1.2: solver (src), tests, scripts, terminal menu, shape files and editor
 data/           stored states used by the regression tests
 docs/           solver_guide_2.pdf (release 2.0) and solver_guide.pdf (release 1.2)
 examples/       the first run, the demonstration run of this README, and Slurm scripts (one run, a job array)
@@ -402,10 +402,9 @@ The solver, the measurement protocol and the failure modes it guards against are
 > Ginzburg–Landau simulations of geometric superconducting diodes* (Version 1.0.0) [Preprint].
 > Zenodo. https://doi.org/10.5281/zenodo.23163207
 
-`Config(:legacy; ...)` with `mode=Strict()` in `julia/` gives the results of that work to the digit, and the
-default production scheme gives its onset brackets (tag `v1.0.0` is the code the paper used). The results of
-release 2.0 (Kramer–Watts-Tobin relaxation and the conversion partition in a two-band diode) are in
-preparation; until then, cite the software with the version used. `CITATION.cff` has the metadata, and GitHub's "Cite this repository" button reads it.
+The revised methods preprint is available in [version 1.1.0](https://www.researchgate.net/publication/417911204_Silent_failure_modes_in_three-dimensional_two-band_time-dependent_Ginzburg-Landau_simulations_of_geometric_superconducting_diodes), DOI [10.5281/zenodo.23603709](https://doi.org/10.5281/zenodo.23603709).
+
+`Config(:legacy; ...)` with `mode=Strict()` in `tdgl/` reproduces the methods results to the digit. Tag `v1.0.0` is the code cited by the preprint. For simulations with the N-band solver, cite the software version used. `CITATION.cff` supplies the citation metadata.
 
 ## License
 

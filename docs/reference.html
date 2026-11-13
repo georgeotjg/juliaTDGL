@@ -160,6 +160,8 @@ an old run resumes with its own.</p>
 <tr><td><code>t_min_GL_res</code></td><td>1584</td><td>the floor of a dissipating point; with noise, the time a silent point must hold without a slip</td></tr>
 <tr><td><code>t_confirm_GL</code></td><td>0</td><td>the onset by the delay: continue the silent rungs below the first flowing one up to this time</td></tr>
 <tr><td><code>confirm_max</code></td><td>4</td><td>at most this many rungs continued</td></tr>
+<tr><td><code>confirm_replay</code></td><td>false</td><td>retain the field PCG and random stream of each buffered rung for delay confirmation</td></tr>
+<tr><td><code>slip_band_mode</code></td><td><code>"band1"</code></td><td><code>"any_band"</code> lets any band trigger a phase-slip verdict and requires a silent closure for the lower bracket</td></tr>
 <tr><td><code>stop_after_V</code></td><td>0</td><td>stop a ladder after this many flowing points (0: run them all)</td></tr>
 <tr><td><code>keep_rung_states</code></td><td>false</td><td>save the state of every rung (needed by the figures and films of a rung)</td></tr>
 <tr><td><code>delta_v</code></td><td>8</td><td>cells between each contact and its voltmeter plane</td></tr>

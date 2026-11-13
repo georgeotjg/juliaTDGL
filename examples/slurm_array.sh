@@ -13,6 +13,6 @@
 export JULIA_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1
 FIELDS=(0.015 0.03 0.06 0.09 0.12)                  # in units of H_c2
 H=${FIELDS[${SLURM_ARRAY_TASK_ID:-0}]}
-julia --project=julia julia/scripts/run_preset.jl --geom WEDGE --kappa 25 --xi-ratio 4 \
+julia --project=tdgl tdgl/scripts/run_preset.jl --geom WEDGE --kappa 25 --xi-ratio 4 \
       --H $H --J 0.02,0.04,0.06,0.08,0.10,0.20,0.30,0.40 \
       --mesh production --window long --dir runs/field_H$H ${RESUME:+--restart}

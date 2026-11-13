@@ -4,7 +4,7 @@ using TDGL, TDGLGPU, KernelAbstractions, LinearAlgebra, Printf
 BLAS.set_num_threads(1)
 backend = KernelAbstractions.CPU()
 dir = joinpath(@__DIR__, "work"); mkpath(dir); f = joinpath(dir, "heat.toml")
-write(f, replace(read(joinpath(@__DIR__, "..", "..", "..", "tdgl2", "examples", "heat_k25.toml"), String),
+write(f, replace(read(joinpath(@__DIR__, "..", "..", "..", "gtdgl", "examples", "heat_k25.toml"), String),
                  r"\[protocol\][\s\S]*" => "[run]\nJ = [0.3]\nH = 0.03\n", "[scheme]" => "[scheme]\nthreads = false"))
 c = load_config(f); st = Stepper(c.model, c.grid, c.masks; c.scheme...); HJ = TDGL.selffield(st, 0.3)
 s0 = initial_state(c.model, c.grid, c.masks, c.H)

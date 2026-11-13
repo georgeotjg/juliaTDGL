@@ -15,7 +15,7 @@
 time-dependent Ginzburg--Landau solver}
 \author{J.~A.~Robles Calder\'on\\
 \small Departamento de F\'isica, Universidad Nacional de Colombia, Bogot\'a}
-\date{Release 2.0 (updated 13 November 2026)}
+\date{Release 2.0 (updated 19 November 2026)}
 
 \begin{document}
 \sloppy
@@ -23,7 +23,7 @@ time-dependent Ginzburg--Landau solver}
 
 \begin{abstract}
 \noindent
-Release 2.0 (\code{tdgl2/}, package \code{TDGL} 2.0.0) generalises the two-band solver of release 1.2 to any number of
+Release 2.0 (\code{gtdgl/}, package \code{TDGL} 2.0.0) generalises the two-band solver of release 1.2 to any number of
 bands, each with its own Kramer--Watts-Tobin (KWT) relaxation, and adds an open boundary for the self-field, an
 insulating buffer, a material per region, Runge--Kutta--Chebyshev (or Legendre) stages and a rotating frame for the bands
 that KWT makes stiff, and a
@@ -69,7 +69,7 @@ What release 2.0 adds over 1.2, in one line each:
 
 What it does not have: the scalar potential of 1.2 (its Coulomb projection, Thomas--Fermi screening and diffused
 residual), the \code{Strict} numerical mode and the legacy explicit scheme of 1.2. For those, and to reproduce the published
-results of release 1.x, release 1.2 stays in the repository (\code{julia/}).
+results of release 1.x, release 1.2 stays in the repository (\code{tdgl/}).
 
 % ======================================================================
 \section{The model}
@@ -356,6 +356,16 @@ passive one. With noise the state never reaches a fixed point, so a rung closes 
 without a phase slip on any band; set that time to the waiting time the question needs (an escape time is a distribution, not a
 number: for it, many seeds).
 
+Under \code{[protocol]}, \code{slip\_band\_mode = "any\_band"} tests each band for a flowing closure.
+The window bracket reads the largest magnitude among the gated second-half band voltages.
+An exhausted rung with a low rate remains undecided. The output records the triggering band in
+\code{slip\_band}. The voltage column \code{V}, \code{nslip} and the bulk collapse verdict retain their
+band-1 definitions. The default \code{"band1"} reproduces the historical protocol.
+
+For delay confirmation, \code{confirm\_replay = true} saves the field PCG solution history and the
+random stream at each buffered rung. The confirmation uses these histories on the CPU. Resume
+checks for their presence in saved rungs when the corresponding terms are active.
+
 \subsection{Vortices}
 
 \code{count\_vortices(G, Vx, Vy, hz, f, grid, k)} counts the vortices of one band on the $x$--$y$ plaquettes of plane $k$: the
@@ -493,8 +503,8 @@ A run is one TOML file:
 \end{verbatim}
 and one command:
 \begin{verbatim}
-OPENBLAS_NUM_THREADS=1 julia --project=tdgl2 \
-    tdgl2/scripts/run.jl RUN.toml [--dir OUT]
+OPENBLAS_NUM_THREADS=1 julia --project=gtdgl \
+    gtdgl/scripts/run.jl RUN.toml [--dir OUT]
 \end{verbatim}
 Each polarity starts from the Meissner seed, or from what \code{start} names: \code{"field\_cooled"} (the sample normal at the
 bath temperature \code{start\_T\_hot} = 1.5 for \code{start\_t\_hot} = 150~$\tGL$, so that the field fills it, then cooled from
@@ -533,7 +543,7 @@ delay_bracket(L)
 
 \subsection{The terminal menu, campaigns and tools}
 
-The terminal menu of release 1.2 (\code{julia/scripts/tdgl-tui.sh}) lists the runs of 2.0 that have an
+The terminal menu of release 1.2 (\code{tdgl/scripts/tdgl-tui.sh}) lists the runs of 2.0 that have an
 \code{out\_dir}, with their points, and launches one from a run file (key \code{n}; with two CPUs, one process per
 polarity), stops it after the current point (\code{s}) and resumes it (\code{u}). Its launch wizard (\code{l}) ends with
 the choice of release: \code{2} writes the run file of release 2 (the two-band model of 1.2, KWT off, with the \code{:bar}
@@ -583,12 +593,12 @@ of the ladder):
 
 For campaigns, one single-threaded process per physical core (\code{OPENBLAS\_NUM\_THREADS=1}); on a laptop with hybrid
 cores the total gain saturates near $2.5\times$ one process (memory bandwidth). The Slurm scripts of release 1.2
-(\code{examples/}) serve with their command replaced by \code{tdgl2/scripts/run.jl RUN.toml --dir OUT}.
+(\code{examples/}) serve with their command replaced by \code{gtdgl/scripts/run.jl RUN.toml --dir OUT}.
 
 % ======================================================================
 \section{Checks}
 
-The suite (\code{tdgl2/test/run.jl}, a few minutes) checks:
+The suite (\code{gtdgl/test/run.jl}, a few minutes) checks:
 \begin{itemize}
 \item \textbf{Release 1.2.} The step, the masks of every catalogue shape, the checkpoints and a two-polarity ladder point
   by point, with the new terms off and \code{selffield\_bc = :slab}, against states written by release 1.2. To the bit

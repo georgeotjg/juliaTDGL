@@ -1,4 +1,4 @@
-# The test suite of the N-band package (tdgl2/) on GitHub's machines, on every push to main, on pull requests and by hand.
+# The test suite of the N-band package (gtdgl/) on GitHub's machines, on every push to main, on pull requests and by hand.
 name: tests
 on:
   push:
@@ -17,13 +17,13 @@ jobs:
         with:
           version: '1.13.2'
       - uses: julia-actions/cache@v3
-      - run: julia --project=tdgl2 -e 'using Pkg; Pkg.instantiate()'
+      - run: julia --project=gtdgl -e 'using Pkg; Pkg.instantiate()'
       - name: Suite, to the bit
         env:
           OPENBLAS_NUM_THREADS: '1'
           OPENBLAS_CORETYPE: Haswell
           TDGL_TEST_BITS: '1'
-        run: julia -C haswell --project=tdgl2 tdgl2/test/run.jl
+        run: julia -C haswell --project=gtdgl gtdgl/test/run.jl
   # As a user runs it: the machine's own kernels, states to 1e-10, verdicts and counts exact.
   native:
     runs-on: ubuntu-24.04
@@ -34,15 +34,15 @@ jobs:
         with:
           version: '1.13'
       - uses: julia-actions/cache@v3
-      - run: julia --project=tdgl2 -e 'using Pkg; Pkg.instantiate()'
+      - run: julia --project=gtdgl -e 'using Pkg; Pkg.instantiate()'
       - name: Suite
         env:
           OPENBLAS_NUM_THREADS: '1'
-        run: julia --project=tdgl2 tdgl2/test/run.jl
+        run: julia --project=gtdgl gtdgl/test/run.jl
       - name: Menu and incomplete-run reports
         run: |
-          julia --project=julia/tui julia/tui/test/runtests.jl
-          python3 tdgl2/test/test_postprocessing.py
+          julia --project=tdgl/tui tdgl/tui/test/runtests.jl
+          python3 gtdgl/test/test_postprocessing.py
   gpu-cpu-backend:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
@@ -88,7 +88,7 @@ jobs:
           echo '071d807f4d3bf6b921f86b9a91e83a47ecc026c5821634efa46b09d890e06785  out/reference_libm/glibc.pkg.tar.zst' | sha256sum -c -
           tar --zstd -xOf out/reference_libm/glibc.pkg.tar.zst usr/lib/libm.so.6 > out/reference_libm/libm.so.6
           echo '58b6b82e39d59d7810d402ba4ec34359fde058204fdb7cd5a269fda256a35421  out/reference_libm/libm.so.6' | sha256sum -c -
-      - run: julia --project=julia -e 'using Pkg; Pkg.instantiate()'
+      - run: julia --project=tdgl -e 'using Pkg; Pkg.instantiate()'
         env:
           LD_LIBRARY_PATH: ${{ github.workspace }}/out/reference_libm
       - name: Classic suite with the reference rounding
@@ -96,4 +96,4 @@ jobs:
           LD_LIBRARY_PATH: ${{ github.workspace }}/out/reference_libm
         run: |
           mkdir -p out/classic_tmp
-          TMPDIR="$PWD/out/classic_tmp" julia -C haswell --project=julia julia/test/run.jl
+          TMPDIR="$PWD/out/classic_tmp" julia -C haswell --project=tdgl tdgl/test/run.jl
