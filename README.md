@@ -396,15 +396,11 @@ one material to another (it needs the scalar potential).
 
 ## Citing
 
-The solver, the measurement protocol and the failure modes it guards against are described in:
-
 > Robles Calderón, J. A. (2026). *Silent failure modes in three-dimensional two-band time-dependent
-> Ginzburg–Landau simulations of geometric superconducting diodes* (Version 1.0.0) [Preprint].
-> Zenodo. https://doi.org/10.5281/zenodo.23163207
+> Ginzburg–Landau simulations of geometric superconducting diodes* (Version 1.1.0) [Preprint].
+> Zenodo. https://doi.org/10.5281/zenodo.23603709
 
-The revised methods preprint is available in [version 1.1.0](https://www.researchgate.net/publication/417911204_Silent_failure_modes_in_three-dimensional_two-band_time-dependent_Ginzburg-Landau_simulations_of_geometric_superconducting_diodes), DOI [10.5281/zenodo.23603709](https://doi.org/10.5281/zenodo.23603709).
-
-`Config(:legacy; ...)` with `mode=Strict()` in `tdgl/` reproduces the methods results to the digit. Tag `v1.0.0` is the code cited by the preprint. For simulations with the N-band solver, cite the software version used. `CITATION.cff` supplies the citation metadata.
+The preprint's simulations used software tag `v1.0.0`. Cite the software version used for your simulations. See [CITATION.cff](CITATION.cff).
 
 ## License
 

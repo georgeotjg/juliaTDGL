@@ -318,12 +318,11 @@ A rung of 1600 t_GL is about two minutes without KWT. What it costs in accuracy:
 
 ## Citing
 
-The solver of release 1.x, the protocol and its failure modes:
+> Robles Calderón, J. A. (2026). *Silent failure modes in three-dimensional two-band time-dependent
+> Ginzburg–Landau simulations of geometric superconducting diodes* (Version 1.1.0) [Preprint].
+> Zenodo. https://doi.org/10.5281/zenodo.23603709
 
-> Robles Calderón, J. A. (2026). *Silent failure modes in three-dimensional two-band time-dependent Ginzburg–Landau
-> simulations of geometric superconducting diodes* (Version 1.0.0) [Preprint]. Zenodo. https://doi.org/10.5281/zenodo.23163207
-
-The results of 2.0 (KWT and the conversion partition in a two-band diode) are in preparation.
+The preprint's simulations used software tag `v1.0.0`. Cite the software version used for your simulations.
 
 ## License
 

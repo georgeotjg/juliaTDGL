@@ -8,6 +8,7 @@ set -euo pipefail
 cpus="${1:?usage: pin_cpu.sh CPUSET command...}"
 shift
 export JULIA_CPU_THREADS=1
+export JULIA_NUM_THREADS=1
 export OPENBLAS_NUM_THREADS=1   # one core per run: more OpenBLAS threads only oversubscribe
 export JULIA_UNBUFFERED=1
 exec taskset -c "$cpus" stdbuf -oL -eL "$@"

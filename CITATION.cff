@@ -44,8 +44,9 @@ preferred-citation:
       orcid: "https://orcid.org/0009-0007-0557-0263"
       affiliation: Universidad Nacional de Colombia
   year: 2026
-  month: 10
+  month: 11
+  version: 1.1.0
   publisher:
     name: Zenodo
-  doi: "10.5281/zenodo.23163207"
-  url: "https://zenodo.org/records/23163207"
+  doi: "10.5281/zenodo.23603709"
+  url: "https://doi.org/10.5281/zenodo.23603709"

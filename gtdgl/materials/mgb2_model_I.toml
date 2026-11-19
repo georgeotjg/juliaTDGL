@@ -1,4 +1,4 @@
-# Two-band model of the methods preprint (Robles Calderón 2026, doi:10.5281/zenodo.23163207): MgB2-like
+# Two-band model of the methods preprint (Robles Calderón 2026, doi:10.5281/zenodo.23603709): MgB2-like
 # band labels, model parameters.  Not quantitative MgB2 (see regime).
 name = "MgB2-like two-band model of the methods preprint"
 regime = "GL near Tc, dirty limit; |gamma| << |alpha_mu| is a model regime (invariant gamma^2/(alpha_s alpha_p) = 1.7e-6); u = Gamma_1/sigma_n = 1"
