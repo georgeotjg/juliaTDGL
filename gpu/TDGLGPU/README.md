@@ -82,7 +82,8 @@ OPENBLAS_NUM_THREADS=1 julia --project=gpu/TDGLGPU gpu/TDGLGPU/test/validate.jl 
 ```
 
 The runner writes environment versions, source SHA-256 values, per-case tolerances/errors and timings to
-`out/gpu_validation/`. Set `TDGLGPU_TEST_WORKDIR` to choose another destination. The step comparison uses each vector field's
+`out/gpu_validation/`. Set `TDGLGPU_TEST_WORKDIR` to choose another destination. KA-CPU keeps its PoCL cache
+in the `pocl-cache/` subdirectory unless `POCL_CACHE_DIR` is set. The step comparison uses each vector field's
 whole magnitude for normalization; the fast PCG cases use a looser, explicitly recorded tolerance (usually 1e-7 versus
 1e-10). A passing short ladder tests protocol/checkpoint plumbing, not a resolved critical-current measurement.
 

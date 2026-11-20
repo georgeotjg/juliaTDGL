@@ -1,10 +1,14 @@
 # Bounded validation with machine-readable results under out/ (or an explicit work folder).
 # julia --project=gpu/TDGLGPU gpu/TDGLGPU/test/validate.jl [cuda] [20]
-using TDGL, TDGLGPU, KernelAbstractions, Pkg, TOML, SHA, Dates, LinearAlgebra
-BLAS.set_num_threads(1)
 work = abspath(get(ENV, "TDGLGPU_TEST_WORKDIR", joinpath(pwd(), "out", "gpu_validation")))
 ENV["TDGLGPU_TEST_WORKDIR"] = work
 mkpath(work)
+if !("cuda" in ARGS) && !haskey(ENV, "POCL_CACHE_DIR")
+    ENV["POCL_CACHE_DIR"] = mkpath(joinpath(work, "pocl-cache"))
+end
+
+using TDGL, TDGLGPU, KernelAbstractions, Pkg, TOML, SHA, Dates, LinearAlgebra
+BLAS.set_num_threads(1)
 versions = Dict(string(p.name) => string(p.version) for p in values(Pkg.dependencies()) if p.version !== nothing)
 hashes = Dict{String,String}()
 for (label, root) in (("TDGL", pkgdir(TDGL)), ("TDGLGPU", pkgdir(TDGLGPU)))
